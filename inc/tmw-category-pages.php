@@ -6,7 +6,7 @@
  * Each category gets a matching CPT post for full WordPress editing.
  *
  * @package suspended-flavor-flavor
- * @version 1.0.0
+ * @version 1.1.0 - Fixed RankMath Gutenberg sidebar
  */
 
 if (!defined('ABSPATH')) {
@@ -22,7 +22,7 @@ if (!defined('TMW_CAT_PAGE_CPT')) {
 
 /* ======================================================================
  * REGISTER CUSTOM POST TYPE
- * Hidden from public, admin-only for editing category content
+ * Key: publicly_queryable must be true for RankMath to work
  * ====================================================================== */
 add_action('init', function () {
     $labels = [
@@ -40,21 +40,21 @@ add_action('init', function () {
     ];
 
     $args = [
-    'labels'              => $labels,
-    'public'              => false,
-    'publicly_queryable'  => true,   // ← CHANGED from false to true
-    'exclude_from_search' => true,   // ← ADDED - keeps it out of search
-    'show_ui'             => true,
-    'show_in_menu'        => false,
-    'show_in_rest'        => true,
-    'has_archive'         => false,
-    'rewrite'             => false,  // No public URLs because this is false
-    'hierarchical'        => false,
-    'supports'            => ['title', 'editor', 'thumbnail', 'excerpt', 'revisions'],
-    'menu_icon'           => 'dashicons-category',
-    'capability_type'     => 'post',
-    'map_meta_cap'        => true,
-];
+        'labels'              => $labels,
+        'public'              => false,
+        'publicly_queryable'  => true,    // REQUIRED for RankMath
+        'exclude_from_search' => true,    // Keep out of search
+        'show_ui'             => true,
+        'show_in_menu'        => false,
+        'show_in_rest'        => true,    // REQUIRED for Gutenberg
+        'has_archive'         => false,
+        'rewrite'             => false,   // No public URLs
+        'hierarchical'        => false,
+        'supports'            => ['title', 'editor', 'thumbnail', 'excerpt', 'revisions', 'custom-fields'],
+        'menu_icon'           => 'dashicons-category',
+        'capability_type'     => 'post',
+        'map_meta_cap'        => true,
+    ];
 
     register_post_type(TMW_CAT_PAGE_CPT, $args);
 }, 5);
@@ -63,12 +63,6 @@ add_action('init', function () {
  * HELPER: Get category_page CPT post for a category
  * ====================================================================== */
 if (!function_exists('tmw_get_category_page_post')) {
-    /**
-     * Get the category_page CPT post linked to a category.
-     *
-     * @param int|WP_Term $category Category term ID or object.
-     * @return WP_Post|null The linked CPT post or null.
-     */
     function tmw_get_category_page_post($category) {
         if (is_numeric($category)) {
             $category = get_term($category, 'category');
@@ -78,7 +72,6 @@ if (!function_exists('tmw_get_category_page_post')) {
             return null;
         }
 
-        // Check if we have a linked CPT post ID stored
         $linked_post_id = get_term_meta($category->term_id, '_tmw_category_page_id', true);
 
         if ($linked_post_id) {
@@ -88,7 +81,6 @@ if (!function_exists('tmw_get_category_page_post')) {
             }
         }
 
-        // Fallback: find by slug match
         $posts = get_posts([
             'post_type'      => TMW_CAT_PAGE_CPT,
             'name'           => $category->slug,
@@ -97,7 +89,6 @@ if (!function_exists('tmw_get_category_page_post')) {
         ]);
 
         if (!empty($posts)) {
-            // Store the link for future lookups
             update_term_meta($category->term_id, '_tmw_category_page_id', $posts[0]->ID);
             return $posts[0];
         }
@@ -110,12 +101,6 @@ if (!function_exists('tmw_get_category_page_post')) {
  * HELPER: Create category_page CPT post for a category
  * ====================================================================== */
 if (!function_exists('tmw_create_category_page_post')) {
-    /**
-     * Create a category_page CPT post for a category.
-     *
-     * @param int|WP_Term $category Category term ID or object.
-     * @return int|WP_Error Post ID on success, WP_Error on failure.
-     */
     function tmw_create_category_page_post($category) {
         if (is_numeric($category)) {
             $category = get_term($category, 'category');
@@ -125,13 +110,11 @@ if (!function_exists('tmw_create_category_page_post')) {
             return new WP_Error('invalid_term', 'Invalid category provided.');
         }
 
-        // Check if already exists
         $existing = tmw_get_category_page_post($category);
         if ($existing) {
             return $existing->ID;
         }
 
-        // Create new CPT post
         $post_data = [
             'post_type'    => TMW_CAT_PAGE_CPT,
             'post_title'   => $category->name,
@@ -146,7 +129,6 @@ if (!function_exists('tmw_create_category_page_post')) {
         $post_id = wp_insert_post($post_data, true);
 
         if (!is_wp_error($post_id)) {
-            // Store the link on the term
             update_term_meta($category->term_id, '_tmw_category_page_id', $post_id);
         }
 
@@ -165,12 +147,10 @@ add_action('created_category', function ($term_id, $tt_id) {
  * AUTO-CREATE: Bulk create for all existing categories (runs once)
  * ====================================================================== */
 add_action('admin_init', function () {
-    // Only run once
     if (get_option('tmw_category_pages_initialized')) {
         return;
     }
 
-    // Only for admins
     if (!current_user_can('manage_options')) {
         return;
     }
@@ -187,7 +167,6 @@ add_action('admin_init', function () {
 
     $created = 0;
     foreach ($categories as $category) {
-        // Skip "Uncategorized" default category
         if ($category->slug === 'uncategorized') {
             continue;
         }
@@ -200,7 +179,6 @@ add_action('admin_init', function () {
 
     update_option('tmw_category_pages_initialized', 1);
 
-    // Admin notice
     if ($created > 0) {
         add_action('admin_notices', function () use ($created) {
             echo '<div class="notice notice-success is-dismissible">';
@@ -225,7 +203,6 @@ add_filter('category_row_actions', function ($actions, $term) {
             __('Edit Page Content', 'retrotube-child')
         );
     } else {
-        // Create link if doesn't exist
         $create_url = wp_nonce_url(
             admin_url('admin-post.php?action=tmw_create_category_page&term_id=' . $term->term_id),
             'tmw_create_category_page_' . $term->term_id
@@ -252,7 +229,7 @@ add_action('admin_post_tmw_create_category_page', function () {
     }
 
     if (!current_user_can('manage_categories')) {
-        wp_die(__('Permission denied.', 'retrotube-child'));
+        wp_die(__('You do not have permission to do this.', 'retrotube-child'));
     }
 
     $result = tmw_create_category_page_post($term_id);
@@ -261,58 +238,48 @@ add_action('admin_post_tmw_create_category_page', function () {
         wp_die($result->get_error_message());
     }
 
-    // Redirect to edit the new post
     wp_redirect(get_edit_post_link($result, 'raw'));
     exit;
 });
 
 /* ======================================================================
- * ADMIN: Add info metabox to category_page edit screen
+ * ADMIN: Add metabox showing linked category info
  * ====================================================================== */
 add_action('add_meta_boxes', function () {
     add_meta_box(
-        'tmw_category_page_info',
+        'tmw_linked_category',
         __('Linked Category', 'retrotube-child'),
-        'tmw_category_page_info_metabox',
+        function ($post) {
+            $category_id = get_post_meta($post->ID, '_tmw_linked_category_id', true);
+
+            if (!$category_id) {
+                echo '<p>' . esc_html__('No linked category found.', 'retrotube-child') . '</p>';
+                return;
+            }
+
+            $category = get_term($category_id, 'category');
+
+            if (!$category || is_wp_error($category)) {
+                echo '<p>' . esc_html__('Linked category not found.', 'retrotube-child') . '</p>';
+                return;
+            }
+
+            $edit_link = get_edit_term_link($category->term_id, 'category');
+            $view_link = get_term_link($category);
+
+            echo '<p><strong>' . esc_html__('Category:', 'retrotube-child') . '</strong> ' . esc_html($category->name) . '</p>';
+            echo '<p><strong>' . esc_html__('Slug:', 'retrotube-child') . '</strong> ' . esc_html($category->slug) . '</p>';
+            echo '<p><strong>' . esc_html__('Videos:', 'retrotube-child') . '</strong> ' . esc_html($category->count) . '</p>';
+            echo '<p>';
+            echo '<a href="' . esc_url($view_link) . '" class="button" target="_blank">' . esc_html__('View Category', 'retrotube-child') . '</a> ';
+            echo '<a href="' . esc_url($edit_link) . '" class="button">' . esc_html__('Edit Category', 'retrotube-child') . '</a>';
+            echo '</p>';
+        },
         TMW_CAT_PAGE_CPT,
         'side',
-        'high'
+        'default'
     );
 });
-
-if (!function_exists('tmw_category_page_info_metabox')) {
-    /**
-     * Render the category info metabox.
-     *
-     * @param WP_Post $post Current post object.
-     */
-    function tmw_category_page_info_metabox($post) {
-        $term_id = get_post_meta($post->ID, '_tmw_linked_category_id', true);
-
-        if (!$term_id) {
-            echo '<p>' . esc_html__('No linked category found.', 'retrotube-child') . '</p>';
-            return;
-        }
-
-        $term = get_term($term_id, 'category');
-
-        if (!$term || is_wp_error($term)) {
-            echo '<p>' . esc_html__('Linked category no longer exists.', 'retrotube-child') . '</p>';
-            return;
-        }
-
-        $category_url = get_term_link($term);
-        $edit_url = get_edit_term_link($term->term_id, 'category');
-
-        echo '<p><strong>' . esc_html__('Category:', 'retrotube-child') . '</strong> ' . esc_html($term->name) . '</p>';
-        echo '<p><strong>' . esc_html__('Slug:', 'retrotube-child') . '</strong> <code>' . esc_html($term->slug) . '</code></p>';
-        echo '<p><strong>' . esc_html__('Videos:', 'retrotube-child') . '</strong> ' . esc_html($term->count) . '</p>';
-        echo '<p>';
-        echo '<a href="' . esc_url($category_url) . '" class="button" target="_blank">' . esc_html__('View Category', 'retrotube-child') . '</a> ';
-        echo '<a href="' . esc_url($edit_url) . '" class="button">' . esc_html__('Edit Category', 'retrotube-child') . '</a>';
-        echo '</p>';
-    }
-}
 
 /* ======================================================================
  * SYNC: Update CPT when category is edited
@@ -328,16 +295,13 @@ add_action('edited_category', function ($term_id, $tt_id) {
         return;
     }
 
-    // Only sync title/slug if they match (avoid overwriting custom titles)
     $updates = [];
 
-    // Always keep slug in sync
     if ($page_post->post_name !== $term->slug) {
         $updates['post_name'] = $term->slug;
     }
 
-    // Only sync title if it was previously matching
-    if ($page_post->post_title === $term->name || empty($page_post->post_content)) {
+    if ($page_post->post_title === $term->name || empty($page_post->post_title)) {
         // Title was synced before, keep syncing
     }
 
@@ -370,12 +334,6 @@ add_action('pre_delete_term', function ($term_id, $taxonomy) {
  * FRONTEND: Get category page content for display
  * ====================================================================== */
 if (!function_exists('tmw_get_category_page_content')) {
-    /**
-     * Get the content from the category_page CPT for a category.
-     *
-     * @param int|WP_Term|null $category Category (defaults to current queried object).
-     * @return array{title: string, content: string, excerpt: string, has_content: bool}
-     */
     function tmw_get_category_page_content($category = null) {
         if ($category === null) {
             $category = get_queried_object();
@@ -401,7 +359,6 @@ if (!function_exists('tmw_get_category_page_content')) {
 
         $content = $page_post->post_content;
 
-        // Apply content filters for shortcodes, blocks, etc.
         if (!empty($content)) {
             $content = apply_filters('the_content', $content);
         }
@@ -417,104 +374,156 @@ if (!function_exists('tmw_get_category_page_content')) {
 }
 
 /* ======================================================================
- * RANK MATH: Register CPT for SEO (Gutenberg sidebar + REST support)
+ * RANK MATH: BULLETPROOF FIX FOR GUTENBERG SIDEBAR
  * ====================================================================== */
-if (!function_exists('tmw_rank_math_add_category_page_post_type')) {
-    /**
-     * Ensure Rank Math includes the category_page CPT even when public is false.
-     *
-     * @param array $post_types Post types list.
-     * @return array
-     */
-    function tmw_rank_math_add_category_page_post_type($post_types) {
-        if (!is_array($post_types)) {
-            $post_types = [];
-        }
 
-        $post_types[TMW_CAT_PAGE_CPT] = TMW_CAT_PAGE_CPT;
-
-        return $post_types;
-    }
-}
-
-add_filter('rank_math/post_types', 'tmw_rank_math_add_category_page_post_type', 999);
-add_filter('rank_math/metabox/post_types', 'tmw_rank_math_add_category_page_post_type', 999);
-add_filter('rank_math/gutenberg/post_types', 'tmw_rank_math_add_category_page_post_type', 999);
-add_filter('rank_math/rest_post_types', 'tmw_rank_math_add_category_page_post_type', 999);
-add_filter('rank_math/accessible_post_types', 'tmw_rank_math_add_category_page_post_type', 999);
-
-// Allow Rank Math to treat this non-public CPT as accessible for Gutenberg.
-add_filter('rank_math/is_post_type_accessible', function ($is_accessible, $post_type) {
-    if ($post_type === TMW_CAT_PAGE_CPT) {
-        return true;
-    }
-
-    return $is_accessible;
-}, 999, 2);
-
-// Bypass WordPress viewability checks for Rank Math in wp-admin.
+/**
+ * 1. FIX: is_post_type_viewable filter - WordPress passes WP_Post_Type OBJECT, not string!
+ */
 add_filter('is_post_type_viewable', function ($is_viewable, $post_type_obj) {
+    // Handle both string and object (WordPress passes object)
     $post_type_name = is_object($post_type_obj) ? $post_type_obj->name : $post_type_obj;
-
+    
     if ($post_type_name === TMW_CAT_PAGE_CPT) {
         return true;
     }
-
+    
     return $is_viewable;
 }, 10, 2);
 
-// Ensure Rank Math scripts load on category_page edit screen in Gutenberg.
-add_filter('rank_math/admin/editor_scripts', function ($load) {
-    global $post_type;
-
-    if ($post_type === TMW_CAT_PAGE_CPT) {
-        return true;
+/**
+ * 2. Add CPT to RankMath's post type lists (use associative array format)
+ */
+add_filter('rank_math/accessible_post_types', function ($post_types) {
+    if (!is_array($post_types)) {
+        $post_types = [];
     }
-
-    return $load;
+    $post_types[TMW_CAT_PAGE_CPT] = TMW_CAT_PAGE_CPT;
+    return $post_types;
 }, 999);
 
-// Enable Rank Math for this post type in settings.
-add_filter('rank_math/settings/general', function ($settings) {
-    if (!isset($settings['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'])) {
-        $settings['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] = 'on';
+add_filter('rank_math/post_types', function ($post_types) {
+    if (!is_array($post_types)) {
+        $post_types = [];
     }
-
-    return $settings;
+    $post_types[TMW_CAT_PAGE_CPT] = TMW_CAT_PAGE_CPT;
+    return $post_types;
 }, 999);
 
-// Force the option so Rank Math sidebar loads for hidden CPTs.
+/**
+ * 3. Force RankMath metabox for this CPT
+ */
+add_filter('rank_math/metabox/post_types', function ($post_types) {
+    if (!is_array($post_types)) {
+        $post_types = [];
+    }
+    $post_types[TMW_CAT_PAGE_CPT] = TMW_CAT_PAGE_CPT;
+    return $post_types;
+}, 999);
+
+/**
+ * 4. Force RankMath to add metabox (the actual check RankMath uses)
+ */
+add_filter('rank_math/metabox/add_meta_boxes', function ($post_types) {
+    if (!is_array($post_types)) {
+        $post_types = [];
+    }
+    if (!in_array(TMW_CAT_PAGE_CPT, $post_types, true)) {
+        $post_types[] = TMW_CAT_PAGE_CPT;
+    }
+    return $post_types;
+}, 999);
+
+/**
+ * 5. Force REST API support for RankMath
+ */
+add_filter('rank_math/rest/enabled_post_types', function ($post_types) {
+    if (!is_array($post_types)) {
+        $post_types = [];
+    }
+    if (!in_array(TMW_CAT_PAGE_CPT, $post_types, true)) {
+        $post_types[] = TMW_CAT_PAGE_CPT;
+    }
+    return $post_types;
+}, 999);
+
+/**
+ * 6. Force database option to enable metabox
+ */
 add_filter('option_rank-math-options-titles', function ($options) {
     if (!is_array($options)) {
         $options = [];
     }
-
     $options['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] = 'on';
-
+    $options['pt_' . TMW_CAT_PAGE_CPT . '_bulk_editing'] = 'on';
     return $options;
 }, 999);
 
-// Persist the Rank Math meta box toggle for category_page so Gutenberg sidebar loads.
+/**
+ * 7. Force load RankMath scripts on this CPT's edit screen
+ */
 add_action('admin_init', function () {
-    static $done = false;
-    if ($done) {
+    global $pagenow;
+    
+    if (!in_array($pagenow, ['post.php', 'post-new.php'], true)) {
         return;
     }
-    $done = true;
+    
+    // Check if we're editing a category_page
+    $post_id = isset($_GET['post']) ? absint($_GET['post']) : 0;
+    if ($post_id && get_post_type($post_id) === TMW_CAT_PAGE_CPT) {
+        // Force RankMath to recognize this screen
+        add_filter('rank_math/admin/screen', function ($screen) {
+            return 'post';
+        }, 999);
+    }
+});
 
+/**
+ * 8. Ensure RankMath editor scripts load
+ */
+add_filter('rank_math/admin/editor_scripts', function ($load) {
+    global $post_type;
+    if ($post_type === TMW_CAT_PAGE_CPT) {
+        return true;
+    }
+    return $load;
+}, 999);
+
+/**
+ * 9. CRITICAL: Hook into enqueue_block_editor_assets to force RankMath scripts
+ */
+add_action('enqueue_block_editor_assets', function () {
+    global $post_type;
+    
+    if ($post_type !== TMW_CAT_PAGE_CPT) {
+        return;
+    }
+    
+    // If RankMath hasn't loaded its scripts, we need to trigger it
+    if (!wp_script_is('rank-math-editor', 'enqueued') && class_exists('RankMath')) {
+        // Trigger RankMath's editor script loading
+        do_action('rank_math/admin/editor_scripts');
+    }
+}, 5);
+
+/**
+ * 10. Persist database setting on admin_init (run once)
+ */
+add_action('admin_init', function () {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    
     $options = get_option('rank-math-options-titles', []);
     if (!is_array($options)) {
         $options = [];
     }
-
+    
     $key = 'pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box';
-    if (($options[$key] ?? '') !== 'on') {
+    if (!isset($options[$key]) || $options[$key] !== 'on') {
         $options[$key] = 'on';
         update_option('rank-math-options-titles', $options);
-
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[TMW-SEO] Enabled Rank Math meta box for category_page CPT.');
-        }
     }
 }, 1);
 
@@ -523,11 +532,11 @@ add_action('admin_init', function () {
  * ====================================================================== */
 add_action('admin_menu', function () {
     add_submenu_page(
-        'edit.php',                                    // Parent: Posts menu
-        __('Category Pages', 'retrotube-child'),       // Page title
-        __('Category Pages', 'retrotube-child'),       // Menu title
-        'manage_categories',                           // Capability
-        'edit.php?post_type=' . TMW_CAT_PAGE_CPT       // URL
+        'edit.php',
+        __('Category Pages', 'retrotube-child'),
+        __('Category Pages', 'retrotube-child'),
+        'manage_categories',
+        'edit.php?post_type=' . TMW_CAT_PAGE_CPT
     );
 });
 
@@ -569,7 +578,6 @@ add_filter('get_the_archive_description', function ($description) {
 
     $page_data = tmw_get_category_page_content($category);
 
-    // If CPT has content, use it; otherwise fall back to original description
     if ($page_data['has_content']) {
         return $page_data['content'];
     }
@@ -596,8 +604,6 @@ add_filter('get_the_archive_title', function ($title) {
         return $title;
     }
 
-    // Only override if the CPT title differs from the category name
-    // This allows custom titles while keeping auto-sync working
     if ($page_post->post_title !== $category->name) {
         return esc_html($page_post->post_title);
     }
