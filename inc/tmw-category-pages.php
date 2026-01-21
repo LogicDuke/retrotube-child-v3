@@ -485,6 +485,23 @@ add_filter('option_rank-math-options-titles', function ($options) {
     return $options;
 });
 
+// Persist the Rank Math meta box toggle for category_page so Gutenberg sidebar loads.
+add_action('current_screen', function ($screen) {
+    if (!$screen || $screen->post_type !== TMW_CAT_PAGE_CPT) {
+        return;
+    }
+
+    $options = get_option('rank-math-options-titles');
+    if (!is_array($options)) {
+        $options = [];
+    }
+
+    if (($options['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] ?? '') !== 'on') {
+        $options['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] = 'on';
+        update_option('rank-math-options-titles', $options);
+    }
+});
+
 /* ======================================================================
  * ADMIN: Add submenu page for managing all category pages
  * ====================================================================== */
