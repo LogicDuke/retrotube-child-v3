@@ -431,18 +431,17 @@ if (!function_exists('tmw_rank_math_add_category_page_post_type')) {
             $post_types = [];
         }
 
-        if (!in_array(TMW_CAT_PAGE_CPT, $post_types, true)) {
-            $post_types[] = TMW_CAT_PAGE_CPT;
-        }
+        $post_types[TMW_CAT_PAGE_CPT] = TMW_CAT_PAGE_CPT;
 
         return $post_types;
     }
 }
 
-add_filter('rank_math/post_types', 'tmw_rank_math_add_category_page_post_type', 20);
-add_filter('rank_math/metabox/post_types', 'tmw_rank_math_add_category_page_post_type', 20);
-add_filter('rank_math/gutenberg/post_types', 'tmw_rank_math_add_category_page_post_type', 20);
-add_filter('rank_math/rest_post_types', 'tmw_rank_math_add_category_page_post_type', 20);
+add_filter('rank_math/post_types', 'tmw_rank_math_add_category_page_post_type', 999);
+add_filter('rank_math/metabox/post_types', 'tmw_rank_math_add_category_page_post_type', 999);
+add_filter('rank_math/gutenberg/post_types', 'tmw_rank_math_add_category_page_post_type', 999);
+add_filter('rank_math/rest_post_types', 'tmw_rank_math_add_category_page_post_type', 999);
+add_filter('rank_math/accessible_post_types', 'tmw_rank_math_add_category_page_post_type', 999);
 
 // Allow Rank Math to treat this non-public CPT as accessible for Gutenberg.
 add_filter('rank_math/is_post_type_accessible', function ($is_accessible, $post_type) {
@@ -451,16 +450,18 @@ add_filter('rank_math/is_post_type_accessible', function ($is_accessible, $post_
     }
 
     return $is_accessible;
-}, 20, 2);
+}, 999, 2);
 
 // Bypass WordPress viewability checks for Rank Math in wp-admin.
-add_filter('is_post_type_viewable', function ($is_viewable, $post_type) {
-    if (is_admin() && $post_type === TMW_CAT_PAGE_CPT) {
+add_filter('is_post_type_viewable', function ($is_viewable, $post_type_obj) {
+    $post_type_name = is_object($post_type_obj) ? $post_type_obj->name : $post_type_obj;
+
+    if ($post_type_name === TMW_CAT_PAGE_CPT) {
         return true;
     }
 
     return $is_viewable;
-}, 20, 2);
+}, 10, 2);
 
 // Ensure Rank Math scripts load on category_page edit screen in Gutenberg.
 add_filter('rank_math/admin/editor_scripts', function ($load) {
@@ -471,7 +472,7 @@ add_filter('rank_math/admin/editor_scripts', function ($load) {
     }
 
     return $load;
-}, 20);
+}, 999);
 
 // Enable Rank Math for this post type in settings.
 add_filter('rank_math/settings/general', function ($settings) {
@@ -480,7 +481,7 @@ add_filter('rank_math/settings/general', function ($settings) {
     }
 
     return $settings;
-}, 20);
+}, 999);
 
 // Force the option so Rank Math sidebar loads for hidden CPTs.
 add_filter('option_rank-math-options-titles', function ($options) {
@@ -491,24 +492,31 @@ add_filter('option_rank-math-options-titles', function ($options) {
     $options['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] = 'on';
 
     return $options;
-}, 20);
+}, 999);
 
 // Persist the Rank Math meta box toggle for category_page so Gutenberg sidebar loads.
 add_action('admin_init', function () {
-    $options = get_option('rank-math-options-titles');
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
+    $options = get_option('rank-math-options-titles', []);
     if (!is_array($options)) {
         $options = [];
     }
 
-    if (($options['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] ?? '') !== 'on') {
-        $options['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] = 'on';
+    $key = 'pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box';
+    if (($options[$key] ?? '') !== 'on') {
+        $options[$key] = 'on';
         update_option('rank-math-options-titles', $options);
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('[TMW-SEO] Enabled Rank Math meta box for category_page CPT.');
         }
     }
-}, 20);
+}, 1);
 
 /* ======================================================================
  * ADMIN: Add submenu page for managing all category pages
