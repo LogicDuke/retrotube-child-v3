@@ -491,6 +491,49 @@ add_filter('rank_math/admin/editor_scripts', function ($load) {
 }, 999);
 
 /**
+ * 8b. Ensure RankMath localizes editor data for the category_page CPT.
+ */
+add_filter('rank_math/admin/editor/localized_data', function ($data) {
+    global $post_type;
+
+    if ($post_type !== TMW_CAT_PAGE_CPT) {
+        return $data;
+    }
+
+    if (isset($data['postTypes']) && is_array($data['postTypes']) && !in_array(TMW_CAT_PAGE_CPT, $data['postTypes'], true)) {
+        $data['postTypes'][] = TMW_CAT_PAGE_CPT;
+    }
+
+    if (isset($data['postType'])) {
+        $data['postType'] = TMW_CAT_PAGE_CPT;
+    }
+
+    $data['isGutenberg'] = true;
+
+    if (!isset($data['assessor']) || !is_array($data['assessor'])) {
+        $data['assessor'] = [];
+    }
+
+    return $data;
+}, 999);
+
+/**
+ * 8c. Backstop localized editor script data for RankMath on category_page.
+ */
+add_filter('rank_math/admin/editor_scripts/data', function ($data) {
+    global $post_type;
+
+    if ($post_type !== TMW_CAT_PAGE_CPT) {
+        return $data;
+    }
+
+    $data['postType'] = TMW_CAT_PAGE_CPT;
+    $data['isGutenbergAvailable'] = true;
+
+    return $data;
+}, 999);
+
+/**
  * 9. CRITICAL: Hook into enqueue_block_editor_assets to force RankMath scripts
  */
 add_action('enqueue_block_editor_assets', function () {
