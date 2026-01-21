@@ -416,81 +416,66 @@ if (!function_exists('tmw_get_category_page_content')) {
 }
 
 /* ======================================================================
- * RANK MATH: Register CPT for SEO
+ * RANK MATH: Register CPT for SEO (Gutenberg sidebar + REST support)
  * ====================================================================== */
-add_filter('rank_math/post_types', function ($post_types) {
-    if (!is_array($post_types)) {
+if (!function_exists('tmw_rank_math_add_category_page_post_type')) {
+    /**
+     * Ensure Rank Math includes the category_page CPT even when public is false.
+     *
+     * @param array $post_types Post types list.
+     * @return array
+     */
+    function tmw_rank_math_add_category_page_post_type($post_types) {
+        if (!is_array($post_types)) {
+            $post_types = [];
+        }
+
+        if (!in_array(TMW_CAT_PAGE_CPT, $post_types, true)) {
+            $post_types[] = TMW_CAT_PAGE_CPT;
+        }
+
         return $post_types;
     }
+}
 
-    if (!in_array(TMW_CAT_PAGE_CPT, $post_types, true)) {
-        $post_types[] = TMW_CAT_PAGE_CPT;
-    }
+add_filter('rank_math/post_types', 'tmw_rank_math_add_category_page_post_type', 20);
+add_filter('rank_math/metabox/post_types', 'tmw_rank_math_add_category_page_post_type', 20);
+add_filter('rank_math/gutenberg/post_types', 'tmw_rank_math_add_category_page_post_type', 20);
+add_filter('rank_math/rest_post_types', 'tmw_rank_math_add_category_page_post_type', 20);
 
-    return $post_types;
-});
-
-// Enable Rank Math metabox for category_page CPT
-add_filter('rank_math/metabox/post_types', function ($post_types) {
-    if (!is_array($post_types)) {
-        $post_types = [];
-    }
-    
-    if (!in_array(TMW_CAT_PAGE_CPT, $post_types, true)) {
-        $post_types[] = TMW_CAT_PAGE_CPT;
-    }
-    
-    return $post_types;
-});
-
-// Ensure Rank Math scripts load on category_page edit screen
+// Ensure Rank Math scripts load on category_page edit screen in Gutenberg.
 add_filter('rank_math/admin/editor_scripts', function ($load) {
     global $post_type;
-    
+
     if ($post_type === TMW_CAT_PAGE_CPT) {
         return true;
     }
-    
+
     return $load;
-});
+}, 20);
 
-// Force Rank Math to recognize category_page as a valid post type
-add_filter('rank_math/sitemap/post_types', function ($post_types) {
-    if (!is_array($post_types)) {
-        return $post_types;
-    }
-    
-    // Don't add to sitemap since these are internal pages
-    // But this filter helps Rank Math recognize the CPT
-    return $post_types;
-});
-
-// Enable Rank Math for this post type in settings
+// Enable Rank Math for this post type in settings.
 add_filter('rank_math/settings/general', function ($settings) {
     if (!isset($settings['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'])) {
         $settings['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] = 'on';
     }
-    return $settings;
-});
 
-// Alternative: Hook into option to ensure post type is enabled
+    return $settings;
+}, 20);
+
+// Force the option so Rank Math sidebar loads for hidden CPTs.
 add_filter('option_rank-math-options-titles', function ($options) {
     if (!is_array($options)) {
-        return $options;
+        $options = [];
     }
-    
-    // Enable meta box for category_page
+
     $options['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] = 'on';
-    
+
     return $options;
-});
+}, 20);
 
 // Persist the Rank Math meta box toggle for category_page so Gutenberg sidebar loads.
-add_action('current_screen', function ($screen) {
-    if (!$screen || $screen->post_type !== TMW_CAT_PAGE_CPT) {
-        return;
-    }
-
+add_action('admin_init', function () {
     $options = get_option('rank-math-options-titles');
     if (!is_array($options)) {
         $options = [];
@@ -499,8 +484,12 @@ add_action('current_screen', function ($screen) {
     if (($options['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] ?? '') !== 'on') {
         $options['pt_' . TMW_CAT_PAGE_CPT . '_add_meta_box'] = 'on';
         update_option('rank-math-options-titles', $options);
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[TMW-SEO] Enabled Rank Math meta box for category_page CPT.');
+        }
     }
-});
+}, 20);
 
 /* ======================================================================
  * ADMIN: Add submenu page for managing all category pages
