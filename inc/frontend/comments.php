@@ -32,7 +32,7 @@ add_filter('comment_form_field_cookies', function ($field) {
     // Preserve current consent state like core does.
     $commenter = function_exists('wp_get_current_commenter') ? wp_get_current_commenter() : array();
     $consent   = empty($commenter['comment_author_email']) ? '' : ' checked="checked"';
-    $label     = __('Save my name and email in this browser for the next time I comment.', 'retrotube-child-v2');
+    $label     = __('Save my name and email in this browser for the next time I comment.', 'retrotube-child-v3');
 
     return '<p class="comment-form-cookies-consent">'
          . '<input id="wp-comment-cookies-consent" name="wp-comment-cookies-consent" type="checkbox" value="yes"'

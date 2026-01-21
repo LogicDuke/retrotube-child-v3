@@ -1,4 +1,4 @@
-# Retrotube Child (Flipbox Edition) v2
+# Retrotube Child (Flipbox Edition) v3
 
 **What’s new**
 - Sidebar on the Models page template.
@@ -10,7 +10,7 @@
 - New `[promo_flipboxes]` shortcode for 4 external flipboxes.
 
 ## Install / Update
-1. Upload and activate the theme: Appearance → Themes → Upload → `retrotube-child-v2.zip`.
+1. Upload and activate the theme: Appearance → Themes → Upload → `retrotube-child-v3.zip`.
 2. Make sure the parent theme folder is named **retrotube**.
 
 ## Development notes
