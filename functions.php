@@ -31,8 +31,8 @@ $__tmw_filter_links = __DIR__ . '/inc/tmw-filter-links.php';
 if (file_exists($__tmw_filter_links)) { require_once $__tmw_filter_links; }
 
 /**
- * RetroTube Child (Flipbox Edition) v2 — Bootstrap
- * v4.2.0: move logic into /inc without behavior change.
+ * RetroTube Child (Flipbox Edition) v3 — Bootstrap
+ * v4.2.0: logic moved into /inc (no behavior change).
  */
 define('TMW_CHILD_VERSION', '4.2.0');
 define('TMW_CHILD_PATH', get_stylesheet_directory());
