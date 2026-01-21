@@ -443,6 +443,24 @@ add_filter('rank_math/metabox/post_types', 'tmw_rank_math_add_category_page_post
 add_filter('rank_math/gutenberg/post_types', 'tmw_rank_math_add_category_page_post_type', 20);
 add_filter('rank_math/rest_post_types', 'tmw_rank_math_add_category_page_post_type', 20);
 
+// Allow Rank Math to treat this non-public CPT as accessible for Gutenberg.
+add_filter('rank_math/is_post_type_accessible', function ($is_accessible, $post_type) {
+    if ($post_type === TMW_CAT_PAGE_CPT) {
+        return true;
+    }
+
+    return $is_accessible;
+}, 20, 2);
+
+// Bypass WordPress viewability checks for Rank Math in wp-admin.
+add_filter('is_post_type_viewable', function ($is_viewable, $post_type) {
+    if (is_admin() && $post_type === TMW_CAT_PAGE_CPT) {
+        return true;
+    }
+
+    return $is_viewable;
+}, 20, 2);
+
 // Ensure Rank Math scripts load on category_page edit screen in Gutenberg.
 add_filter('rank_math/admin/editor_scripts', function ($load) {
     global $post_type;
