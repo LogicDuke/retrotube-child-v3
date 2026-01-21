@@ -40,20 +40,21 @@ add_action('init', function () {
     ];
 
     $args = [
-        'labels'              => $labels,
-        'public'              => false,           // Not publicly viewable
-        'publicly_queryable'  => false,           // Can't query from frontend
-        'show_ui'             => true,            // Show in admin
-        'show_in_menu'        => false,           // Hidden from main menu (access via category edit link)
-        'show_in_rest'        => true,            // Enable Gutenberg
-        'has_archive'         => false,
-        'rewrite'             => false,           // No public URLs
-        'hierarchical'        => false,
-        'supports'            => ['title', 'editor', 'thumbnail', 'excerpt', 'revisions'],
-        'menu_icon'           => 'dashicons-category',
-        'capability_type'     => 'post',
-        'map_meta_cap'        => true,
-    ];
+    'labels'              => $labels,
+    'public'              => false,
+    'publicly_queryable'  => true,   // ← CHANGED from false to true
+    'exclude_from_search' => true,   // ← ADDED - keeps it out of search
+    'show_ui'             => true,
+    'show_in_menu'        => false,
+    'show_in_rest'        => true,
+    'has_archive'         => false,
+    'rewrite'             => false,  // No public URLs because this is false
+    'hierarchical'        => false,
+    'supports'            => ['title', 'editor', 'thumbnail', 'excerpt', 'revisions'],
+    'menu_icon'           => 'dashicons-category',
+    'capability_type'     => 'post',
+    'map_meta_cap'        => true,
+];
 
     register_post_type(TMW_CAT_PAGE_CPT, $args);
 }, 5);
