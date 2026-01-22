@@ -22,18 +22,50 @@ add_action('init', function () {
     $args = [
         'labels'              => $labels,
         'public'              => true,
-        'publicly_queryable'  => false,
+        'publicly_queryable'  => true,
         'show_ui'             => true,
         'show_in_menu'        => true,
         'show_in_rest'        => true,
         'supports'            => ['title', 'editor', 'excerpt', 'revisions'],
-        'exclude_from_search' => true,
+        'exclude_from_search' => false,
         'rewrite'             => false,
     ];
 
     register_post_type(TMW_CATEGORY_PAGE_CPT, $args);
-    error_log('[TMW-CAT-CPT-FIX] Registered Category Page CPT.');
+    error_log('[TMW-CAT-CPT-VISIBILITY] Registered Category Page CPT.');
 }, 5);
+
+add_action('template_redirect', function () {
+    if (is_admin() || wp_doing_ajax() || is_feed()) {
+        return;
+    }
+
+    if (!is_singular(TMW_CATEGORY_PAGE_CPT)) {
+        return;
+    }
+
+    $post_id = get_queried_object_id();
+    $term_id = get_post_meta($post_id, '_tmw_linked_term_id', true);
+    $taxonomy = get_post_meta($post_id, '_tmw_linked_taxonomy', true);
+
+    if (!$term_id || $taxonomy !== 'category') {
+        return;
+    }
+
+    $term = get_term((int) $term_id, 'category');
+    if (!$term instanceof WP_Term) {
+        return;
+    }
+
+    $term_link = get_term_link($term);
+    if (is_wp_error($term_link)) {
+        return;
+    }
+
+    error_log('[TMW-CAT-REDIRECT] Redirecting category page post ' . $post_id . ' to term ' . $term->term_id . '.');
+    wp_safe_redirect($term_link);
+    exit;
+});
 
 if (!function_exists('tmw_get_category_page_post')) {
     function tmw_get_category_page_post($category) {
