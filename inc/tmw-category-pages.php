@@ -26,6 +26,19 @@ if (!function_exists('tmw_category_page_log_once')) {
     }
 }
 
+if (!function_exists('tmw_category_page_audit_log_once')) {
+    function tmw_category_page_audit_log_once(string $key, string $message): void {
+        static $logged = [];
+
+        if (!empty($logged[$key])) {
+            return;
+        }
+
+        $logged[$key] = true;
+        error_log('[TMW-CAT-ADMIN-AUDIT] ' . $message);
+    }
+}
+
 if (!function_exists('tmw_category_page_get_linked_term_url')) {
     function tmw_category_page_get_linked_term_url(int $post_id): ?string {
         static $cached_links = [];
@@ -271,6 +284,69 @@ if (!function_exists('tmw_get_category_page_post')) {
     }
 }
 
+if (!function_exists('tmw_category_page_audit_resolve_post')) {
+    function tmw_category_page_audit_resolve_post($category): ?WP_Post {
+        if (is_numeric($category)) {
+            $category = get_term((int) $category, 'category');
+        }
+
+        if (!$category instanceof WP_Term) {
+            return null;
+        }
+
+        $post = tmw_get_category_page_post($category);
+        $post_id = $post instanceof WP_Post ? $post->ID : 0;
+        $post_type = $post instanceof WP_Post ? $post->post_type : 'none';
+        $post_status = $post instanceof WP_Post ? $post->post_status : 'none';
+
+        tmw_category_page_audit_log_once(
+            'resolve_category_page_' . $category->term_id,
+            'resolve_category_page term_id=' . $category->term_id . ' found_post=' . $post_id . ' post_type=' . $post_type . ' status=' . $post_status
+        );
+
+        return $post instanceof WP_Post ? $post : null;
+    }
+}
+
+add_action('admin_bar_menu', function ($wp_admin_bar) {
+    if (!is_category() || !is_user_logged_in() || !current_user_can('manage_categories')) {
+        return;
+    }
+
+    $term = get_queried_object();
+    if (!$term instanceof WP_Term) {
+        return;
+    }
+
+    $node = $wp_admin_bar->get_node('edit');
+    $href = $node ? (string) $node->href : 'none';
+    $title = $node ? (string) $node->title : 'none';
+    $post = tmw_category_page_audit_resolve_post($term);
+    $post_id = $post instanceof WP_Post ? $post->ID : 0;
+    $current_url = (is_ssl() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? '');
+
+    tmw_category_page_audit_log_once(
+        'admin_bar_edit_node',
+        'admin_bar_edit_node href=' . $href . ' title=' . $title . ' term_id=' . $term->term_id . ' term_slug=' . $term->slug . ' post_id=' . $post_id . ' url=' . $current_url
+    );
+}, 999);
+
+add_filter('get_edit_term_link', function ($link, $term_id, $taxonomy, $object_type) {
+    if ($taxonomy !== 'category') {
+        return $link;
+    }
+
+    $is_category = is_category();
+    $is_frontend = !is_admin();
+
+    tmw_category_page_audit_log_once(
+        'get_edit_term_link_' . (int) $term_id,
+        'get_edit_term_link term_id=' . (int) $term_id . ' taxonomy=' . $taxonomy . ' link=' . $link . ' is_category=' . ($is_category ? 'yes' : 'no') . ' is_frontend=' . ($is_frontend ? 'yes' : 'no')
+    );
+
+    return $link;
+}, 10, 4);
+
 if (!function_exists('tmw_create_category_page_post')) {
     function tmw_create_category_page_post($category) {
         if (is_numeric($category)) {
@@ -404,14 +480,14 @@ add_action('admin_init', function () {
         return;
     }
 
-    $post = tmw_get_category_page_post($term);
+    $post = tmw_category_page_audit_resolve_post($term);
     $post_id = $post instanceof WP_Post ? $post->ID : 0;
     $current_url = (is_ssl() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? '');
-    $user_id = get_current_user_id();
+    $would_redirect_to = $post_id ? admin_url('post.php?post=' . $post_id . '&action=edit') : 'none';
 
-    tmw_category_page_log_once(
-        '[TMW-CAT-ADMIN-AUDIT]',
-        'term_id=' . $term->term_id . ' post_id=' . $post_id . ' url=' . $current_url . ' user_id=' . $user_id
+    tmw_category_page_audit_log_once(
+        'term_php_access_' . $term->term_id,
+        'term_php_access term_id=' . $term->term_id . ' post_id=' . $post_id . ' url=' . $current_url . ' would_redirect_to=' . $would_redirect_to
     );
 });
 
