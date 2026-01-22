@@ -172,12 +172,15 @@ if (!function_exists('tmw_category_archive_desc_to_accordion')) {
 
     static $tmw_cat_desc_logged = false;
     if (!$tmw_cat_desc_logged) {
-      $term_id = (int) get_queried_object_id();
+      $term = get_queried_object();
+      $term_id = $term instanceof WP_Term ? (int) $term->term_id : (int) get_queried_object_id();
+      $slug = $term instanceof WP_Term ? $term->slug : '';
       $desc_len = strlen($description);
       $is_wrapped = stripos($description, 'tmw-accordion') !== false;
       error_log(sprintf(
-        '[TMW-CAT-ACC-AUDIT] source=archive_description term_id=%d desc_len=%d wrapped=%s',
+        '[TMW-CAT-ACC-AUDIT] source=archive_description_wrapper term_id=%d slug=%s len=%d wrapped=%s',
         $term_id,
+        $slug !== '' ? $slug : '-',
         $desc_len,
         $is_wrapped ? '1' : '0'
       ));

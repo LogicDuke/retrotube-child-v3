@@ -17,6 +17,15 @@ tmw_render_sidebar_layout('generic-archive', function () {
           $archive_title = wp_strip_all_tags(get_the_archive_title());
           echo tmw_render_title_bar($archive_title, 1);
           ?>
+          <?php
+          if (is_category()) {
+            static $tmw_cat_desc_template_logged = false;
+            if (!$tmw_cat_desc_template_logged) {
+              error_log('[TMW-CAT-ACC-AUDIT] source=template_echo_archive_description file=archive.php');
+              $tmw_cat_desc_template_logged = true;
+            }
+          }
+          ?>
           <?php the_archive_description('<div class="archive-description">', '</div>'); ?>
         </header>
 
