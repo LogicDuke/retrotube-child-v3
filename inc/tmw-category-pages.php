@@ -634,11 +634,19 @@ add_action('loop_start', function ($query) {
     $body_html = trim($sections['body']);
     $faq_html = trim($sections['faq']);
 
-    tmw_category_page_log_once(
-        '[TMW-CAT-ACC-AUDIT]',
-        'source=loop_start_injection term_id=' . $term->term_id . ' post_id=' . $post->ID
-        . ' intro_len=' . strlen($intro_html) . ' body_len=' . strlen($body_html) . ' faq_len=' . strlen($faq_html)
-    );
+    static $tmw_cat_page_injection_logged = false;
+    if (!$tmw_cat_page_injection_logged) {
+        error_log(
+            '[TMW-CAT-ACC-AUDIT] source=category_page_injection term_id=' . $term->term_id
+            . ' slug=' . $term->slug
+            . ' post_id=' . $post->ID
+            . ' status=' . $post->post_status
+            . ' intro_len=' . strlen($intro_html)
+            . ' body_len=' . strlen($body_html)
+            . ' faq_len=' . strlen($faq_html)
+        );
+        $tmw_cat_page_injection_logged = true;
+    }
 
     if ($intro_html === '' && $body_html === '' && $faq_html === '') {
         error_log('[TMW-CAT-FALLBACK] Category page empty content for term ' . $term->term_id . '.');
