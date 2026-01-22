@@ -1,458 +1,350 @@
 <?php
 /**
- * TMW Category Pages - CPT Mirror System
- * 
- * Creates editable "page" versions of category archives.
- * Each category gets a matching CPT post for full WordPress editing.
+ * TMW Category Pages - CPT-backed SEO surface for category archives.
  *
- * @package suspended-flavor-flavor
- * @version 1.1.0 - Fixed RankMath Gutenberg sidebar
+ * @package retrotube-child
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-/* ======================================================================
- * CONSTANTS
- * ====================================================================== */
-if (!defined('TMW_CAT_PAGE_CPT')) {
-    define('TMW_CAT_PAGE_CPT', 'category_page');
+if (!defined('TMW_CATEGORY_PAGE_CPT')) {
+    define('TMW_CATEGORY_PAGE_CPT', 'tmw_category_page');
 }
 
-/* ======================================================================
- * REGISTER CUSTOM POST TYPE
- * Key: publicly_queryable must be true for RankMath to work
- * ====================================================================== */
 add_action('init', function () {
     $labels = [
-        'name'                  => __('Category Pages', 'retrotube-child'),
-        'singular_name'         => __('Category Page', 'retrotube-child'),
-        'menu_name'             => __('Category Pages', 'retrotube-child'),
-        'add_new'               => __('Add New', 'retrotube-child'),
-        'add_new_item'          => __('Add New Category Page', 'retrotube-child'),
-        'edit_item'             => __('Edit Category Page', 'retrotube-child'),
-        'new_item'              => __('New Category Page', 'retrotube-child'),
-        'view_item'             => __('View Category Page', 'retrotube-child'),
-        'search_items'          => __('Search Category Pages', 'retrotube-child'),
-        'not_found'             => __('No category pages found.', 'retrotube-child'),
-        'not_found_in_trash'    => __('No category pages found in Trash.', 'retrotube-child'),
+        'name'          => __('Category Pages', 'retrotube-child'),
+        'singular_name' => __('Category Page', 'retrotube-child'),
     ];
 
     $args = [
         'labels'              => $labels,
         'public'              => false,
-        'publicly_queryable'  => true,    // REQUIRED for RankMath
-        'exclude_from_search' => true,    // Keep out of search
         'show_ui'             => true,
-        'show_in_menu'        => false,
-        'show_in_rest'        => true,    // REQUIRED for Gutenberg
-        'has_archive'         => false,
-        'rewrite'             => false,   // No public URLs
-        'hierarchical'        => false,
-        'supports'            => ['title', 'editor', 'thumbnail', 'excerpt', 'revisions', 'custom-fields'],
-        'menu_icon'           => 'dashicons-category',
-        'capability_type'     => 'post',
-        'map_meta_cap'        => true,
+        'show_in_menu'        => true,
+        'show_in_rest'        => true,
+        'supports'            => ['title', 'editor', 'excerpt', 'revisions'],
+        'exclude_from_search' => true,
+        'rewrite'             => false,
     ];
 
-    register_post_type(TMW_CAT_PAGE_CPT, $args);
+    register_post_type(TMW_CATEGORY_PAGE_CPT, $args);
+    error_log('[TMW-CAT-CPT] Registered Category Page CPT.');
 }, 5);
 
-/* ======================================================================
- * HELPER: Get category_page CPT post for a category
- * ====================================================================== */
 if (!function_exists('tmw_get_category_page_post')) {
     function tmw_get_category_page_post($category) {
         if (is_numeric($category)) {
-            $category = get_term($category, 'category');
+            $category = get_term((int) $category, 'category');
         }
 
         if (!$category instanceof WP_Term) {
             return null;
         }
 
-        $linked_post_id = get_term_meta($category->term_id, '_tmw_category_page_id', true);
-
-        if ($linked_post_id) {
-            $post = get_post($linked_post_id);
-            if ($post && $post->post_type === TMW_CAT_PAGE_CPT && $post->post_status !== 'trash') {
-                return $post;
-            }
-        }
-
         $posts = get_posts([
-            'post_type'      => TMW_CAT_PAGE_CPT,
-            'name'           => $category->slug,
-            'posts_per_page' => 1,
-            'post_status'    => ['publish', 'draft', 'pending'],
+            'post_type'      => TMW_CATEGORY_PAGE_CPT,
+            'posts_per_page' => 2,
+            'post_status'    => ['publish', 'draft', 'pending', 'private'],
+            'meta_query'     => [
+                [
+                    'key'   => '_tmw_linked_term_id',
+                    'value' => $category->term_id,
+                ],
+                [
+                    'key'   => '_tmw_linked_taxonomy',
+                    'value' => 'category',
+                ],
+            ],
         ]);
 
+        if (count($posts) > 1) {
+            $ids = wp_list_pluck($posts, 'ID');
+            error_log('[TMW-CAT-GUARD] Multiple category page posts detected for term ' . $category->term_id . ': ' . implode(',', $ids));
+        }
+
         if (!empty($posts)) {
-            update_term_meta($category->term_id, '_tmw_category_page_id', $posts[0]->ID);
             return $posts[0];
+        }
+
+        $slug_match = get_posts([
+            'post_type'      => TMW_CATEGORY_PAGE_CPT,
+            'posts_per_page' => 2,
+            'name'           => $category->slug,
+            'post_status'    => ['publish', 'draft', 'pending', 'private'],
+        ]);
+
+        if (count($slug_match) > 1) {
+            $ids = wp_list_pluck($slug_match, 'ID');
+            error_log('[TMW-CAT-GUARD] Multiple slug matches for category term ' . $category->term_id . ': ' . implode(',', $ids));
+        }
+
+        if (!empty($slug_match)) {
+            update_post_meta($slug_match[0]->ID, '_tmw_linked_term_id', $category->term_id);
+            update_post_meta($slug_match[0]->ID, '_tmw_linked_taxonomy', 'category');
+            error_log('[TMW-CAT-LINK] Linked existing category page post ' . $slug_match[0]->ID . ' to term ' . $category->term_id . '.');
+            return $slug_match[0];
         }
 
         return null;
     }
 }
 
-/* ======================================================================
- * HELPER: Create category_page CPT post for a category
- * ====================================================================== */
 if (!function_exists('tmw_create_category_page_post')) {
     function tmw_create_category_page_post($category) {
         if (is_numeric($category)) {
-            $category = get_term($category, 'category');
+            $category = get_term((int) $category, 'category');
         }
 
         if (!$category instanceof WP_Term) {
-            return new WP_Error('invalid_term', 'Invalid category provided.');
+            return new WP_Error('tmw_invalid_category', __('Invalid category.', 'retrotube-child'));
         }
 
         $existing = tmw_get_category_page_post($category);
-        if ($existing) {
+        if ($existing instanceof WP_Post) {
             return $existing->ID;
         }
 
-        $post_data = [
-            'post_type'    => TMW_CAT_PAGE_CPT,
+        $post_id = wp_insert_post([
+            'post_type'    => TMW_CATEGORY_PAGE_CPT,
             'post_title'   => $category->name,
             'post_name'    => $category->slug,
-            'post_content' => $category->description ?: '',
             'post_status'  => 'publish',
+            'post_content' => '',
             'meta_input'   => [
-                '_tmw_linked_category_id' => $category->term_id,
+                '_tmw_linked_term_id'   => $category->term_id,
+                '_tmw_linked_taxonomy'  => 'category',
             ],
-        ];
+        ], true);
 
-        $post_id = wp_insert_post($post_data, true);
-
-        if (!is_wp_error($post_id)) {
-            update_term_meta($category->term_id, '_tmw_category_page_id', $post_id);
+        if (is_wp_error($post_id)) {
+            return $post_id;
         }
 
+        error_log('[TMW-CAT-LINK] Created category page post ' . $post_id . ' for term ' . $category->term_id . '.');
         return $post_id;
     }
 }
 
-/* ======================================================================
- * AUTO-CREATE: When a new category is created
- * ====================================================================== */
-add_action('created_category', function ($term_id, $tt_id) {
+add_action('created_category', function ($term_id) {
     tmw_create_category_page_post($term_id);
-}, 10, 2);
+}, 10, 1);
 
-/* ======================================================================
- * AUTO-CREATE: Bulk create for all existing categories (runs once)
- * ====================================================================== */
-add_action('admin_init', function () {
-    if (get_option('tmw_category_pages_initialized')) {
-        return;
-    }
-
-    if (!current_user_can('manage_options')) {
-        return;
-    }
-
-    $categories = get_terms([
-        'taxonomy'   => 'category',
-        'hide_empty' => false,
-    ]);
-
-    if (is_wp_error($categories) || empty($categories)) {
-        update_option('tmw_category_pages_initialized', 1);
-        return;
-    }
-
-    $created = 0;
-    foreach ($categories as $category) {
-        if ($category->slug === 'uncategorized') {
-            continue;
-        }
-
-        $result = tmw_create_category_page_post($category);
-        if (!is_wp_error($result)) {
-            $created++;
-        }
-    }
-
-    update_option('tmw_category_pages_initialized', 1);
-
-    if ($created > 0) {
-        add_action('admin_notices', function () use ($created) {
-            echo '<div class="notice notice-success is-dismissible">';
-            echo '<p><strong>TMW Category Pages:</strong> Created ' . esc_html($created) . ' category page(s).</p>';
-            echo '</div>';
-        });
-    }
-});
-
-/* ======================================================================
- * ADMIN: Add "Edit Category Page" link to category list table
- * ====================================================================== */
-add_filter('category_row_actions', function ($actions, $term) {
-    $page_post = tmw_get_category_page_post($term);
-
-    if ($page_post) {
-        $edit_url = get_edit_post_link($page_post->ID);
-        $actions['edit_category_page'] = sprintf(
-            '<a href="%s" aria-label="%s">%s</a>',
-            esc_url($edit_url),
-            esc_attr__('Edit Category Page', 'retrotube-child'),
-            __('Edit Page Content', 'retrotube-child')
-        );
-    } else {
-        $create_url = wp_nonce_url(
-            admin_url('admin-post.php?action=tmw_create_category_page&term_id=' . $term->term_id),
-            'tmw_create_category_page_' . $term->term_id
-        );
-        $actions['create_category_page'] = sprintf(
-            '<a href="%s" aria-label="%s">%s</a>',
-            esc_url($create_url),
-            esc_attr__('Create Category Page', 'retrotube-child'),
-            __('Create Page', 'retrotube-child')
-        );
-    }
-
-    return $actions;
-}, 10, 2);
-
-/* ======================================================================
- * ADMIN: Handle manual category page creation
- * ====================================================================== */
-add_action('admin_post_tmw_create_category_page', function () {
-    $term_id = isset($_GET['term_id']) ? absint($_GET['term_id']) : 0;
-
-    if (!$term_id || !wp_verify_nonce($_GET['_wpnonce'] ?? '', 'tmw_create_category_page_' . $term_id)) {
-        wp_die(__('Invalid request.', 'retrotube-child'));
-    }
-
-    if (!current_user_can('manage_categories')) {
-        wp_die(__('You do not have permission to do this.', 'retrotube-child'));
-    }
-
-    $result = tmw_create_category_page_post($term_id);
-
-    if (is_wp_error($result)) {
-        wp_die($result->get_error_message());
-    }
-
-    wp_redirect(get_edit_post_link($result, 'raw'));
-    exit;
-});
-
-/* ======================================================================
- * ADMIN: Add metabox showing linked category info
- * ====================================================================== */
-add_action('add_meta_boxes', function () {
-    add_meta_box(
-        'tmw_linked_category',
-        __('Linked Category', 'retrotube-child'),
-        function ($post) {
-            $category_id = get_post_meta($post->ID, '_tmw_linked_category_id', true);
-
-            if (!$category_id) {
-                echo '<p>' . esc_html__('No linked category found.', 'retrotube-child') . '</p>';
-                return;
-            }
-
-            $category = get_term($category_id, 'category');
-
-            if (!$category || is_wp_error($category)) {
-                echo '<p>' . esc_html__('Linked category not found.', 'retrotube-child') . '</p>';
-                return;
-            }
-
-            $edit_link = get_edit_term_link($category->term_id, 'category');
-            $view_link = get_term_link($category);
-
-            echo '<p><strong>' . esc_html__('Category:', 'retrotube-child') . '</strong> ' . esc_html($category->name) . '</p>';
-            echo '<p><strong>' . esc_html__('Slug:', 'retrotube-child') . '</strong> ' . esc_html($category->slug) . '</p>';
-            echo '<p><strong>' . esc_html__('Videos:', 'retrotube-child') . '</strong> ' . esc_html($category->count) . '</p>';
-            echo '<p>';
-            echo '<a href="' . esc_url($view_link) . '" class="button" target="_blank">' . esc_html__('View Category', 'retrotube-child') . '</a> ';
-            echo '<a href="' . esc_url($edit_link) . '" class="button">' . esc_html__('Edit Category', 'retrotube-child') . '</a>';
-            echo '</p>';
-        },
-        TMW_CAT_PAGE_CPT,
-        'side',
-        'default'
-    );
-});
-
-/* ======================================================================
- * SYNC: Update CPT when category is edited
- * ====================================================================== */
-add_action('edited_category', function ($term_id, $tt_id) {
+add_action('edited_category', function ($term_id) {
     $term = get_term($term_id, 'category');
-    if (!$term || is_wp_error($term)) {
+    if (!$term instanceof WP_Term) {
         return;
     }
 
-    $page_post = tmw_get_category_page_post($term);
-    if (!$page_post) {
+    $post = tmw_get_category_page_post($term);
+    if (!$post instanceof WP_Post) {
         return;
     }
 
     $updates = [];
-
-    if ($page_post->post_name !== $term->slug) {
+    if ($post->post_name !== $term->slug) {
         $updates['post_name'] = $term->slug;
     }
 
-    if ($page_post->post_title === $term->name || empty($page_post->post_title)) {
-        // Title was synced before, keep syncing
-    }
-
     if (!empty($updates)) {
-        $updates['ID'] = $page_post->ID;
+        $updates['ID'] = $post->ID;
         wp_update_post($updates);
     }
+}, 10, 1);
+
+if (!function_exists('tmw_category_page_admin_link')) {
+    function tmw_category_page_admin_link(WP_Term $term): string {
+        $url = add_query_arg([
+            'action'  => 'tmw_category_page_edit',
+            'term_id' => $term->term_id,
+        ], admin_url('admin-post.php'));
+
+        return wp_nonce_url($url, 'tmw_category_page_edit_' . $term->term_id);
+    }
+}
+
+add_filter('category_row_actions', function ($actions, $term) {
+    if (!current_user_can('manage_categories')) {
+        return $actions;
+    }
+
+    $actions['tmw_edit_category_page'] = sprintf(
+        '<a href="%s">%s</a>',
+        esc_url(tmw_category_page_admin_link($term)),
+        esc_html__('Edit Category Page', 'retrotube-child')
+    );
+
+    return $actions;
 }, 10, 2);
 
-/* ======================================================================
- * CLEANUP: Trash CPT when category is deleted
- * ====================================================================== */
-add_action('pre_delete_term', function ($term_id, $taxonomy) {
-    if ($taxonomy !== 'category') {
+add_action('category_edit_form_fields', function ($term) {
+    if (!current_user_can('manage_categories')) {
         return;
+    }
+
+    $link = tmw_category_page_admin_link($term);
+    ?>
+    <tr class="form-field tmw-category-page-edit">
+        <th scope="row"><?php esc_html_e('Category Page', 'retrotube-child'); ?></th>
+        <td>
+            <a class="button" href="<?php echo esc_url($link); ?>">
+                <?php esc_html_e('Edit Category Page', 'retrotube-child'); ?>
+            </a>
+        </td>
+    </tr>
+    <?php
+});
+
+add_action('admin_post_tmw_category_page_edit', function () {
+    if (!current_user_can('manage_categories')) {
+        wp_die(__('You do not have permission to do this.', 'retrotube-child'));
+    }
+
+    $term_id = isset($_GET['term_id']) ? (int) $_GET['term_id'] : 0;
+    if (!$term_id || !wp_verify_nonce($_GET['_wpnonce'] ?? '', 'tmw_category_page_edit_' . $term_id)) {
+        wp_die(__('Invalid request.', 'retrotube-child'));
     }
 
     $term = get_term($term_id, 'category');
-    if (!$term || is_wp_error($term)) {
-        return;
+    if (!$term instanceof WP_Term) {
+        wp_die(__('Invalid category.', 'retrotube-child'));
     }
 
-    $page_post = tmw_get_category_page_post($term);
-    if ($page_post) {
-        wp_trash_post($page_post->ID);
+    $post = tmw_get_category_page_post($term);
+    if (!$post instanceof WP_Post) {
+        $post_id = tmw_create_category_page_post($term);
+        if (is_wp_error($post_id)) {
+            wp_die($post_id->get_error_message());
+        }
+        $post = get_post($post_id);
     }
-}, 10, 2);
 
-/* ======================================================================
- * FRONTEND: Get category page content for display
- * ====================================================================== */
-if (!function_exists('tmw_get_category_page_content')) {
-    function tmw_get_category_page_content($category = null) {
-        if ($category === null) {
-            $category = get_queried_object();
+    if (!$post instanceof WP_Post) {
+        wp_die(__('Unable to resolve category page.', 'retrotube-child'));
+    }
+
+    error_log('[TMW-CAT-ADMIN] Opening category page edit for term ' . $term->term_id . ' (post ' . $post->ID . ').');
+
+    wp_safe_redirect(admin_url('post.php?post=' . $post->ID . '&action=edit'));
+    exit;
+});
+
+if (!function_exists('tmw_category_page_extract_sections')) {
+    function tmw_category_page_extract_sections(WP_Post $post): array {
+        $intro_html = '';
+        $body_html = '';
+        $faq_html = '';
+
+        if ($post->post_excerpt !== '') {
+            $intro_html = apply_filters('the_excerpt', $post->post_excerpt);
         }
 
-        $default = [
-            'title'       => '',
-            'content'     => '',
-            'excerpt'     => '',
-            'has_content' => false,
-            'post_id'     => 0,
+        $raw_content = (string) $post->post_content;
+        $body_raw = $raw_content;
+
+        if ($intro_html === '' && strpos($raw_content, '<!--more-->') !== false) {
+            $extended = get_extended($raw_content);
+            $intro_raw = $extended['main'] ?? '';
+            $body_raw = $extended['extended'] ?? '';
+            if (trim($intro_raw) !== '') {
+                $intro_html = apply_filters('the_content', $intro_raw);
+            }
+        }
+
+        if (trim($body_raw) === '') {
+            return [
+                'intro' => $intro_html,
+                'body'  => '',
+                'faq'   => '',
+            ];
+        }
+
+        $faq_blocks = [];
+        $content_blocks = [];
+        $faq_block_names = [
+            'rank-math/faq-block',
+            'yoast/faq-block',
+            'core/faq',
         ];
 
-        if (!$category instanceof WP_Term) {
-            return $default;
-        }
+        if (has_blocks($body_raw)) {
+            $blocks = parse_blocks($body_raw);
+            foreach ($blocks as $block) {
+                if (isset($block['blockName']) && in_array($block['blockName'], $faq_block_names, true)) {
+                    $faq_blocks[] = $block;
+                    continue;
+                }
+                $content_blocks[] = $block;
+            }
 
-        $page_post = tmw_get_category_page_post($category);
+            foreach ($content_blocks as $block) {
+                $body_html .= render_block($block);
+            }
 
-        if (!$page_post || $page_post->post_status !== 'publish') {
-            return $default;
-        }
-
-        $content = $page_post->post_content;
-
-        if (!empty($content)) {
-            $content = apply_filters('the_content', $content);
+            foreach ($faq_blocks as $block) {
+                $faq_html .= render_block($block);
+            }
+        } else {
+            $body_html = apply_filters('the_content', $body_raw);
         }
 
         return [
-            'title'       => $page_post->post_title,
-            'content'     => $content,
-            'excerpt'     => $page_post->post_excerpt,
-            'has_content' => !empty(trim($page_post->post_content)),
-            'post_id'     => $page_post->ID,
+            'intro' => $intro_html,
+            'body'  => $body_html,
+            'faq'   => $faq_html,
         ];
     }
 }
 
-/* ======================================================================
- * ADMIN: Add submenu page for managing all category pages
- * ====================================================================== */
-add_action('admin_menu', function () {
-    add_submenu_page(
-        'edit.php',
-        __('Category Pages', 'retrotube-child'),
-        __('Category Pages', 'retrotube-child'),
-        'manage_categories',
-        'edit.php?post_type=' . TMW_CAT_PAGE_CPT
-    );
-});
-
-/* ======================================================================
- * ADMIN: Highlight correct menu when editing category_page
- * ====================================================================== */
-add_filter('parent_file', function ($parent_file) {
-    global $current_screen;
-
-    if ($current_screen && $current_screen->post_type === TMW_CAT_PAGE_CPT) {
-        return 'edit.php';
+add_action('loop_start', function ($query) {
+    if (is_admin() || wp_doing_ajax() || is_feed()) {
+        return;
     }
 
-    return $parent_file;
-});
-
-add_filter('submenu_file', function ($submenu_file) {
-    global $current_screen;
-
-    if ($current_screen && $current_screen->post_type === TMW_CAT_PAGE_CPT) {
-        return 'edit.php?post_type=' . TMW_CAT_PAGE_CPT;
+    if (!$query->is_main_query() || !is_category()) {
+        return;
     }
 
-    return $submenu_file;
-});
-
-/* ======================================================================
- * FRONTEND: Override archive description with CPT content
- * ====================================================================== */
-add_filter('get_the_archive_description', function ($description) {
-    if (!is_category()) {
-        return $description;
+    if (!empty($GLOBALS['tmw_category_page_rendered'])) {
+        return;
     }
 
-    $category = get_queried_object();
-    if (!$category instanceof WP_Term) {
-        return $description;
+    $term = get_queried_object();
+    if (!$term instanceof WP_Term) {
+        return;
     }
 
-    $page_data = tmw_get_category_page_content($category);
-
-    if ($page_data['has_content']) {
-        return $page_data['content'];
+    $post = tmw_get_category_page_post($term);
+    if (!$post instanceof WP_Post || $post->post_status !== 'publish') {
+        error_log('[TMW-CAT-FALLBACK] Category page fallback for term ' . $term->term_id . '.');
+        return;
     }
 
-    return $description;
-}, 15);
+    $sections = tmw_category_page_extract_sections($post);
+    $intro_html = trim($sections['intro']);
+    $body_html = trim($sections['body']);
+    $faq_html = trim($sections['faq']);
 
-/* ======================================================================
- * FRONTEND: Override archive title with CPT title (if customized)
- * ====================================================================== */
-add_filter('get_the_archive_title', function ($title) {
-    if (!is_category()) {
-        return $title;
+    if ($intro_html === '' && $body_html === '' && $faq_html === '') {
+        error_log('[TMW-CAT-FALLBACK] Category page empty content for term ' . $term->term_id . '.');
+        return;
     }
 
-    $category = get_queried_object();
-    if (!$category instanceof WP_Term) {
-        return $title;
+    $GLOBALS['tmw_category_page_rendered'] = true;
+
+    error_log('[TMW-CAT-RENDER] Injecting category page content for term ' . $term->term_id . ' using post ' . $post->ID . '.');
+
+    echo '<div class="tmw-category-page-content">';
+    if ($intro_html !== '') {
+        echo '<div class="tmw-category-page-intro">' . $intro_html . '</div>';
     }
-
-    $page_post = tmw_get_category_page_post($category);
-
-    if (!$page_post || $page_post->post_status !== 'publish') {
-        return $title;
+    if ($body_html !== '') {
+        echo '<div class="tmw-category-page-body">' . $body_html . '</div>';
     }
-
-    if ($page_post->post_title !== $category->name) {
-        return esc_html($page_post->post_title);
+    if ($faq_html !== '') {
+        echo '<div class="tmw-category-page-faq">' . $faq_html . '</div>';
     }
-
-    return $title;
-}, 15);
+    echo '</div>';
+}, 10, 1);
