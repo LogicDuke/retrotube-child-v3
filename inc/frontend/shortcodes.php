@@ -170,6 +170,20 @@ if (!function_exists('tmw_category_archive_desc_to_accordion')) {
       return $description;
     }
 
+    static $tmw_cat_desc_logged = false;
+    if (!$tmw_cat_desc_logged) {
+      $term_id = (int) get_queried_object_id();
+      $desc_len = strlen($description);
+      $is_wrapped = stripos($description, 'tmw-accordion') !== false;
+      error_log(sprintf(
+        '[TMW-CAT-ACC-AUDIT] source=archive_description term_id=%d desc_len=%d wrapped=%s',
+        $term_id,
+        $desc_len,
+        $is_wrapped ? '1' : '0'
+      ));
+      $tmw_cat_desc_logged = true;
+    }
+
     if (trim($description) === '') {
       return $description;
     }
