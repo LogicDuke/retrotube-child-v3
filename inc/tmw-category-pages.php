@@ -44,15 +44,14 @@ if (!function_exists('tmw_category_page_get_linked_term_url')) {
         }
 
         $term_id = (int) get_post_meta($post_id, '_tmw_linked_term_id', true);
-        $taxonomy = get_post_meta($post_id, '_tmw_linked_taxonomy', true);
 
-        if (!$term_id || $taxonomy !== 'category') {
+        if (!$term_id) {
             $cached_links[$post_id] = null;
             return null;
         }
 
         $term = get_term($term_id, 'category');
-        if (!$term instanceof WP_Term) {
+        if (!$term instanceof WP_Term || $term->taxonomy !== 'category') {
             $cached_links[$post_id] = null;
             return null;
         }
