@@ -605,67 +605,74 @@ if (!function_exists('tmw_category_page_extract_sections')) {
     }
 }
 
-add_action('loop_start', function ($query) {
-    if (is_admin() || wp_doing_ajax() || is_feed()) {
-        return;
-    }
+if (!function_exists('tmw_category_append_cpt_to_archive_description')) {
+    function tmw_category_append_cpt_to_archive_description(string $description): string {
+        if (is_admin() || !is_category()) {
+            return $description;
+        }
 
-    if (!$query->is_main_query() || !is_category()) {
-        return;
-    }
+        static $tmw_cat_page_injection_logged = false;
+        $term = get_queried_object();
+        if (!$term instanceof WP_Term) {
+            return $description;
+        }
 
-    if (!empty($GLOBALS['tmw_category_page_rendered'])) {
-        return;
-    }
+        $post = tmw_get_category_page_post($term);
+        if (!$post instanceof WP_Post || $post->post_status !== 'publish') {
+            if (!$tmw_cat_page_injection_logged) {
+                error_log(
+                    '[TMW-CAT-ACC-INJECT] term_id=' . $term->term_id . ' appended=0 reason=no_post'
+                );
+                $tmw_cat_page_injection_logged = true;
+            }
+            return $description;
+        }
 
-    $term = get_queried_object();
-    if (!$term instanceof WP_Term) {
-        return;
-    }
+        $sections = tmw_category_page_extract_sections($post);
+        $intro_html = trim($sections['intro']);
+        $body_html = trim($sections['body']);
+        $faq_html = trim($sections['faq']);
 
-    $post = tmw_get_category_page_post($term);
-    if (!$post instanceof WP_Post || $post->post_status !== 'publish') {
-        error_log('[TMW-CAT-FALLBACK] Category page fallback for term ' . $term->term_id . '.');
-        return;
-    }
+        if ($intro_html === '' && $body_html === '' && $faq_html === '') {
+            if (!$tmw_cat_page_injection_logged) {
+                error_log(
+                    '[TMW-CAT-ACC-INJECT] term_id=' . $term->term_id . ' post_id=' . $post->ID . ' appended=0 reason=empty'
+                );
+                $tmw_cat_page_injection_logged = true;
+            }
+            return $description;
+        }
 
-    $sections = tmw_category_page_extract_sections($post);
-    $intro_html = trim($sections['intro']);
-    $body_html = trim($sections['body']);
-    $faq_html = trim($sections['faq']);
+        $content_block = '<div class="tmw-category-page-content">';
+        if ($intro_html !== '') {
+            $content_block .= '<div class="tmw-category-page-intro">' . $intro_html . '</div>';
+        }
+        if ($body_html !== '') {
+            $content_block .= '<div class="tmw-category-page-body">' . $body_html . '</div>';
+        }
+        if ($faq_html !== '') {
+            $content_block .= '<div class="tmw-category-page-faq">' . $faq_html . '</div>';
+        }
+        $content_block .= '</div>';
 
-    static $tmw_cat_page_injection_logged = false;
-    if (!$tmw_cat_page_injection_logged) {
-        error_log(
-            '[TMW-CAT-ACC-AUDIT] source=category_page_injection term_id=' . $term->term_id
-            . ' slug=' . $term->slug
-            . ' post_id=' . $post->ID
-            . ' status=' . $post->post_status
-            . ' intro_len=' . strlen($intro_html)
-            . ' body_len=' . strlen($body_html)
-            . ' faq_len=' . strlen($faq_html)
-        );
-        $tmw_cat_page_injection_logged = true;
-    }
+        if (!$tmw_cat_page_injection_logged) {
+            error_log(
+                '[TMW-CAT-ACC-INJECT] term_id=' . $term->term_id
+                . ' post_id=' . $post->ID
+                . ' appended=1'
+                . ' intro_len=' . strlen($intro_html)
+                . ' body_len=' . strlen($body_html)
+                . ' faq_len=' . strlen($faq_html)
+            );
+            $tmw_cat_page_injection_logged = true;
+        }
 
-    if ($intro_html === '' && $body_html === '' && $faq_html === '') {
-        error_log('[TMW-CAT-FALLBACK] Category page empty content for term ' . $term->term_id . '.');
-        return;
-    }
+        if (trim($description) === '') {
+            return $content_block;
+        }
 
-    $GLOBALS['tmw_category_page_rendered'] = true;
+        return $description . "\n" . $content_block;
+    }
+}
 
-    error_log('[TMW-CAT-RENDER] Injecting category page content for term ' . $term->term_id . ' using post ' . $post->ID . '.');
-
-    echo '<div class="tmw-category-page-content">';
-    if ($intro_html !== '') {
-        echo '<div class="tmw-category-page-intro">' . $intro_html . '</div>';
-    }
-    if ($body_html !== '') {
-        echo '<div class="tmw-category-page-body">' . $body_html . '</div>';
-    }
-    if ($faq_html !== '') {
-        echo '<div class="tmw-category-page-faq">' . $faq_html . '</div>';
-    }
-    echo '</div>';
-}, 10, 1);
+add_filter('get_the_archive_description', 'tmw_category_append_cpt_to_archive_description', 19);
