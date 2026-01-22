@@ -1,0 +1,177 @@
+/**
+ * TMW Global Accordion v5.0 - BULLETPROOF FINAL
+ * 100% identical styling on ALL pages
+ *
+ * @package RetrotubeChild
+ * @version 5.0.0
+ */
+
+/* ============================================
+   CUSTOM TMW ACCORDION
+   Used on: Homepage, Model taxonomy, etc.
+   ============================================ */
+
+.tmw-accordion {
+    margin: 0 0 20px;
+    padding: 0 20px 15px;
+    background: transparent;
+}
+
+.tmw-accordion-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #ccc;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+/* Collapsed state */
+.tmw-accordion-content.tmw-accordion-collapsed {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--tmw-accordion-lines, 1);
+    max-height: calc(1.6em * var(--tmw-accordion-lines, 1));
+}
+
+/* Expanded state */
+.tmw-accordion-content:not(.tmw-accordion-collapsed) {
+    -webkit-line-clamp: unset;
+    max-height: 5000px;
+}
+
+.tmw-accordion-content p {
+    margin: 0 0 10px;
+}
+
+.tmw-accordion-content p:first-child {
+    display: inline;
+}
+
+.tmw-accordion-content h2,
+.tmw-accordion-content h3 {
+    font-size: 16px;
+    margin: 15px 0 8px;
+    color: #fff;
+}
+
+/* === TOGGLE WRAPPER WITH RED LINES === */
+.tmw-accordion-toggle-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 15px;
+    width: 100%;
+}
+
+/* Left red gradient line */
+.tmw-accordion-toggle-wrap::before {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #e74c3c 100%);
+}
+
+/* Right red gradient line */
+.tmw-accordion-toggle-wrap::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, #e74c3c 0%, transparent 100%);
+}
+
+/* Reset active/focus visuals */
+.tmw-accordion-toggle,
+.tmw-accordion-toggle:focus,
+.tmw-accordion-toggle:active,
+.tmw-accordion-toggle:focus-visible,
+.tmw-accordion-readmore,
+.tmw-accordion-readmore:focus,
+.tmw-accordion-readmore:active,
+.tmw-accordion-readmore:focus-visible {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tmw-accordion-toggle-wrap:hover::before {
+    background: linear-gradient(90deg, transparent 0%, #ff6b5b 100%);
+}
+
+.tmw-accordion-toggle-wrap:hover::after {
+    background: linear-gradient(90deg, #ff6b5b 0%, transparent 100%);
+}
+
+/* === THE TOGGLE LINK === */
+.tmw-accordion-toggle {
+    color: #e74c3c;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0 15px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s ease;
+}
+
+.tmw-accordion-toggle:hover {
+    color: #ff6b5b;
+}
+
+.tmw-accordion-toggle-wrap:hover .tmw-accordion-toggle .tmw-accordion-text::after {
+    background-color: #ff6b5b;
+}
+
+/* Text with dark underline */
+.tmw-accordion-toggle .tmw-accordion-text {
+    position: relative;
+}
+
+.tmw-accordion-toggle .tmw-accordion-text::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #333;
+    transition: background-color 0.2s ease;
+}
+
+.tmw-accordion-toggle:hover .tmw-accordion-text::after {
+    background-color: #e74c3c;
+}
+
+/* Icon */
+.tmw-accordion-toggle i,
+.tmw-accordion-toggle .fa {
+    font-size: 12px;
+    line-height: 1;
+}
+
+
+/* ============================================
+   MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .tmw-accordion-toggle {
+        font-size: 13px !important;
+    }
+    
+    .tmw-accordion-toggle-wrap::before,
+    .tmw-accordion-toggle-wrap::after {
+        min-width: 20px !important;
+    }
+}
+
+.archive-description .tmw-accordion {
+    padding-left: 0;
+    padding-right: 0;
+}
