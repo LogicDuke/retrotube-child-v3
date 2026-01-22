@@ -21,7 +21,8 @@ add_action('init', function () {
 
     $args = [
         'labels'              => $labels,
-        'public'              => false,
+        'public'              => true,
+        'publicly_queryable'  => false,
         'show_ui'             => true,
         'show_in_menu'        => true,
         'show_in_rest'        => true,
@@ -31,7 +32,7 @@ add_action('init', function () {
     ];
 
     register_post_type(TMW_CATEGORY_PAGE_CPT, $args);
-    error_log('[TMW-CAT-CPT] Registered Category Page CPT.');
+    error_log('[TMW-CAT-CPT-FIX] Registered Category Page CPT.');
 }, 5);
 
 if (!function_exists('tmw_get_category_page_post')) {
