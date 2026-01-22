@@ -376,6 +376,45 @@ add_action('category_edit_form_fields', function ($term) {
     <?php
 });
 
+add_action('admin_init', function () {
+    global $pagenow;
+
+    if ($pagenow !== 'term.php') {
+        return;
+    }
+
+    $taxonomy = $_GET['taxonomy'] ?? '';
+    if ($taxonomy !== 'category') {
+        return;
+    }
+
+    $term_id = 0;
+    if (isset($_GET['tag_ID'])) {
+        $term_id = (int) $_GET['tag_ID'];
+    } elseif (isset($_GET['term_id'])) {
+        $term_id = (int) $_GET['term_id'];
+    }
+
+    if (!$term_id) {
+        return;
+    }
+
+    $term = get_term($term_id, 'category');
+    if (!$term instanceof WP_Term) {
+        return;
+    }
+
+    $post = tmw_get_category_page_post($term);
+    $post_id = $post instanceof WP_Post ? $post->ID : 0;
+    $current_url = (is_ssl() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? '');
+    $user_id = get_current_user_id();
+
+    tmw_category_page_log_once(
+        '[TMW-CAT-ADMIN-AUDIT]',
+        'term_id=' . $term->term_id . ' post_id=' . $post_id . ' url=' . $current_url . ' user_id=' . $user_id
+    );
+});
+
 add_action('admin_post_tmw_category_page_edit', function () {
     if (!current_user_can('manage_categories')) {
         wp_die(__('You do not have permission to do this.', 'retrotube-child'));
@@ -404,11 +443,24 @@ add_action('admin_post_tmw_category_page_edit', function () {
         wp_die(__('Unable to resolve category page.', 'retrotube-child'));
     }
 
+    $redirect_url = admin_url('post.php?post=' . $post->ID . '&action=edit');
+    $current_url = (is_ssl() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? '');
+    $user_id = get_current_user_id();
+
+    tmw_category_page_log_once(
+        '[TMW-CAT-ADMIN-AUDIT]',
+        'term_id=' . $term->term_id . ' post_id=' . $post->ID . ' redirect=' . $redirect_url . ' url=' . $current_url . ' user_id=' . $user_id
+    );
+
     error_log('[TMW-CAT-ADMIN] Opening category page edit for term ' . $term->term_id . ' (post ' . $post->ID . ').');
 
-    wp_safe_redirect(admin_url('post.php?post=' . $post->ID . '&action=edit'));
+    wp_safe_redirect($redirect_url);
     exit;
 });
+
+if (is_admin()) {
+    require_once __DIR__ . '/admin/tmw-category-pages-admin-single-editor.php';
+}
 
 if (!function_exists('tmw_category_page_extract_sections')) {
     function tmw_category_page_extract_sections(WP_Post $post): array {
