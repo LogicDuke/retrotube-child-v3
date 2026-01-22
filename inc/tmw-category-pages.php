@@ -13,6 +13,61 @@ if (!defined('TMW_CATEGORY_PAGE_CPT')) {
     define('TMW_CATEGORY_PAGE_CPT', 'tmw_category_page');
 }
 
+if (!function_exists('tmw_category_page_log_once')) {
+    function tmw_category_page_log_once(string $tag, string $message): void {
+        static $logged = [];
+
+        if (!empty($logged[$tag])) {
+            return;
+        }
+
+        $logged[$tag] = true;
+        error_log($tag . ' ' . $message);
+    }
+}
+
+if (!function_exists('tmw_category_page_get_linked_term_url')) {
+    function tmw_category_page_get_linked_term_url(int $post_id): ?string {
+        static $cached_links = [];
+
+        if (!$post_id) {
+            return null;
+        }
+
+        if (array_key_exists($post_id, $cached_links)) {
+            return $cached_links[$post_id];
+        }
+
+        if (get_post_type($post_id) !== TMW_CATEGORY_PAGE_CPT) {
+            $cached_links[$post_id] = null;
+            return null;
+        }
+
+        $term_id = (int) get_post_meta($post_id, '_tmw_linked_term_id', true);
+        $taxonomy = get_post_meta($post_id, '_tmw_linked_taxonomy', true);
+
+        if (!$term_id || $taxonomy !== 'category') {
+            $cached_links[$post_id] = null;
+            return null;
+        }
+
+        $term = get_term($term_id, 'category');
+        if (!$term instanceof WP_Term) {
+            $cached_links[$post_id] = null;
+            return null;
+        }
+
+        $term_link = get_term_link($term);
+        if (is_wp_error($term_link)) {
+            $cached_links[$post_id] = null;
+            return null;
+        }
+
+        $cached_links[$post_id] = $term_link;
+        return $term_link;
+    }
+}
+
 add_action('init', function () {
     $labels = [
         'name'          => __('Category Pages', 'retrotube-child'),
@@ -66,6 +121,98 @@ add_action('template_redirect', function () {
     wp_safe_redirect($term_link);
     exit;
 });
+
+add_filter('rank_math/frontend/canonical', function ($canonical) {
+    $post_id = get_queried_object_id();
+
+    if (!$post_id || get_post_type($post_id) !== TMW_CATEGORY_PAGE_CPT) {
+        return $canonical;
+    }
+
+    $term_link = tmw_category_page_get_linked_term_url($post_id);
+    if ($term_link) {
+        tmw_category_page_log_once(
+            '[TMW-CAT-RM-CANONICAL]',
+            'Using category URL ' . $term_link . ' for post ' . $post_id . '.'
+        );
+        return $term_link;
+    }
+
+    tmw_category_page_log_once(
+        '[TMW-CAT-RM-CANONICAL]',
+        'Falling back to original canonical for post ' . $post_id . '.'
+    );
+    return $canonical;
+}, 20);
+
+add_filter('rank_math/opengraph/url', function ($url) {
+    $post_id = get_queried_object_id();
+
+    if (!$post_id || get_post_type($post_id) !== TMW_CATEGORY_PAGE_CPT) {
+        return $url;
+    }
+
+    $term_link = tmw_category_page_get_linked_term_url($post_id);
+    if ($term_link) {
+        tmw_category_page_log_once(
+            '[TMW-CAT-RM-OG]',
+            'Using category URL ' . $term_link . ' for post ' . $post_id . '.'
+        );
+        return $term_link;
+    }
+
+    tmw_category_page_log_once(
+        '[TMW-CAT-RM-OG]',
+        'Falling back to original opengraph URL for post ' . $post_id . '.'
+    );
+    return $url;
+}, 20);
+
+add_filter('rank_math/twitter/url', function ($url) {
+    $post_id = get_queried_object_id();
+
+    if (!$post_id || get_post_type($post_id) !== TMW_CATEGORY_PAGE_CPT) {
+        return $url;
+    }
+
+    $term_link = tmw_category_page_get_linked_term_url($post_id);
+    if ($term_link) {
+        tmw_category_page_log_once(
+            '[TMW-CAT-RM-TWITTER]',
+            'Using category URL ' . $term_link . ' for post ' . $post_id . '.'
+        );
+        return $term_link;
+    }
+
+    tmw_category_page_log_once(
+        '[TMW-CAT-RM-TWITTER]',
+        'Falling back to original twitter URL for post ' . $post_id . '.'
+    );
+    return $url;
+}, 20);
+
+add_filter('rank_math/pre_get_preview_url', function ($url, $post) {
+    $post_id = $post instanceof WP_Post ? $post->ID : (int) $post;
+
+    if (!$post_id || get_post_type($post_id) !== TMW_CATEGORY_PAGE_CPT) {
+        return $url;
+    }
+
+    $term_link = tmw_category_page_get_linked_term_url($post_id);
+    if ($term_link) {
+        tmw_category_page_log_once(
+            '[TMW-CAT-RM-PREVIEW]',
+            'Using category URL ' . $term_link . ' for post ' . $post_id . '.'
+        );
+        return $term_link;
+    }
+
+    tmw_category_page_log_once(
+        '[TMW-CAT-RM-PREVIEW]',
+        'Falling back to original preview URL for post ' . $post_id . '.'
+    );
+    return $url;
+}, 20, 2);
 
 if (!function_exists('tmw_get_category_page_post')) {
     function tmw_get_category_page_post($category) {
