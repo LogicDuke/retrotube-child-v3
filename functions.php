@@ -29,6 +29,8 @@ DELETE_BLOCK_END
 if (!defined('ABSPATH')) { exit; }
 $__tmw_filter_links = __DIR__ . '/inc/tmw-filter-links.php';
 if (file_exists($__tmw_filter_links)) { require_once $__tmw_filter_links; }
+$__tmw_filter_canonical = __DIR__ . '/inc/tmw-filter-canonical.php';
+if (file_exists($__tmw_filter_canonical)) { require_once $__tmw_filter_canonical; }
 
 /**
  * RetroTube Child (Flipbox Edition) v3 — Bootstrap
