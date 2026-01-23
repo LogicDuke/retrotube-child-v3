@@ -44,6 +44,7 @@ define('TMW_CHILD_URL',  get_stylesheet_directory_uri());
 require_once TMW_CHILD_PATH . '/inc/bootstrap.php';
 require_once get_stylesheet_directory() . '/inc/tmw-category-pages.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-category-pages.php';
+require_once get_stylesheet_directory() . '/inc/tmw-rankmath-excluded-audit.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-sanity.php';
 if (defined('WP_DEBUG') && WP_DEBUG) {
     $tmw_rankmath_hook_audit = get_stylesheet_directory() . '/inc/tmw-rankmath-hook-audit.php';
