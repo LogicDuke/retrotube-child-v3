@@ -17,9 +17,10 @@ add_action('wp_ajax_tmw_ajax_register',        'tmw_ajax_register_handler');
 function tmw_ajax_register_handler() {
     $payload = wp_unslash($_POST);
 
-    // Optional nonce check (respects older forms that may not send a nonce).
+    // Require nonce validation for registration requests.
     $nonce = isset($payload['nonce']) ? sanitize_text_field($payload['nonce']) : '';
-    if (!empty($nonce) && !wp_verify_nonce($nonce, 'tmw-ajax-register')) {
+    if (empty($nonce) || !wp_verify_nonce($nonce, 'tmw-ajax-register')) {
+        error_log('[TMW-SECURITY] Registration nonce validation failed.');
         wp_send_json_error(array(
             'message' => __('Security check failed. Please refresh and try again.', 'retrotube'),
             'code'    => 'bad_nonce',

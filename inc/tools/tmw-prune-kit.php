@@ -53,7 +53,12 @@ add_action('template_redirect', function () {
 /* ---------- core ---------- */
 
 function tmw_prune_build_report() {
-    $theme_dir = trailingslashit(get_stylesheet_directory());
+    if (!current_user_can('manage_options')) {
+        error_log('[TMW-SECURITY] Prune report denied: insufficient capability.');
+        return [];
+    }
+
+    $theme_dir = trailingslashit(TMW_CHILD_PATH);
     $theme_uri = trailingslashit(get_stylesheet_directory_uri());
 
     // 1) Gather all files
@@ -133,6 +138,12 @@ function tmw_prune_build_report() {
     ];
 }
 
+function tmw_prune_is_path_safe($path, $base_dir) {
+    $base_dir = trailingslashit(wp_normalize_path($base_dir));
+    $path     = wp_normalize_path($path);
+    return $path !== '' && strpos($path, $base_dir) === 0;
+}
+
 function tmw_prune_static_scan_references($theme_dir) {
     $refs = [];
 
@@ -196,7 +207,16 @@ function tmw_prune_static_scan_references($theme_dir) {
 }
 
 function tmw_prune_apply($report, $all = false) {
-    $theme_dir = trailingslashit(get_stylesheet_directory());
+    if (!current_user_can('manage_options')) {
+        error_log('[TMW-SECURITY] Prune apply denied: insufficient capability.');
+        return [
+            'trash_dir' => '',
+            'moved'     => [],
+            'failed'    => [],
+        ];
+    }
+
+    $theme_dir = trailingslashit(TMW_CHILD_PATH);
     $stamp     = date('Ymd-His');
     $trash_dir = $theme_dir . '.trash/' . $stamp . '/';
 
@@ -207,10 +227,23 @@ function tmw_prune_apply($report, $all = false) {
     $failed = [];
 
     foreach ($targets as $rel) {
-        $src = $theme_dir . $rel;
+        if (!is_string($rel) || strpos($rel, '..') !== false) {
+            error_log('[TMW-SECURITY] Prune skipped unsafe relative path.');
+            $failed[] = $rel;
+            continue;
+        }
+
+        $src = $theme_dir . ltrim($rel, '/');
         if (!file_exists($src)) continue;
 
-        $dst = $trash_dir . $rel;
+        $dst = $trash_dir . ltrim($rel, '/');
+
+        if (!tmw_prune_is_path_safe($src, $theme_dir) || !tmw_prune_is_path_safe($dst, $theme_dir)) {
+            error_log('[TMW-SECURITY] Prune skipped path outside theme directory.');
+            $failed[] = $rel;
+            continue;
+        }
+
         $dst_dir = dirname($dst);
         if (!is_dir($dst_dir)) wp_mkdir_p($dst_dir);
 

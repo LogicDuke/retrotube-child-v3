@@ -168,7 +168,7 @@ $is_rated_yet   = ( 0 === ( $likes_count + $dislikes_count ) ) ? ' not-rated-yet
                                         </span>
                                         <?php if ($tmw_model_tags_count > 0 && is_array($tmw_model_tags)) : ?>
                                                 <?php foreach ($tmw_model_tags as $tag) : ?>
-                                                        <a href="<?php echo get_tag_link( $tag->term_id ); ?>"
+                                                        <a href="<?php echo esc_url( get_tag_link( $tag->term_id ) ); ?>"
                                                                 class="label"
                                                                 title="<?php echo esc_attr( $tag->name ); ?>">
                                                                 <i class="fa fa-tag"></i><?php echo esc_html( $tag->name ); ?>
