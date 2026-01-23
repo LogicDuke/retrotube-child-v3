@@ -675,4 +675,15 @@ if (!function_exists('tmw_category_append_cpt_to_archive_description')) {
     }
 }
 
+if (!function_exists('tmw_category_append_cpt_to_term_description')) {
+    function tmw_category_append_cpt_to_term_description($description, $term, $taxonomy): string {
+        if (is_admin() || $taxonomy !== 'category' || !is_category()) {
+            return (string) $description;
+        }
+
+        return tmw_category_append_cpt_to_archive_description((string) $description);
+    }
+}
+
 add_filter('get_the_archive_description', 'tmw_category_append_cpt_to_archive_description', 19);
+add_filter('term_description', 'tmw_category_append_cpt_to_term_description', 19, 3);
