@@ -337,6 +337,162 @@ if (!function_exists('tmw_seo_category_bridge_get_schema')) {
     }
 }
 
+if (!function_exists('tmw_seo_category_bridge_get_social_meta')) {
+    function tmw_seo_category_bridge_get_social_meta(string $meta_key, string $original): string {
+        if (!is_category()) {
+            return $original;
+        }
+
+        $term = tmw_seo_category_bridge_get_term();
+        if (!$term instanceof WP_Term) {
+            return $original;
+        }
+
+        $post = tmw_seo_category_bridge_get_category_page_post();
+        if (!$post instanceof WP_Post) {
+            return $original;
+        }
+
+        $meta = (string) get_post_meta($post->ID, $meta_key, true);
+        if ($meta === '') {
+            return $original;
+        }
+
+        $meta = tmw_seo_category_bridge_replace_vars($meta, $post->ID);
+        tmw_seo_category_bridge_log_once(
+            '[TMW-SEO-CAT-SOCIAL]',
+            'applied=1 post_id=' . $post->ID . ' term_id=' . $term->term_id
+        );
+
+        return $meta;
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_build_itemlist_schema')) {
+    function tmw_seo_category_bridge_build_itemlist_schema(): ?array {
+        $query = $GLOBALS['wp_query'] ?? null;
+        if (!$query || empty($query->posts) || !is_array($query->posts)) {
+            return null;
+        }
+
+        $items = [];
+        $position = 1;
+        foreach ($query->posts as $post) {
+            if (!$post instanceof WP_Post) {
+                continue;
+            }
+
+            if ($post->post_status !== 'publish') {
+                continue;
+            }
+
+            $url = get_permalink($post);
+            if (!$url) {
+                continue;
+            }
+
+            $items[] = [
+                '@type'    => 'ListItem',
+                'position' => $position,
+                'url'      => $url,
+                'name'     => get_the_title($post),
+            ];
+
+            $position++;
+            if ($position > 20) {
+                break;
+            }
+        }
+
+        if (empty($items)) {
+            return null;
+        }
+
+        return [
+            '@type'           => 'ItemList',
+            'itemListOrder'   => 'https://schema.org/ItemListOrderDescending',
+            'numberOfItems'   => count($items),
+            'itemListElement' => $items,
+        ];
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_merge_itemlist_schema')) {
+    function tmw_seo_category_bridge_merge_itemlist_schema(array $data, array $itemlist): array {
+        if (isset($data['@graph']) && is_array($data['@graph'])) {
+            foreach ($data['@graph'] as $index => $node) {
+                if (!is_array($node)) {
+                    continue;
+                }
+
+                $types = $node['@type'] ?? [];
+                if (is_string($types)) {
+                    $types = [$types];
+                }
+
+                if (in_array('ItemList', $types, true)) {
+                    $data['@graph'][$index] = array_merge($node, $itemlist);
+                    return $data;
+                }
+            }
+
+            $data['@graph'][] = $itemlist;
+            return $data;
+        }
+
+        if (tmw_seo_category_bridge_is_list($data)) {
+            foreach ($data as $index => $node) {
+                if (!is_array($node)) {
+                    continue;
+                }
+
+                $types = $node['@type'] ?? [];
+                if (is_string($types)) {
+                    $types = [$types];
+                }
+
+                if (in_array('ItemList', $types, true)) {
+                    $data[$index] = array_merge($node, $itemlist);
+                    return $data;
+                }
+            }
+
+            $data[] = $itemlist;
+            return $data;
+        }
+
+        if (isset($data['@type'])) {
+            $types = $data['@type'];
+            if (is_string($types)) {
+                $types = [$types];
+            }
+
+            if (is_array($types) && in_array('ItemList', $types, true)) {
+                return array_merge($data, $itemlist);
+            }
+
+            $context = $data['@context'] ?? 'https://schema.org';
+            return [
+                '@context' => $context,
+                '@graph'   => [$data, $itemlist],
+            ];
+        }
+
+        if (empty($data)) {
+            return [
+                '@context' => 'https://schema.org',
+                '@graph'   => [$itemlist],
+            ];
+        }
+
+        $context = $data['@context'] ?? 'https://schema.org';
+        return [
+            '@context' => $context,
+            '@graph'   => [$data, $itemlist],
+        ];
+    }
+}
+
 add_filter('rank_math/frontend/title', function ($title) {
     if (!is_category()) {
         return $title;
@@ -389,6 +545,22 @@ add_filter('rank_math/frontend/description', function ($description) {
         'Applied Rank Math description for post ' . $post->ID . '.'
     );
     return $meta;
+}, 20);
+
+add_filter('rank_math/opengraph/title', function ($title) {
+    return tmw_seo_category_bridge_get_social_meta('rank_math_title', $title);
+}, 20);
+
+add_filter('rank_math/opengraph/description', function ($description) {
+    return tmw_seo_category_bridge_get_social_meta('rank_math_description', $description);
+}, 20);
+
+add_filter('rank_math/twitter/title', function ($title) {
+    return tmw_seo_category_bridge_get_social_meta('rank_math_title', $title);
+}, 20);
+
+add_filter('rank_math/twitter/description', function ($description) {
+    return tmw_seo_category_bridge_get_social_meta('rank_math_description', $description);
 }, 20);
 
 add_filter('rank_math/frontend/canonical', function ($canonical) {
@@ -533,5 +705,16 @@ add_filter('rank_math/json_ld', function ($data) {
         return $data;
     }
 
-    return tmw_seo_category_bridge_ensure_collection_page_schema($schema_data, $term, $post);
+    $schema_data = tmw_seo_category_bridge_ensure_collection_page_schema($schema_data, $term, $post);
+
+    $itemlist = tmw_seo_category_bridge_build_itemlist_schema();
+    if ($itemlist) {
+        $schema_data = tmw_seo_category_bridge_merge_itemlist_schema($schema_data, $itemlist);
+        tmw_seo_category_bridge_log_once(
+            '[TMW-SEO-CAT-ITEMLIST]',
+            'injected=1 items=' . $itemlist['numberOfItems'] . ' term_id=' . $term->term_id
+        );
+    }
+
+    return $schema_data;
 }, 20);
