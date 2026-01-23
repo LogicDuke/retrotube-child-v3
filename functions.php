@@ -43,6 +43,7 @@ define('TMW_CHILD_URL',  get_stylesheet_directory_uri());
 // Single include: all logic is now in /inc/bootstrap.php
 require_once TMW_CHILD_PATH . '/inc/bootstrap.php';
 require_once get_stylesheet_directory() . '/inc/tmw-category-pages.php';
+require_once get_stylesheet_directory() . '/inc/tmw-rankmath-category-pages.php';
 require_once get_stylesheet_directory() . '/inc/tmw-seo-category-bridge.php';
 require_once get_stylesheet_directory() . '/inc/tmw-seo-model-bridge.php';
 require_once get_stylesheet_directory() . '/inc/tmw-model-schema.php';
@@ -194,49 +195,4 @@ add_filter('site_transient_update_themes', function($value) {
     }
 
     return $value;
-});
-
-// Ensure Rank Math loads in the block editor for internal-only category_page CPTs.
-add_filter('rank_math/post_types', function ($post_types) {
-    if (!in_array('category_page', $post_types, true)) {
-        $post_types[] = 'category_page';
-    }
-
-    return $post_types;
-});
-
-add_filter('rank_math/metabox/post_types', function ($post_types) {
-    if (!in_array('category_page', $post_types, true)) {
-        $post_types[] = 'category_page';
-    }
-
-    return $post_types;
-});
-
-add_filter('rank_math/rest/enabled_post_types', function ($post_types) {
-    if (!in_array('category_page', $post_types, true)) {
-        $post_types[] = 'category_page';
-    }
-
-    return $post_types;
-});
-
-add_filter('rank_math/is_post_type_accessible', function ($is_accessible, $post_type) {
-    if ($post_type === 'category_page') {
-        return true;
-    }
-
-    return $is_accessible;
-}, 10, 2);
-
-add_action('admin_init', function () {
-    if (!defined('WP_DEBUG') || !WP_DEBUG) {
-        return;
-    }
-
-    if (!current_user_can('manage_options')) {
-        return;
-    }
-
-    error_log('[TMW-RANKMATH] Enabled Rank Math sidebar for category_page CPT.');
 });
