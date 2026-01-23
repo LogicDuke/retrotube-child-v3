@@ -132,6 +132,183 @@ if (!function_exists('tmw_seo_category_bridge_get_term_link')) {
     }
 }
 
+if (!function_exists('tmw_seo_category_bridge_is_list')) {
+    function tmw_seo_category_bridge_is_list(array $items): bool {
+        $index = 0;
+        foreach ($items as $key => $_value) {
+            if ($key !== $index) {
+                return false;
+            }
+            $index++;
+        }
+
+        return true;
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_normalize_url')) {
+    function tmw_seo_category_bridge_normalize_url(string $url): string {
+        $url = explode('#', $url)[0];
+        return untrailingslashit($url);
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_get_schema_nodes')) {
+    function tmw_seo_category_bridge_get_schema_nodes(array $data): array {
+        if (isset($data['@graph']) && is_array($data['@graph'])) {
+            return $data['@graph'];
+        }
+
+        if (tmw_seo_category_bridge_is_list($data)) {
+            return $data;
+        }
+
+        if (isset($data['@type'])) {
+            return [$data];
+        }
+
+        return [];
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_has_archive_schema_node')) {
+    function tmw_seo_category_bridge_has_archive_schema_node(array $data, string $term_link): bool {
+        $normalized_term_link = tmw_seo_category_bridge_normalize_url($term_link);
+        $nodes = tmw_seo_category_bridge_get_schema_nodes($data);
+
+        foreach ($nodes as $node) {
+            if (!is_array($node)) {
+                continue;
+            }
+
+            $types = $node['@type'] ?? [];
+            if (is_string($types)) {
+                $types = [$types];
+            }
+
+            if (!in_array('CollectionPage', $types, true) && !in_array('WebPage', $types, true)) {
+                continue;
+            }
+
+            $url = null;
+            if (!empty($node['url']) && is_string($node['url'])) {
+                $url = $node['url'];
+            } elseif (!empty($node['@id']) && is_string($node['@id'])) {
+                $url = $node['@id'];
+            }
+
+            if ($url === null) {
+                continue;
+            }
+
+            if (tmw_seo_category_bridge_normalize_url($url) === $normalized_term_link) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_get_archive_description')) {
+    function tmw_seo_category_bridge_get_archive_description(WP_Term $term, ?WP_Post $post): string {
+        if ($post instanceof WP_Post) {
+            $meta = (string) get_post_meta($post->ID, 'rank_math_description', true);
+            if ($meta !== '') {
+                $meta = tmw_seo_category_bridge_replace_vars($meta, $post->ID);
+                return trim(wp_strip_all_tags($meta));
+            }
+        }
+
+        $description = term_description($term);
+        if (!is_string($description)) {
+            $description = '';
+        }
+
+        return trim(wp_strip_all_tags($description));
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_build_collection_page_schema')) {
+    function tmw_seo_category_bridge_build_collection_page_schema(WP_Term $term, ?WP_Post $post): ?array {
+        $term_link = tmw_seo_category_bridge_get_term_link();
+        if (!$term_link) {
+            return null;
+        }
+
+        $title = single_cat_title('', false);
+        if ($title === '') {
+            $title = $term->name;
+        }
+
+        $description = tmw_seo_category_bridge_get_archive_description($term, $post);
+
+        $schema = [
+            '@type' => 'CollectionPage',
+            'url'   => $term_link,
+            'name'  => $title,
+        ];
+
+        if ($description !== '') {
+            $schema['description'] = $description;
+        }
+
+        return $schema;
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_inject_collection_page_schema')) {
+    function tmw_seo_category_bridge_inject_collection_page_schema(array $data, array $schema): array {
+        if (isset($data['@graph']) && is_array($data['@graph'])) {
+            $data['@graph'][] = $schema;
+            return $data;
+        }
+
+        if (tmw_seo_category_bridge_is_list($data)) {
+            $data[] = $schema;
+            return $data;
+        }
+
+        if (empty($data)) {
+            return [
+                '@context' => 'https://schema.org',
+                '@graph'   => [$schema],
+            ];
+        }
+
+        $context = $data['@context'] ?? 'https://schema.org';
+        return [
+            '@context' => $context,
+            '@graph'   => [$data, $schema],
+        ];
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_ensure_collection_page_schema')) {
+    function tmw_seo_category_bridge_ensure_collection_page_schema(array $data, WP_Term $term, ?WP_Post $post): array {
+        $term_link = tmw_seo_category_bridge_get_term_link();
+        if (!$term_link) {
+            return $data;
+        }
+
+        if (tmw_seo_category_bridge_has_archive_schema_node($data, $term_link)) {
+            return $data;
+        }
+
+        $schema = tmw_seo_category_bridge_build_collection_page_schema($term, $post);
+        if (!$schema) {
+            return $data;
+        }
+
+        tmw_seo_category_bridge_log_once(
+            '[TMW-SEO-CAT-SCHEMA]',
+            'injected=1 term_id=' . $term->term_id
+        );
+
+        return tmw_seo_category_bridge_inject_collection_page_schema($data, $schema);
+    }
+}
+
 if (!function_exists('tmw_seo_category_bridge_get_schema')) {
     function tmw_seo_category_bridge_get_schema(int $post_id): ?array {
         if (class_exists('\RankMath\Frontend\JsonLD')) {
@@ -326,23 +503,26 @@ add_filter('rank_math/json_ld', function ($data) {
         return $data;
     }
 
+    $term = tmw_seo_category_bridge_get_term();
+    if (!$term instanceof WP_Term) {
+        return $data;
+    }
+
     $post = tmw_seo_category_bridge_get_category_page_post();
-    if (!$post instanceof WP_Post) {
-        return $data;
-    }
+    $schema = $post instanceof WP_Post ? tmw_seo_category_bridge_get_schema($post->ID) : null;
 
-    $schema = tmw_seo_category_bridge_get_schema($post->ID);
-    if (!$schema) {
+    if ($schema && $post instanceof WP_Post) {
         tmw_seo_category_bridge_log_once(
-            '[TMW-SEO-CAT-FALLBACK]',
-            'Rank Math schema empty for post ' . $post->ID . '.'
+            '[TMW-SEO-CAT-META]',
+            'Applied schema for post ' . $post->ID . '.'
         );
+    }
+
+    $schema_data = is_array($schema) ? $schema : (is_array($data) ? $data : []);
+
+    if (!is_array($schema_data)) {
         return $data;
     }
 
-    tmw_seo_category_bridge_log_once(
-        '[TMW-SEO-CAT-META]',
-        'Applied schema for post ' . $post->ID . '.'
-    );
-    return $schema;
+    return tmw_seo_category_bridge_ensure_collection_page_schema($schema_data, $term, $post);
 }, 20);
