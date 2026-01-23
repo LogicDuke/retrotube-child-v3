@@ -28,7 +28,7 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 
 		<?php if ( get_post_meta( $post->ID, 'unique_ad_under_player', true ) != '' ) : ?>
 			<div class="happy-under-player">
-				<?php echo get_post_meta( $post->ID, 'unique_ad_under_player', true ); ?>
+				<?php echo wp_kses_post( get_post_meta( $post->ID, 'unique_ad_under_player', true ) ); ?>
 			</div>
 		<?php elseif ( xbox_get_field_value( 'wpst-options', 'under-player-ad-desktop' ) != '' ) : ?>
 			<div class="happy-under-player">
