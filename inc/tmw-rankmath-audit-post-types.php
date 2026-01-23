@@ -28,12 +28,10 @@ add_filter('rank_math/excluded_post_types', function ($excluded_post_types) {
 
     $accessible_post_types = array_values(array_unique(array_filter($accessible_post_types, 'is_string')));
 
-    if (!empty($accessible_post_types)) {
-        error_log(sprintf('[TMW-RM-AUDIT] accessible_post_types=%s', implode(',', $accessible_post_types)));
-        foreach ($accessible_post_types as $post_type) {
-            if (!get_post_type_object($post_type)) {
-                error_log(sprintf('[TMW-RM-AUDIT] INVALID post_type=%s', $post_type));
-            }
+    error_log(sprintf('[TMW-RM-AUDIT] accessible_post_types=%s', implode(',', $accessible_post_types)));
+    foreach ($accessible_post_types as $post_type) {
+        if (!get_post_type_object($post_type)) {
+            error_log(sprintf('[TMW-RM-AUDIT] INVALID post_type=%s', $post_type));
         }
     }
 
