@@ -425,6 +425,11 @@ add_filter('rank_math/frontend/robots', function ($robots) {
         return $robots;
     }
 
+    $term = tmw_seo_category_bridge_get_term();
+    if (!$term instanceof WP_Term) {
+        return $robots;
+    }
+
     $post = tmw_seo_category_bridge_get_category_page_post();
     if (!$post instanceof WP_Post) {
         return $robots;
@@ -433,10 +438,10 @@ add_filter('rank_math/frontend/robots', function ($robots) {
     $meta = get_post_meta($post->ID, 'rank_math_robots', true);
     if (empty($meta)) {
         tmw_seo_category_bridge_log_once(
-            '[TMW-SEO-CAT-FALLBACK]',
-            'Rank Math robots empty for post ' . $post->ID . '.'
+            '[TMW-SEO-CAT-ROBOTS]',
+            'fallback=noindex term_id=' . $term->term_id . ' post_id=' . $post->ID
         );
-        return $robots;
+        return ['noindex', 'follow'];
     }
 
     if (is_string($meta)) {
@@ -444,7 +449,11 @@ add_filter('rank_math/frontend/robots', function ($robots) {
     }
 
     if (empty($meta)) {
-        return $robots;
+        tmw_seo_category_bridge_log_once(
+            '[TMW-SEO-CAT-ROBOTS]',
+            'fallback=noindex term_id=' . $term->term_id . ' post_id=' . $post->ID
+        );
+        return ['noindex', 'follow'];
     }
 
     tmw_seo_category_bridge_log_once(
