@@ -72,10 +72,10 @@ add_action('template_redirect', function(){
           </div>
           <?php if ($bio): ?>
             <div class="tmw-accordion-toggle-wrap">
-              <a class="tmw-accordion-toggle" href="javascript:void(0);" data-tmw-accordion-toggle aria-controls="tmw-bio">
+              <button class="tmw-accordion-toggle" type="button" data-tmw-accordion-toggle aria-controls="tmw-bio">
                 <span class="tmw-accordion-text"><?php esc_html_e('Read more','retrotube-child'); ?></span>
                 <i class="fa fa-chevron-down"></i>
-              </a>
+              </button>
             </div>
           <?php endif; ?>
         </div>

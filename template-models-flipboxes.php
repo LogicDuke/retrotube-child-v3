@@ -43,10 +43,10 @@ $page_content = tmw_sanitize_accordion_html($page_content);
             <?php echo $page_content; ?>
           </div>
           <div class="tmw-accordion-toggle-wrap">
-            <a id="tmw-seo-toggle" class="tmw-accordion-toggle" href="javascript:void(0);" data-tmw-accordion-toggle>
+            <button id="tmw-seo-toggle" class="tmw-accordion-toggle" type="button" data-tmw-accordion-toggle>
               <span class="tmw-accordion-text"><?php esc_html_e('Read more', 'retrotube-child'); ?></span>
               <i class="fa fa-chevron-down"></i>
-            </a>
+            </button>
           </div>
         </div>
       <?php endif; ?>
