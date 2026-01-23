@@ -4,8 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-if (!function_exists('tmw_rm_sanitize_excluded_post_types')) {
-    function tmw_rm_sanitize_excluded_post_types($post_types)
+if (!function_exists('tmw_rm_strip_invalid_rankmath_post_types')) {
+    function tmw_rm_strip_invalid_rankmath_post_types($post_types)
     {
         if (!is_array($post_types)) {
             return $post_types;
@@ -47,4 +47,4 @@ if (!function_exists('tmw_rm_sanitize_excluded_post_types')) {
     }
 }
 
-add_filter('rank_math/excluded_post_types', 'tmw_rm_sanitize_excluded_post_types', 10000);
+add_filter('rank_math/excluded_post_types', 'tmw_rm_strip_invalid_rankmath_post_types', 10000);
