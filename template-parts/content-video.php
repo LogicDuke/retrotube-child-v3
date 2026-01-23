@@ -177,10 +177,10 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 									<?php the_content(); ?>
 								</div>
 								<div class="tmw-accordion-toggle-wrap">
-									<a class="tmw-accordion-toggle" href="javascript:void(0);" data-tmw-accordion-toggle aria-controls="tmw-video-desc-<?php echo (int) get_the_ID(); ?>" aria-expanded="false" data-readmore-text="<?php echo esc_attr__( 'Read more', 'retrotube-child' ); ?>" data-close-text="<?php echo esc_attr__( 'Close', 'retrotube-child' ); ?>">
+									<button class="tmw-accordion-toggle" type="button" data-tmw-accordion-toggle aria-controls="tmw-video-desc-<?php echo (int) get_the_ID(); ?>" aria-expanded="false" data-readmore-text="<?php echo esc_attr__( 'Read more', 'retrotube-child' ); ?>" data-close-text="<?php echo esc_attr__( 'Close', 'retrotube-child' ); ?>">
 										<span class="tmw-accordion-text"><?php esc_html_e( 'Read more', 'retrotube-child' ); ?></span>
 										<i class="fa fa-chevron-down"></i>
-									</a>
+									</button>
 								</div>
 							</div>
 						<?php else : ?>

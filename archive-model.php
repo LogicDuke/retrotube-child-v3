@@ -43,10 +43,10 @@ if ($models_page) {
             <?php echo $seo_text; ?>
           </div>
           <div class="tmw-accordion-toggle-wrap">
-            <a class="tmw-accordion-toggle" href="javascript:void(0);" data-tmw-accordion-toggle>
+            <button class="tmw-accordion-toggle" type="button" data-tmw-accordion-toggle>
               <span class="tmw-accordion-text"><?php esc_html_e('Read more', 'retrotube-child'); ?></span>
               <i class="fa fa-chevron-down"></i>
-            </a>
+            </button>
           </div>
         </div>
       <?php endif; ?>

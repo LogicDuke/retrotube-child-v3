@@ -82,7 +82,7 @@ if (!function_exists('tmw_render_accordion')) {
     $toggle_text = $collapsed ? $readmore_text : $close_text;
 
     return sprintf(
-      '<div class="%1$s"><div id="%2$s" class="%3$s" data-tmw-accordion-lines="%4$d">%5$s</div><div class="tmw-accordion-toggle-wrap"><a class="%6$s" href="javascript:void(0);" data-tmw-accordion-toggle aria-controls="%2$s" aria-expanded="%7$s" data-readmore-text="%8$s" data-close-text="%9$s"><span class="tmw-accordion-text">%10$s</span><i class="fa fa-chevron-down"></i></a></div></div>',
+      '<div class="%1$s"><div id="%2$s" class="%3$s" data-tmw-accordion-lines="%4$d">%5$s</div><div class="tmw-accordion-toggle-wrap"><button class="%6$s" type="button" data-tmw-accordion-toggle aria-controls="%2$s" aria-expanded="%7$s" data-readmore-text="%8$s" data-close-text="%9$s"><span class="tmw-accordion-text">%10$s</span><i class="fa fa-chevron-down"></i></button></div></div>',
       esc_attr($accordion_classes),
       esc_attr($content_id),
       esc_attr($content_classes),
