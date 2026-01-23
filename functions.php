@@ -44,6 +44,7 @@ define('TMW_CHILD_URL',  get_stylesheet_directory_uri());
 require_once TMW_CHILD_PATH . '/inc/bootstrap.php';
 require_once get_stylesheet_directory() . '/inc/tmw-category-pages.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-category-pages.php';
+require_once get_stylesheet_directory() . '/inc/tmw-rankmath-audit-post-types.php';
 require_once get_stylesheet_directory() . '/inc/tmw-seo-category-bridge.php';
 require_once get_stylesheet_directory() . '/inc/tmw-seo-model-bridge.php';
 require_once get_stylesheet_directory() . '/inc/tmw-model-schema.php';
