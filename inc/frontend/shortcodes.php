@@ -184,6 +184,19 @@ if (!function_exists('tmw_category_archive_desc_to_accordion')) {
         $desc_len,
         $is_wrapped ? '1' : '0'
       ));
+      if (
+        isset($_GET['tmw_rm_sanity'])
+        && current_user_can('manage_options')
+        && defined('WP_DEBUG') && WP_DEBUG
+      ) {
+        error_log(sprintf(
+          '[TMW-CAT-ACC-AUDIT] sanity_check=1 source=archive_description_wrapper term_id=%d slug=%s len=%d wrapped=%s',
+          $term_id,
+          $slug !== '' ? $slug : '-',
+          $desc_len,
+          $is_wrapped ? '1' : '0'
+        ));
+      }
       $tmw_cat_desc_logged = true;
     }
 
