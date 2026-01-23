@@ -5,6 +5,8 @@ if (!defined('ABSPATH')) {
 
 /**
  * Detect whether the current request is for a login/registration screen.
+ *
+ * @return bool True when on login/register screens.
  */
 function tmw_perf_is_login_page(): bool {
     if (!isset($GLOBALS['pagenow'])) {
@@ -16,6 +18,8 @@ function tmw_perf_is_login_page(): bool {
 
 /**
  * Determine whether frontend performance hooks should run for this request.
+ *
+ * @return bool True when performance hooks should run.
  */
 function tmw_perf_should_run(): bool {
     if (is_admin() || wp_doing_ajax() || wp_doing_cron()) {
@@ -35,6 +39,8 @@ function tmw_perf_should_run(): bool {
 
 /**
  * Decide if third-party deferral should run on this request.
+ *
+ * @return bool True when deferral should run.
  */
 function tmw_perf_should_delay_thirdparty(): bool {
     return tmw_perf_should_run() && is_singular('model');
@@ -45,6 +51,7 @@ function tmw_perf_should_delay_thirdparty(): bool {
  *
  * @param string $src Source URL to check.
  * @param array  $needles Substrings to match.
+ * @return bool True when any needle is found.
  */
 function tmw_perf_src_matches(string $src, array $needles): bool {
     foreach ($needles as $needle) {
