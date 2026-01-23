@@ -26,6 +26,9 @@ This document is audit-only. No fixes, refactors, or behavioral changes are impl
 - Duplicate require_once for tmw-category-pages.php exists in both functions.php and inc/bootstrap.php.
 - A mu-plugin is bundled inside the theme tree (wp-content/mu-plugins), which blurs deployment boundaries.
 
+**Change Log Note**
+The admin-only tmw-prune-kit tool has been intentionally decommissioned as part of PR #3A to remove unused tooling while preserving existing behavior.
+
 ## 3. Security Assessment
 **Positive findings**
 - Nonce usage is present for sensitive actions (admin tools and AJAX voting).
