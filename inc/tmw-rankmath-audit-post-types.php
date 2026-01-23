@@ -4,6 +4,53 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (!function_exists('tmw_rm_sanitize_post_types')) {
+    function tmw_rm_sanitize_post_types($post_types)
+    {
+        $post_types = is_array($post_types) ? $post_types : [];
+        $post_types = array_values(array_filter($post_types, 'is_string'));
+
+        $valid_post_types = [];
+        $removed_post_types = [];
+        foreach ($post_types as $post_type) {
+            if (post_type_exists($post_type)) {
+                $valid_post_types[] = $post_type;
+            } else {
+                $removed_post_types[] = $post_type;
+            }
+        }
+
+        $valid_post_types = array_values(array_unique($valid_post_types));
+
+        if (!empty($removed_post_types) && defined('WP_DEBUG') && WP_DEBUG && current_user_can('manage_options')) {
+            static $did_log = false;
+            if (!$did_log) {
+                $did_log = true;
+                $removed_post_types = array_values(array_unique($removed_post_types));
+                error_log(sprintf('[TMW-RM-FIX] removed_invalid_post_types=%s', implode(',', $removed_post_types)));
+            }
+        }
+
+        return $valid_post_types;
+    }
+}
+
+add_filter('rank_math/excluded_post_types', function ($excluded_post_types) {
+    return tmw_rm_sanitize_post_types($excluded_post_types);
+}, 5);
+
+add_filter('rank_math/post_types', function ($post_types) {
+    return tmw_rm_sanitize_post_types($post_types);
+});
+
+add_filter('rank_math/metabox/post_types', function ($post_types) {
+    return tmw_rm_sanitize_post_types($post_types);
+});
+
+add_filter('rank_math/rest/enabled_post_types', function ($post_types) {
+    return tmw_rm_sanitize_post_types($post_types);
+});
+
 add_filter('rank_math/excluded_post_types', function ($excluded_post_types) {
     if (!defined('WP_DEBUG') || !WP_DEBUG) {
         return $excluded_post_types;
@@ -37,5 +84,5 @@ add_filter('rank_math/excluded_post_types', function ($excluded_post_types) {
         }
     }
 
-    return $excluded_post_types;
+    return tmw_rm_sanitize_post_types($excluded_post_types);
 }, 9999);
