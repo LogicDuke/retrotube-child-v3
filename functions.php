@@ -2,13 +2,6 @@
 // Exit if accessed directly.
 if (!defined('ABSPATH')) { exit; }
 
-/* === TMW Theme Prune Kit loader (v3.7.0) === */
-add_action('after_setup_theme', function () {
-    if (!is_user_logged_in() || !current_user_can('manage_options')) { return; }
-    $tool = __DIR__ . '/inc/tools/tmw-prune-kit.php';
-    if (file_exists($tool)) { require_once $tool; }
-}, 99);
-
 // [TMW-LINK-GUARD] loader (v3.6.2)
 // Remove legacy guards if Codex finds them:
 /*
