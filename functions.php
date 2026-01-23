@@ -35,7 +35,6 @@ define('TMW_CHILD_URL',  get_stylesheet_directory_uri());
 
 // Single include: all logic is now in /inc/bootstrap.php
 require_once TMW_CHILD_PATH . '/inc/bootstrap.php';
-require_once get_stylesheet_directory() . '/inc/tmw-category-pages.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-category-pages.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-excluded-sanitizer.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-sanity.php';
