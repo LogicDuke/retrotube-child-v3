@@ -117,7 +117,11 @@ function wpst_breadcrumbs() {
         } elseif (is_page() && !is_front_page()) {
             if ($show_current) {
                 echo '<span class="separator">' . $delimiter . '</span>';
-                echo $before . get_the_title() . $after;
+                if (is_page('videos') && isset($_GET['filter'])) {
+                    echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html(get_the_title()) . '</a>';
+                } else {
+                    echo $before . get_the_title() . $after;
+                }
             }
 
             // [TMW-BREADCRUMB-VIDEO-FILTER] Append filter label on Videos page.
