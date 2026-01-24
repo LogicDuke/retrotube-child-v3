@@ -3,10 +3,10 @@
  * Single post template override for Retrotube Child theme.
  */
 
-if (is_singular('video')) {
+if ( function_exists( 'tmw_is_video_singular' ) && tmw_is_video_singular() ) {
     get_header();
-    if (function_exists('tmw_render_video_breadcrumbs')) {
-        tmw_render_video_breadcrumbs();
+    if ( function_exists( 'tmw_render_video_breadcrumbs' ) ) {
+        echo tmw_render_video_breadcrumbs();
     }
     ?>
     <div id="content" class="site-content row">

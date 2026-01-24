@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 function wpst_breadcrumbs() {
     global $post;
 
-    if (is_singular('video')) {
+    if ( function_exists( 'tmw_is_video_singular' ) && tmw_is_video_singular() ) {
         return;
     }
 

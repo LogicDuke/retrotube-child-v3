@@ -6,8 +6,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * [TMW-BREADCRUMB] Canonical single video breadcrumbs.
  */
+function tmw_is_video_singular(): bool {
+    if ( is_singular( 'video' ) ) {
+        return true;
+    }
+
+    if ( is_single() && get_post_type() === 'post' ) {
+        return true;
+    }
+
+    return false;
+}
+
 function tmw_render_video_breadcrumbs() {
-    if ( ! is_singular( 'video' ) ) {
+    if ( ! function_exists( 'tmw_is_video_singular' ) || ! tmw_is_video_singular() ) {
         return '';
     }
 
@@ -32,7 +44,6 @@ function tmw_render_video_breadcrumbs() {
     <?php
     $output = ob_get_clean();
 
-    echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     error_log( sprintf( '[TMW-BREADCRUMB] Video breadcrumb rendered for ID %d', (int) $post_id ) );
 
     return $output;
