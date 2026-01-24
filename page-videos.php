@@ -4,11 +4,6 @@
  */
 get_header();
 ?>
-<nav class="tmw-breadcrumbs" aria-label="Breadcrumb">
-    <a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a>
-    <span class="sep">›</span>
-    <span>Videos</span>
-</nav>
 <?php
 
 $filter_raw = isset( $_GET['filter'] ) ? wp_unslash( $_GET['filter'] ) : '';
@@ -24,7 +19,25 @@ if ( $filter_raw && is_numeric( $filter_raw ) ) {
     $filter = function_exists( 'tmw_normalize_video_filter' ) ? tmw_normalize_video_filter( $filter_raw ) : strtolower( $filter_raw );
 }
 
+$filter_label = $filter ? ucfirst( $filter ) : '';
+
 $tmw_video_widget_class = class_exists( 'TMW_WP_Widget_Videos_Block_Fixed' ) ? 'TMW_WP_Widget_Videos_Block_Fixed' : 'wpst_WP_Widget_Videos_Block';
+
+?>
+<div class="breadcrumbs-area">
+    <div class="row">
+        <div id="breadcrumbs">
+            <a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'Home', 'retrotube-child' ); ?></a>
+            <span class="separator"><i class="fa fa-caret-right"></i></span>
+            <span class="current"><?php esc_html_e( 'Videos', 'retrotube-child' ); ?></span>
+            <?php if ( $filter_label ) : ?>
+                <span class="separator"><i class="fa fa-caret-right"></i></span>
+                <span class="current"><?php echo esc_html( $filter_label ); ?></span>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?php
 
 if ( $filter ) {
     $filter_map = array(

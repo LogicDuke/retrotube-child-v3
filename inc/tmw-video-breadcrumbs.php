@@ -21,13 +21,17 @@ function tmw_render_video_breadcrumbs() {
 
     ob_start();
     ?>
-    <nav class="tmw-breadcrumbs" aria-label="Breadcrumb">
-        <a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo esc_html( $home_label ); ?></a>
-        <span class="sep">›</span>
-        <a href="<?php echo esc_url( home_url( '/videos/' ) ); ?>"><?php echo esc_html( $videos_label ); ?></a>
-        <span class="sep">›</span>
-        <span><?php echo esc_html( get_the_title( $post_id ) ); ?></span>
-    </nav>
+    <div class="breadcrumbs-area">
+        <div class="row">
+            <div id="breadcrumbs">
+                <a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo esc_html( $home_label ); ?></a>
+                <span class="separator"><i class="fa fa-caret-right"></i></span>
+                <a href="<?php echo esc_url( home_url( '/videos/' ) ); ?>"><?php echo esc_html( $videos_label ); ?></a>
+                <span class="separator"><i class="fa fa-caret-right"></i></span>
+                <span class="current"><?php echo esc_html( get_the_title( $post_id ) ); ?></span>
+            </div>
+        </div>
+    </div>
     <?php
     $output = ob_get_clean();
 
