@@ -23,13 +23,32 @@ function wpst_breadcrumbs() {
         echo '<div id="breadcrumbs">';
         echo '<a href="' . esc_url($home_link) . '">' . esc_html($home) . '</a>';
 
-        if (is_category()) {
-            $category_link = get_category_link(get_queried_object_id());
+        if (is_category() || (is_tax() && get_queried_object() && get_queried_object()->taxonomy === 'category')) {
+            $term = get_queried_object();
+            $category_link = get_term_link($term);
             $category_base = untrailingslashit(dirname($category_link));
             echo '<span class="separator">' . $delimiter . '</span>';
             echo '<a href="' . esc_url($category_base) . '">Categories</a>';
             echo '<span class="separator">' . $delimiter . '</span>';
-            echo $before . esc_html(single_cat_title('', false)) . $after;
+            echo '<a href="' . esc_url($category_link) . '">' . esc_html($term->name) . '</a>';
+
+            if (isset($_GET['filter'])) {
+                $filter = sanitize_key(wp_unslash($_GET['filter']));
+                if ($filter) {
+                    $filter_labels = array(
+                        'latest' => __('Latest', 'wpst'),
+                        'random' => __('Random', 'wpst'),
+                        'popular' => __('Popular', 'wpst'),
+                        'longest' => __('Longest', 'wpst'),
+                        'most-viewed' => __('Most Viewed', 'wpst'),
+                    );
+                    $filter_label = isset($filter_labels[$filter])
+                        ? $filter_labels[$filter]
+                        : ucwords(str_replace('-', ' ', $filter));
+                    echo '<span class="separator">' . $delimiter . '</span>';
+                    echo $before . esc_html($filter_label) . $after;
+                }
+            }
         } elseif (is_search()) {
             echo '<span class="separator">' . $delimiter . '</span>';
             echo $before . sprintf(__('Search Results for "%s"', 'wpst'), get_search_query()) . $after;
