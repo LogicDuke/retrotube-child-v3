@@ -5,9 +5,6 @@
 
 if (is_singular('video')) {
     get_header();
-    if (function_exists('tmw_render_video_breadcrumbs')) {
-        tmw_render_video_breadcrumbs();
-    }
     ?>
     <div id="content" class="site-content row">
       <div id="primary" class="content-area with-sidebar-right single-post">

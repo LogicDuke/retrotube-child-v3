@@ -83,17 +83,10 @@ function wpst_breadcrumbs() {
             $post_type = get_post_type();
             if ($post_type === 'video') {
                 $video_label = __('Videos', 'wpst');
-                $primary_categories = get_the_category($post->ID);
-                $primary_category = !empty($primary_categories) ? $primary_categories[0] : null;
-                $primary_category_link = $primary_category ? get_term_link($primary_category) : '';
 
+                // [TMW-BREADCRUMB-VIDEO] Enforce Home > Videos > Title trail for single videos.
                 echo '<span class="separator">' . $delimiter . '</span>';
                 echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html($video_label) . '</a>';
-
-                if ($primary_category && !is_wp_error($primary_category_link)) {
-                    echo '<span class="separator">' . $delimiter . '</span>';
-                    echo '<a href="' . esc_url($primary_category_link) . '">' . esc_html($primary_category->name) . '</a>';
-                }
 
                 if ($show_current) {
                     echo '<span class="separator">' . $delimiter . '</span>';
