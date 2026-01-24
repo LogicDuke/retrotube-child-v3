@@ -1,4 +1,5 @@
 <?php
+die('CHILD BREADCRUMB ACTIVE');
 // CHILD OVERRIDE — BREADCRUMBS
 // Fix single VIDEO breadcrumb: Home › Videos › Title (no category)
 
