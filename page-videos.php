@@ -3,6 +3,9 @@
  * Template Name: Videos Page
  */
 get_header();
+if ( function_exists( 'rank_math_the_breadcrumbs' ) ) {
+    rank_math_the_breadcrumbs();
+}
 
 $filter_raw = isset( $_GET['filter'] ) ? wp_unslash( $_GET['filter'] ) : '';
 $filter_raw = is_string( $filter_raw ) ? sanitize_text_field( $filter_raw ) : '';
