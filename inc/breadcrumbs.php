@@ -86,7 +86,15 @@ function wpst_breadcrumbs() {
             $post_type_object = get_post_type_object(get_post_type());
             if ($post_type_object) {
                 echo '<span class="separator">' . $delimiter . '</span>';
-                echo $before . esc_html($post_type_object->labels->singular_name) . $after;
+                if (is_post_type_archive('video')) {
+                    // [TMW-BREADCRUMB-VIDEO-LINK] Ensure Videos archive crumb is clickable.
+                    $video_label = !empty($post_type_object->labels->name)
+                        ? $post_type_object->labels->name
+                        : $post_type_object->labels->singular_name;
+                    echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html($video_label) . '</a>';
+                } else {
+                    echo $before . esc_html($post_type_object->labels->singular_name) . $after;
+                }
             }
 
             $filter = '';
@@ -101,9 +109,10 @@ function wpst_breadcrumbs() {
                     'latest' => __('Latest', 'wpst'),
                     'top' => __('Top', 'wpst'),
                 );
-                $filter_label = $filter_labels[$filter] ?? ucwords(str_replace(array('-', '_'), ' ', $filter));
-                echo '<span class="separator">' . $delimiter . '</span>';
-                echo $before . esc_html($filter_label) . $after;
+                if (isset($filter_labels[$filter])) {
+                    echo '<span class="separator">' . $delimiter . '</span>';
+                    echo $before . esc_html($filter_labels[$filter]) . $after;
+                }
             }
         } elseif (is_page() && !is_front_page()) {
             if ($show_current) {
