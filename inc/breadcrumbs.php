@@ -1,70 +1,55 @@
 <?php
-// CHILD OVERRIDE OF wpst_breadcrumbs()
-// Fix: Single VIDEO breadcrumb = Home > Videos > Title (no category)
+/**
+ * CHILD override of wpst_breadcrumbs()
+ * Scope:
+ * - Videos archive
+ * - Single video posts
+ * - Leave all other cases to parent fallback
+ */
 
 if ( ! function_exists( 'wpst_breadcrumbs' ) ) {
 
 	function wpst_breadcrumbs() {
 
-		$delimiter   = '<i class="fa fa-caret-right"></i>';
-		$home        = 'Home';
-		$showCurrent = 1;
-		$before      = '<span class="current">';
-		$after       = '</span>';
-
-		global $post;
+		$delimiter = '<i class="fa fa-caret-right"></i>';
+		$home      = 'Home';
 		$homeLink = get_bloginfo( 'url' );
 
-		/* =====================================================
-		 * FIX: SINGLE VIDEO POSTS ONLY
-		 * ===================================================== */
-		if ( is_singular( 'video' ) || ( isset( $post ) && get_post_type( $post ) === 'video' ) ) {
+		// ===============================
+		// VIDEOS ARCHIVE: Home > Videos (NOT clickable)
+		// ===============================
+		if ( is_post_type_archive( 'video' ) ) {
+
+			echo '<div class="breadcrumbs-area"><div class="row"><div id="breadcrumbs">';
+			echo '<a href="' . esc_url( $homeLink ) . '">' . esc_html( $home ) . '</a>';
+			echo '<span class="separator">' . $delimiter . '</span>';
+			echo '<span class="current">Videos</span>';
+			echo '</div></div></div>';
+
+			return;
+		}
+
+		// ===============================
+		// SINGLE VIDEO: Home > Videos > Title
+		// ===============================
+		if ( is_singular( 'video' ) ) {
 
 			echo '<div class="breadcrumbs-area"><div class="row"><div id="breadcrumbs">';
 			echo '<a href="' . esc_url( $homeLink ) . '">' . esc_html( $home ) . '</a>';
 			echo '<span class="separator">' . $delimiter . '</span>';
 			echo '<a href="' . esc_url( $homeLink . '/videos/' ) . '">Videos</a>';
 			echo '<span class="separator">' . $delimiter . '</span>';
-			echo $before . esc_html( get_the_title() ) . $after;
+			echo '<span class="current">' . esc_html( get_the_title() ) . '</span>';
 			echo '</div></div></div>';
 
-			return; // ⛔ STOP — do not run generic logic
-		}
-
-		/* =====================================================
-		 * DEFAULT / PARENT BEHAVIOR (copied safely)
-		 * ===================================================== */
-
-		if ( is_home() || is_front_page() ) {
 			return;
 		}
 
-		echo '<div class="breadcrumbs-area"><div class="row"><div id="breadcrumbs">';
-		echo '<a href="' . esc_url( $homeLink ) . '">' . esc_html( $home ) . '</a>';
-
-		if ( is_single() && ! is_attachment() ) {
-
-			echo '<span class="separator">' . $delimiter . '</span>';
-
-			if ( get_post_type() !== 'post' ) {
-				$post_type = get_post_type_object( get_post_type() );
-				echo '<a href="' . esc_url( $homeLink . '/' . $post_type->rewrite['slug'] . '/' ) . '">';
-				echo esc_html( $post_type->labels->singular_name );
-				echo '</a>';
-
-				if ( $showCurrent ) {
-					echo '<span class="separator">' . $delimiter . '</span>';
-					echo $before . esc_html( get_the_title() ) . $after;
-				}
-			}
-
-		} elseif ( is_page() ) {
-
-			echo '<span class="separator">' . $delimiter . '</span>';
-			echo $before . esc_html( get_the_title() ) . $after;
-
+		// ===============================
+		// FALLBACK → Parent behavior
+		// ===============================
+		if ( function_exists( 'wpst_parent_breadcrumbs' ) ) {
+			wpst_parent_breadcrumbs();
 		}
-
-		echo '</div></div></div>';
 	}
 }
