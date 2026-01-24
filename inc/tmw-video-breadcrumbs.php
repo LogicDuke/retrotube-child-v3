@@ -19,12 +19,20 @@ function tmw_render_video_breadcrumbs() {
     $home_label = __('Home', 'wpst');
     $videos_label = __('Videos', 'wpst');
 
+    $categories = get_the_category($post_id);
+    $primary_category = !empty($categories) ? $categories[0] : null;
+    $primary_category_link = $primary_category ? get_term_link($primary_category) : '';
+
     ob_start();
     ?>
     <div id="breadcrumbs">
         <a href="<?php echo esc_url(home_url('/')); ?>"><?php echo esc_html($home_label); ?></a>
         <span class="separator"><i class="fa fa-caret-right"></i></span>
         <a href="<?php echo esc_url(home_url('/videos/')); ?>"><?php echo esc_html($videos_label); ?></a>
+        <?php if ($primary_category && !is_wp_error($primary_category_link)) : ?>
+            <span class="separator"><i class="fa fa-caret-right"></i></span>
+            <a href="<?php echo esc_url($primary_category_link); ?>"><?php echo esc_html($primary_category->name); ?></a>
+        <?php endif; ?>
         <span class="separator"><i class="fa fa-caret-right"></i></span>
         <span class="current"><?php echo esc_html(get_the_title($post_id)); ?></span>
     </div>
