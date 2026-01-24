@@ -47,6 +47,49 @@ if (!function_exists('tmw_pick_images_for_term')) {
   }
 }
 
+/* ======================================================================
+ * BREADCRUMBS (Rank Math) - Videos
+ * ====================================================================== */
+add_filter('rank_math/frontend/breadcrumb/items', function ($crumbs) {
+  if (!function_exists('rank_math_the_breadcrumbs')) {
+    return $crumbs;
+  }
+
+  if (!is_singular('video')) {
+    return $crumbs;
+  }
+
+  $post_id = get_queried_object_id();
+  $terms = get_the_terms($post_id, 'category');
+  $primary_term = null;
+
+  if (is_array($terms) && !empty($terms)) {
+    $primary_term = reset($terms);
+  }
+
+  $crumbs = [
+    ['label' => 'Home', 'url' => home_url('/')],
+    ['label' => 'Videos', 'url' => home_url('/videos/')],
+  ];
+
+  if ($primary_term instanceof WP_Term) {
+    $term_link = get_term_link($primary_term);
+    $crumbs[] = [
+      'label' => $primary_term->name,
+      'url'   => is_wp_error($term_link) ? '' : $term_link,
+    ];
+  }
+
+  $crumbs[] = [
+    'label' => get_the_title($post_id),
+    'url'   => '',
+  ];
+
+  error_log(sprintf('[TMW-BREADCRUMB-VIDEO] Rank Math breadcrumb overridden for video ID %d', (int) $post_id));
+
+  return $crumbs;
+});
+
 if (!function_exists('tmw_child_flipbox_front_image_markup')) {
   function tmw_child_flipbox_front_image_markup(string $front_url, string $name, bool $is_lcp): string {
     if ($front_url === '') {
