@@ -3,35 +3,6 @@
  * Single post template override for Retrotube Child theme.
  */
 
-if (is_singular('video')) {
-    get_header();
-    if (function_exists('tmw_render_video_breadcrumbs')) {
-        tmw_render_video_breadcrumbs();
-    }
-    ?>
-    <div id="content" class="site-content row">
-      <div id="primary" class="content-area with-sidebar-right single-post">
-        <main id="main" class="site-main with-sidebar-right" role="main">
-          <?php while (have_posts()) : the_post(); ?>
-            <?php get_template_part('template-parts/content', get_post_type()); ?>
-            <?php the_post_navigation(); ?>
-
-            <?php if (comments_open() || get_comments_number()) : ?>
-              <?php comments_template(); ?>
-            <?php endif; ?>
-          <?php endwhile; ?>
-          <?php get_template_part('partials/featured-models-block'); ?>
-        </main>
-      </div>
-      <aside id="sidebar" class="widget-area with-sidebar-right" role="complementary">
-        <?php get_sidebar(); ?>
-      </aside>
-    </div>
-    <?php
-    get_footer();
-    return;
-}
-
 $parent_template = '';
 $parent_dir      = trailingslashit(get_template_directory());
 
