@@ -16,19 +16,16 @@ function tmw_render_video_breadcrumbs() {
         return '';
     }
 
-    $home_label   = __( 'Home', 'wpst' );
-    $videos_label = __( 'Videos', 'wpst' );
-
     ob_start();
     ?>
     <div class="breadcrumbs-area">
         <div class="row">
             <div id="breadcrumbs">
-                <a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo esc_html( $home_label ); ?></a>
+                <a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a>
                 <span class="separator"><i class="fa fa-caret-right"></i></span>
-                <a href="<?php echo esc_url( home_url( '/videos/' ) ); ?>"><?php echo esc_html( $videos_label ); ?></a>
+                <a href="<?php echo esc_url( home_url( '/videos/' ) ); ?>">Videos</a>
                 <span class="separator"><i class="fa fa-caret-right"></i></span>
-                <span class="current"><?php echo esc_html( get_the_title( $post_id ) ); ?></span>
+                <span class="current"><?php the_title(); ?></span>
             </div>
         </div>
     </div>
