@@ -105,11 +105,9 @@ function wpst_breadcrumbs() {
                 $models_label = __('Models', 'wpst');
 
                 echo '<span class="separator">' . $delimiter . '</span>';
-                if ($models_link) {
-                    echo '<a href="' . esc_url($models_link) . '">' . esc_html($models_label) . '</a>';
-                } else {
-                    echo esc_html($models_label);
-                }
+                // [TMW-BREADCRUMB-MODELS] Always link Models crumb, fallback to /models/.
+                $models_href = $models_link ? $models_link : home_url('/models/');
+                echo '<a href="' . esc_url($models_href) . '">' . esc_html($models_label) . '</a>';
 
                 if ($show_current) {
                     echo '<span class="separator">' . $delimiter . '</span>';
@@ -177,10 +175,17 @@ function wpst_breadcrumbs() {
             }
         } elseif (is_page() && !is_front_page()) {
             if ($show_current) {
+                $filter = isset($_GET['filter']) ? sanitize_key(wp_unslash($_GET['filter'])) : '';
+
                 echo '<span class="separator">' . $delimiter . '</span>';
                 if (is_page('videos')) {
-                    // [TMW-BREADCRUMB-FIX] Keep Videos crumb clickable on page + filtered variants.
-                    echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html(get_the_title()) . '</a>';
+                    if ($filter) {
+                        // [TMW-BREADCRUMB-VIDEOS] Keep Videos crumb clickable on filtered page variants.
+                        echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html(get_the_title()) . '</a>';
+                    } else {
+                        // [TMW-BREADCRUMB-VIDEOS] Treat Videos as current page when unfiltered.
+                        echo $before . get_the_title() . $after;
+                    }
                 } else {
                     echo $before . get_the_title() . $after;
                 }
