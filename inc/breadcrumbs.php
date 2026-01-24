@@ -92,6 +92,8 @@ function wpst_breadcrumbs() {
                     echo '<span class="separator">' . $delimiter . '</span>';
                     echo $before . get_the_title() . $after;
                 }
+
+                error_log(sprintf('[TMW-BREAD-VIDEO] Single video breadcrumb normalized (no category) ID %d', (int) get_queried_object_id()));
             } elseif ($post_type === 'model') {
                 $models_page = get_page_by_path('models');
                 $models_link = $models_page ? get_permalink($models_page) : '';
