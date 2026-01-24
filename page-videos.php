@@ -22,20 +22,6 @@ if ( $filter_raw && is_numeric( $filter_raw ) ) {
 $tmw_video_widget_class = class_exists( 'TMW_WP_Widget_Videos_Block_Fixed' ) ? 'TMW_WP_Widget_Videos_Block_Fixed' : 'wpst_WP_Widget_Videos_Block';
 
 ?>
-<div class="breadcrumbs-area">
-  <div class="row">
-    <div id="breadcrumbs">
-      <a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a>
-      <span class="separator"><i class="fa fa-caret-right"></i></span>
-      <a href="<?php echo esc_url( home_url( '/videos/' ) ); ?>">Videos</a>
-
-      <?php if ( ! empty( $filter ) ) : ?>
-        <span class="separator"><i class="fa fa-caret-right"></i></span>
-        <span class="current"><?php echo esc_html( ucfirst( $filter ) ); ?></span>
-      <?php endif; ?>
-    </div>
-  </div>
-</div>
 <?php
 
 if ( $filter ) {
@@ -95,6 +81,20 @@ tmw_render_sidebar_layout('', function () use ( $filter, $instance, $tmw_video_w
 
     $intro_is_accordion = $intro_content && stripos( $intro_content, 'tmw-accordion' ) !== false;
     ?>
+      <div class="breadcrumbs-area">
+        <div class="row">
+          <div id="breadcrumbs">
+            <a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a>
+            <span class="separator"><i class="fa fa-caret-right"></i></span>
+            <a href="<?php echo esc_url( home_url( '/videos/' ) ); ?>">Videos</a>
+
+            <?php if ( ! empty( $filter ) ) : ?>
+              <span class="separator"><i class="fa fa-caret-right"></i></span>
+              <span class="current"><?php echo esc_html( ucfirst( $filter ) ); ?></span>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
       <header class="entry-header">
         <h1 class="entry-title"><i class="fa fa-video-camera"></i> Videos</h1>
         <?php if ( $intro_content ) : ?>
