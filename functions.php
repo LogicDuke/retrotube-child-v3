@@ -73,6 +73,15 @@ if (is_admin()) {
 
 require_once get_stylesheet_directory() . '/inc/tmw-mail-fix.php';
 
+// [TMW-BREADCRUMB] Disable parent breadcrumb rendering on single videos.
+add_action('wp', function () {
+    if (!is_singular('video')) {
+        return;
+    }
+
+    remove_all_actions('wpst_breadcrumbs');
+}, 20);
+
 add_action('wp_head', function () {
     if (!is_front_page()) {
         return;
