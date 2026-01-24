@@ -62,13 +62,9 @@ add_filter('rank_math/frontend/breadcrumb/items', function ($crumbs) {
   $post_id = get_queried_object_id();
 
   $crumbs = [
-    ['label' => 'Home', 'url' => home_url('/')],
-    ['label' => 'Videos', 'url' => home_url('/videos/')],
-  ];
-
-  $crumbs[] = [
-    'label' => get_the_title($post_id),
-    'url'   => '',
+    ['link' => home_url('/'), 'name' => __('Home', 'wpst')],
+    ['link' => home_url('/videos/'), 'name' => __('Videos', 'wpst')],
+    ['link' => '', 'name' => get_the_title($post_id)],
   ];
 
   error_log(sprintf('[TMW-BREAD-VIDEO] Single video breadcrumb normalized (no category) ID %d', (int) $post_id));
