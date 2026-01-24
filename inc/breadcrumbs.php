@@ -55,8 +55,12 @@ function wpst_breadcrumbs() {
                 if ($post_type_object) {
                     $slug = $post_type_object->rewrite;
                     if (is_array($slug) && isset($slug['slug'])) {
+                        // [TMW-BREADCRUMB-FIX] Use plural label for model breadcrumbs on single pages.
+                        $label = (get_post_type() === 'model' && !empty($post_type_object->labels->name))
+                            ? $post_type_object->labels->name
+                            : $post_type_object->labels->singular_name;
                         echo '<span class="separator">' . $delimiter . '</span>';
-                        echo '<a href="' . esc_url($home_link . '/' . $slug['slug'] . '/') . '">' . esc_html($post_type_object->labels->singular_name) . '</a>';
+                        echo '<a href="' . esc_url($home_link . '/' . $slug['slug'] . '/') . '">' . esc_html($label) . '</a>';
                     }
                 }
                 if ($show_current) {
