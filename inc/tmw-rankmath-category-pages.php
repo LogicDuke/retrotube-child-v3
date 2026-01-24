@@ -25,16 +25,27 @@ add_filter('rank_math/is_post_type_accessible', function ($is_accessible, $post_
     return $is_accessible;
 }, 10, 2);
 
-add_filter('rank_math/excluded_post_types', function ($post_types) {
-    if (defined('WP_DEBUG') && WP_DEBUG && current_user_can('manage_options') && is_array($post_types)) {
-        static $logged = [];
-        foreach ($post_types as $slug) {
-            if (!is_string($slug) || post_type_exists($slug)) { continue; }
-            if (isset($logged[$slug])) { continue; }
-            $logged[$slug] = true;
-            $uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-            error_log(sprintf('[TMW-RM-AUDIT] invalid_post_type=%s source=rank_math/excluded_post_types uri=%s', $slug, $uri));
+add_filter('rank_math/excluded_post_types', function ($excluded) {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $is_rest = (defined('REST_REQUEST') && REST_REQUEST);
+        $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+
+        if (
+            !is_admin()
+            && !wp_doing_ajax()
+            && !wp_doing_cron()
+            && !$is_rest
+            && $uri !== ''
+            && strpos($uri, '/category/') === 0
+        ) {
+            if (is_array($excluded)) {
+                $list = implode(',', $excluded);
+                error_log('[TMW-RM-EXCL-AUDIT] stage=post_theme priority=10001 list=' . $list . ' uri=' . $uri);
+            } else {
+                error_log('[TMW-RM-EXCL-AUDIT] stage=post_theme priority=10001 type=' . gettype($excluded) . ' uri=' . $uri);
+            }
         }
     }
-    return $post_types;
-}, 999);
+
+    return $excluded;
+}, 10001);

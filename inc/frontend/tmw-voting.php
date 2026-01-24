@@ -92,6 +92,18 @@ function tmw_handle_vote_ajax(): void {
     $likes    = tmw_get_post_likes_count($post_id);
     $dislikes = tmw_get_post_dislikes_count($post_id);
 
+    $ip_address = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
+    $vote_key   = 'tmw_vote_' . md5($ip_address . '|' . $post_id);
+    if (get_transient($vote_key)) {
+        $total   = $likes + $dislikes;
+        $percent = $total > 0 ? round(($likes / $total) * 100, 0) : 0;
+        wp_send_json_success([
+            'likes'    => $likes,
+            'dislikes' => $dislikes,
+            'percent'  => $percent,
+        ]);
+    }
+
     if ($vote_type === 'like') {
         $likes++;
         update_post_meta($post_id, 'likes_count', $likes);
@@ -99,6 +111,8 @@ function tmw_handle_vote_ajax(): void {
         $dislikes++;
         update_post_meta($post_id, 'dislikes_count', $dislikes);
     }
+
+    set_transient($vote_key, 1, 45);
 
     $total   = $likes + $dislikes;
     $percent = $total > 0 ? round(($likes / $total) * 100, 0) : 0;

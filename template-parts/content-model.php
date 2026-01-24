@@ -125,10 +125,10 @@ $is_rated_yet   = ( 0 === ( $likes_count + $dislikes_count ) ) ? ' not-rated-yet
                                                                         <?php the_content(); ?>
                                                                 </div>
                                                                 <div class="tmw-accordion-toggle-wrap">
-                                                                        <a class="tmw-accordion-toggle" href="javascript:void(0);" data-tmw-accordion-toggle aria-controls="tmw-model-desc-<?php echo (int) get_the_ID(); ?>" aria-expanded="false" data-readmore-text="<?php echo esc_attr__( 'Read more', 'retrotube-child' ); ?>" data-close-text="<?php echo esc_attr__( 'Close', 'retrotube-child' ); ?>">
+                                                                        <button class="tmw-accordion-toggle" type="button" data-tmw-accordion-toggle aria-controls="tmw-model-desc-<?php echo (int) get_the_ID(); ?>" aria-expanded="false" data-readmore-text="<?php echo esc_attr__( 'Read more', 'retrotube-child' ); ?>" data-close-text="<?php echo esc_attr__( 'Close', 'retrotube-child' ); ?>">
                                                                                 <span class="tmw-accordion-text"><?php esc_html_e( 'Read more', 'retrotube-child' ); ?></span>
                                                                                 <i class="fa fa-chevron-down"></i>
-                                                                        </a>
+                                                                        </button>
                                                                 </div>
                                                         </div>
                                                 <?php else : ?>
@@ -168,7 +168,7 @@ $is_rated_yet   = ( 0 === ( $likes_count + $dislikes_count ) ) ? ' not-rated-yet
                                         </span>
                                         <?php if ($tmw_model_tags_count > 0 && is_array($tmw_model_tags)) : ?>
                                                 <?php foreach ($tmw_model_tags as $tag) : ?>
-                                                        <a href="<?php echo get_tag_link( $tag->term_id ); ?>"
+                                                        <a href="<?php echo esc_url( get_tag_link( $tag->term_id ) ); ?>"
                                                                 class="label"
                                                                 title="<?php echo esc_attr( $tag->name ); ?>">
                                                                 <i class="fa fa-tag"></i><?php echo esc_html( $tag->name ); ?>
@@ -178,6 +178,57 @@ $is_rated_yet   = ( 0 === ( $likes_count + $dislikes_count ) ) ? ' not-rated-yet
                                 </div>
                                 <!-- === END TMW-TAGS-BULLETPROOF-RESTORE === -->
                                 <?php endif; ?>
+
+						<?php
+						// [TMW-RELATED-MODELS] Static internal linking block for crawlable related models.
+						$related_taxonomies = [ 'category', 'post_tag', 'models' ];
+						$related_tax_query  = [ 'relation' => 'OR' ];
+
+						foreach ( $related_taxonomies as $related_taxonomy ) {
+							$related_terms = get_the_terms( $model_id, $related_taxonomy );
+							if ( empty( $related_terms ) || is_wp_error( $related_terms ) ) {
+								continue;
+							}
+
+							$related_term_ids = wp_list_pluck( $related_terms, 'term_id' );
+							if ( empty( $related_term_ids ) ) {
+								continue;
+							}
+
+							$related_tax_query[] = [
+								'taxonomy' => $related_taxonomy,
+								'field'    => 'term_id',
+								'terms'    => $related_term_ids,
+							];
+						}
+
+						$related_models_query = null;
+						if ( count( $related_tax_query ) > 1 ) {
+							$related_models_query = new WP_Query(
+								[
+									'post_type'           => 'model',
+									'posts_per_page'      => 6,
+									'post__not_in'        => [ $model_id ],
+									'tax_query'           => $related_tax_query,
+									'no_found_rows'       => true,
+									'ignore_sticky_posts' => true,
+								]
+							);
+						}
+						?>
+
+						<?php if ( $related_models_query instanceof WP_Query && $related_models_query->have_posts() ) : ?>
+							<section class="tmw-related-models">
+								<h3><?php esc_html_e( 'Related Models', 'retrotube-child' ); ?></h3>
+								<ul>
+									<?php while ( $related_models_query->have_posts() ) : ?>
+										<?php $related_models_query->the_post(); ?>
+										<li><a href="<?php echo esc_url( get_permalink() ); ?>"><?php the_title(); ?></a></li>
+									<?php endwhile; ?>
+								</ul>
+							</section>
+							<?php wp_reset_postdata(); ?>
+						<?php endif; ?>
 
                         <?php get_template_part( 'template-parts/model-videos' ); ?>
 
