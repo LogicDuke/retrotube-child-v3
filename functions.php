@@ -34,6 +34,7 @@ define('TMW_CHILD_PATH', get_stylesheet_directory());
 define('TMW_CHILD_URL',  get_stylesheet_directory_uri());
 
 require_once get_stylesheet_directory() . '/inc/breadcrumbs.php';
+require_once get_stylesheet_directory() . '/inc/tmw-video-breadcrumbs.php';
 
 // Single include: all logic is now in /inc/bootstrap.php
 require_once TMW_CHILD_PATH . '/inc/bootstrap.php';
@@ -196,3 +197,22 @@ add_filter('site_transient_update_themes', function($value) {
 
     return $value;
 });
+
+add_action('wp', function () {
+    if (!is_singular('video')) {
+        return;
+    }
+
+    remove_all_actions('wpst_breadcrumbs');
+    remove_all_actions('breadcrumb');
+    remove_all_actions('breadcrumbs');
+    remove_all_actions('rank_math/breadcrumbs');
+    remove_action('wpst_breadcrumbs', 'rank_math_the_breadcrumbs');
+    remove_action('wpst_breadcrumbs', 'wpst_breadcrumbs');
+
+    static $logged = false;
+    if (!$logged) {
+        error_log('[TMW-BREADCRUMB] Parent & Rank Math breadcrumbs disabled for single video');
+        $logged = true;
+    }
+}, 9);
