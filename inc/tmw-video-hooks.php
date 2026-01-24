@@ -61,20 +61,17 @@ add_filter('rank_math/frontend/breadcrumb/items', function ($crumbs) {
 
   $post_id = get_queried_object_id();
 
+  // RankMath expects: [0 => 'Label', 1 => 'URL']
   $crumbs = [
-    ['label' => 'Home', 'url' => home_url('/')],
-    ['label' => 'Videos', 'url' => home_url('/videos/')],
-  ];
-
-  $crumbs[] = [
-    'label' => get_the_title($post_id),
-    'url'   => '',
+    [0 => 'Home', 1 => home_url('/')],
+    [0 => 'Videos', 1 => home_url('/videos/')],
+    [0 => get_the_title($post_id), 1 => ''],
   ];
 
   error_log(sprintf('[TMW-BREAD-VIDEO] Single video breadcrumb normalized (no category) ID %d', (int) $post_id));
 
   return $crumbs;
-});
+}, 99);
 
 if (!function_exists('tmw_child_flipbox_front_image_markup')) {
   function tmw_child_flipbox_front_image_markup(string $front_url, string $name, bool $is_lcp): string {
