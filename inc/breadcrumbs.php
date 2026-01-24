@@ -9,6 +9,10 @@ if (!defined('ABSPATH')) {
 function wpst_breadcrumbs() {
     global $post;
 
+    if (is_singular('video')) {
+        return;
+    }
+
     $delimiter = '<i class="fa fa-caret-right"></i>';
     $home = __('Home', 'wpst');
     $show_current = 1;
