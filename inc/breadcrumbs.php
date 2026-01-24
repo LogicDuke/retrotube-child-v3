@@ -81,17 +81,47 @@ function wpst_breadcrumbs() {
             echo $before . esc_html(get_the_time('Y')) . $after;
         } elseif (is_single() && !is_attachment()) {
             $post_type = get_post_type();
-            if ($post_type != 'post') {
+            if ($post_type === 'video') {
+                $video_label = __('Videos', 'wpst');
+                $primary_categories = get_the_category($post->ID);
+                $primary_category = !empty($primary_categories) ? $primary_categories[0] : null;
+                $primary_category_link = $primary_category ? get_term_link($primary_category) : '';
+
+                echo '<span class="separator">' . $delimiter . '</span>';
+                echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html($video_label) . '</a>';
+
+                if ($primary_category && !is_wp_error($primary_category_link)) {
+                    echo '<span class="separator">' . $delimiter . '</span>';
+                    echo '<a href="' . esc_url($primary_category_link) . '">' . esc_html($primary_category->name) . '</a>';
+                }
+
+                if ($show_current) {
+                    echo '<span class="separator">' . $delimiter . '</span>';
+                    echo $before . get_the_title() . $after;
+                }
+            } elseif ($post_type === 'model') {
+                $models_page = get_page_by_path('models');
+                $models_link = $models_page ? get_permalink($models_page) : '';
+                $models_label = __('Models', 'wpst');
+
+                echo '<span class="separator">' . $delimiter . '</span>';
+                if ($models_link) {
+                    echo '<a href="' . esc_url($models_link) . '">' . esc_html($models_label) . '</a>';
+                } else {
+                    echo esc_html($models_label);
+                }
+
+                if ($show_current) {
+                    echo '<span class="separator">' . $delimiter . '</span>';
+                    echo $before . get_the_title() . $after;
+                }
+            } elseif ($post_type != 'post') {
                 $post_type_object = get_post_type_object($post_type);
                 if ($post_type_object) {
                     $slug = $post_type_object->rewrite;
                     if (is_array($slug) && isset($slug['slug'])) {
-                        // [TMW-BREADCRUMB-FIX] Use plural label for model breadcrumbs on single pages.
-                        $label = (get_post_type() === 'model' && !empty($post_type_object->labels->name))
-                            ? $post_type_object->labels->name
-                            : $post_type_object->labels->singular_name;
                         echo '<span class="separator">' . $delimiter . '</span>';
-                        echo '<a href="' . esc_url($home_link . '/' . $slug['slug'] . '/') . '">' . esc_html($label) . '</a>';
+                        echo '<a href="' . esc_url($home_link . '/' . $slug['slug'] . '/') . '">' . esc_html($post_type_object->labels->singular_name) . '</a>';
                     }
                 }
                 if ($show_current) {
