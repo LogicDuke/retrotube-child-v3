@@ -215,13 +215,11 @@ add_action('wp', function () {
     remove_all_actions('wpst_breadcrumbs');
     remove_all_actions('breadcrumb');
     remove_all_actions('breadcrumbs');
-    remove_all_actions('rank_math/breadcrumbs');
-    remove_action('wpst_breadcrumbs', 'rank_math_the_breadcrumbs');
     remove_action('wpst_breadcrumbs', 'wpst_breadcrumbs');
 
     static $logged = false;
     if (!$logged) {
-        error_log('[TMW-BREADCRUMB] Parent & Rank Math breadcrumbs disabled for single video');
+        error_log('[TMW-BREADCRUMB-VIDEO] Parent breadcrumbs disabled for single video (RankMath kept)');
         $logged = true;
     }
 }, 9);
