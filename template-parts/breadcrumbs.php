@@ -10,6 +10,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (is_singular('video')) {
+    return;
+}
+
 $is_model_context = is_singular('model') || is_post_type_archive('model') || is_tax('models');
 
 if (!$is_model_context) {
