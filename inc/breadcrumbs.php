@@ -25,29 +25,41 @@ function wpst_breadcrumbs() {
 
         if (is_category() || (is_tax() && get_queried_object() && get_queried_object()->taxonomy === 'category')) {
             $term = get_queried_object();
-            $category_link = get_term_link($term);
-            $category_base = untrailingslashit(dirname($category_link));
-            echo '<span class="separator">' . $delimiter . '</span>';
-            echo '<a href="' . esc_url($category_base) . '">Categories</a>';
-            echo '<span class="separator">' . $delimiter . '</span>';
-            echo '<a href="' . esc_url($category_link) . '">' . esc_html($term->name) . '</a>';
+            $category_link = $term ? get_term_link($term) : '';
+            $categories_page = get_page_by_path('categories');
+            $categories_link = $categories_page ? get_permalink($categories_page) : '';
+            $filter = isset($_GET['filter']) ? sanitize_key(wp_unslash($_GET['filter'])) : '';
 
-            if (isset($_GET['filter'])) {
-                $filter = sanitize_key(wp_unslash($_GET['filter']));
+            // [TMW-BREADCRUMB-FIX] Link Categories to real hub page only.
+            echo '<span class="separator">' . $delimiter . '</span>';
+            if ($categories_link) {
+                echo '<a href="' . esc_url($categories_link) . '">' . esc_html__('Categories', 'wpst') . '</a>';
+            } else {
+                echo esc_html__('Categories', 'wpst');
+            }
+
+            if ($term && !is_wp_error($category_link)) {
+                echo '<span class="separator">' . $delimiter . '</span>';
                 if ($filter) {
-                    $filter_labels = array(
-                        'latest' => __('Latest', 'wpst'),
-                        'random' => __('Random', 'wpst'),
-                        'popular' => __('Popular', 'wpst'),
-                        'longest' => __('Longest', 'wpst'),
-                        'most-viewed' => __('Most Viewed', 'wpst'),
-                    );
-                    $filter_label = isset($filter_labels[$filter])
-                        ? $filter_labels[$filter]
-                        : ucwords(str_replace('-', ' ', $filter));
-                    echo '<span class="separator">' . $delimiter . '</span>';
-                    echo $before . esc_html($filter_label) . $after;
+                    echo '<a href="' . esc_url($category_link) . '">' . esc_html($term->name) . '</a>';
+                } else {
+                    echo $before . esc_html($term->name) . $after;
                 }
+            }
+
+            if ($filter) {
+                $filter_labels = array(
+                    'latest' => __('Latest', 'wpst'),
+                    'random' => __('Random', 'wpst'),
+                    'popular' => __('Popular', 'wpst'),
+                    'longest' => __('Longest', 'wpst'),
+                    'most-viewed' => __('Most Viewed', 'wpst'),
+                );
+                $filter_label = isset($filter_labels[$filter])
+                    ? $filter_labels[$filter]
+                    : ucwords(str_replace('-', ' ', $filter));
+                echo '<span class="separator">' . $delimiter . '</span>';
+                echo $before . esc_html($filter_label) . $after;
             }
         } elseif (is_search()) {
             echo '<span class="separator">' . $delimiter . '</span>';
@@ -136,7 +148,8 @@ function wpst_breadcrumbs() {
         } elseif (is_page() && !is_front_page()) {
             if ($show_current) {
                 echo '<span class="separator">' . $delimiter . '</span>';
-                if (is_page('videos') && isset($_GET['filter'])) {
+                if (is_page('videos')) {
+                    // [TMW-BREADCRUMB-FIX] Keep Videos crumb clickable on page + filtered variants.
                     echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html(get_the_title()) . '</a>';
                 } else {
                     echo $before . get_the_title() . $after;
