@@ -110,6 +110,22 @@ function wpst_breadcrumbs() {
                 echo '<span class="separator">' . $delimiter . '</span>';
                 echo $before . get_the_title() . $after;
             }
+
+            // [TMW-BREADCRUMB-VIDEO-FILTER] Append filter label on Videos page.
+            if (get_post_field('post_name', get_queried_object_id()) === 'videos' && isset($_GET['filter'])) {
+                $filter = sanitize_key(wp_unslash($_GET['filter']));
+
+                $filter_labels = array(
+                    'latest' => __('Latest', 'wpst'),
+                    'random' => __('Random', 'wpst'),
+                    'top' => __('Top', 'wpst'),
+                );
+
+                if (isset($filter_labels[$filter])) {
+                    echo '<span class="separator">' . $delimiter . '</span>';
+                    echo $before . esc_html($filter_labels[$filter]) . $after;
+                }
+            }
         } elseif (is_attachment()) {
             $parent = get_post($post->post_parent);
             if ($parent) {
