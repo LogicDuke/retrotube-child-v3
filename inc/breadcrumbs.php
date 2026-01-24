@@ -9,10 +9,6 @@ if (!defined('ABSPATH')) {
 function wpst_breadcrumbs() {
     global $post;
 
-    if (is_singular('video')) {
-        return;
-    }
-
     $delimiter = '<i class="fa fa-caret-right"></i>';
     $home = __('Home', 'wpst');
     $show_current = 1;
@@ -20,6 +16,27 @@ function wpst_breadcrumbs() {
     $after = '</span>';
 
     $home_link = home_url('/');
+    $videos_page = get_page_by_path('videos');
+    $videos_url = ($videos_page instanceof WP_Post) ? get_permalink($videos_page->ID) : home_url('/videos/');
+
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        static $logged = false;
+        if (!$logged) {
+            $post_id = is_object($post) && isset($post->ID) ? (int) $post->ID : 0;
+            $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+            error_log(sprintf(
+                '[TMW-BREADCRUMB-AUDIT] post_id=%d post_type=%s is_single=%s is_singular_video=%s is_video_archive=%s is_page=%s request_uri=%s',
+                $post_id,
+                get_post_type(),
+                is_single() ? '1' : '0',
+                is_singular('video') ? '1' : '0',
+                is_post_type_archive('video') ? '1' : '0',
+                is_page() ? '1' : '0',
+                $request_uri
+            ));
+            $logged = true;
+        }
+    }
 
     if (!is_home() && !is_front_page()) {
         echo '<div class="breadcrumbs-area">';
@@ -92,7 +109,7 @@ function wpst_breadcrumbs() {
                 $primary_category_link = $primary_category ? get_term_link($primary_category) : '';
 
                 echo '<span class="separator">' . $delimiter . '</span>';
-                echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html($video_label) . '</a>';
+                echo '<a href="' . esc_url($videos_url) . '">' . esc_html($video_label) . '</a>';
 
                 if ($primary_category && !is_wp_error($primary_category_link)) {
                     echo '<span class="separator">' . $delimiter . '</span>';
@@ -134,6 +151,14 @@ function wpst_breadcrumbs() {
                 }
             } else {
                 $cat = get_the_category();
+                echo '<span class="separator">' . $delimiter . '</span>';
+                echo '<a href="' . esc_url($videos_url) . '">' . esc_html__('Videos', 'wpst') . '</a>';
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log(sprintf(
+                        '[TMW-BREADCRUMB] Injected Videos crumb for post ID %d',
+                        is_object($post) && isset($post->ID) ? (int) $post->ID : 0
+                    ));
+                }
                 if (!empty($cat)) {
                     $cat = $cat[0];
                     $cats = get_category_parents($cat, true, '<span class="separator">' . $delimiter . '</span>');
@@ -144,6 +169,9 @@ function wpst_breadcrumbs() {
                     echo $cats;
                 }
                 if ($show_current) {
+                    if (empty($cat)) {
+                        echo '<span class="separator">' . $delimiter . '</span>';
+                    }
                     echo $before . get_the_title() . $after;
                 }
             }
@@ -152,11 +180,10 @@ function wpst_breadcrumbs() {
             if ($post_type_object) {
                 echo '<span class="separator">' . $delimiter . '</span>';
                 if (is_post_type_archive('video')) {
-                    // [TMW-BREADCRUMB-VIDEO-LINK] Ensure Videos archive crumb is clickable.
                     $video_label = !empty($post_type_object->labels->name)
                         ? $post_type_object->labels->name
                         : $post_type_object->labels->singular_name;
-                    echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html($video_label) . '</a>';
+                    echo $before . esc_html($video_label) . $after;
                 } else {
                     echo $before . esc_html($post_type_object->labels->singular_name) . $after;
                 }
@@ -182,12 +209,7 @@ function wpst_breadcrumbs() {
         } elseif (is_page() && !is_front_page()) {
             if ($show_current) {
                 echo '<span class="separator">' . $delimiter . '</span>';
-                if (is_page('videos')) {
-                    // [TMW-BREADCRUMB-FIX] Keep Videos crumb clickable on page + filtered variants.
-                    echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html(get_the_title()) . '</a>';
-                } else {
-                    echo $before . get_the_title() . $after;
-                }
+                echo $before . get_the_title() . $after;
             }
 
             // [TMW-BREADCRUMB-VIDEO-FILTER] Append filter label on Videos page.
