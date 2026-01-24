@@ -10,3 +10,17 @@ add_action('after_setup_theme', function () {
     add_image_size('tmw-front-optimized', 400, 600, true);
     // ... add any existing supports previously in functions.php (moved verbatim)
 }, 10);
+
+/**
+ * Breadcrumb fix:
+ * Remove category breadcrumb ONLY on single video pages
+ * Do not affect other pages
+ */
+add_filter('get_the_category', function ($categories) {
+
+    if (is_singular('video')) {
+        return [];
+    }
+
+    return $categories;
+});
