@@ -18,7 +18,7 @@ if ( ! function_exists( 'wpst_breadcrumbs' ) ) {
 		/* =====================================================
 		 * FIX: SINGLE VIDEO POSTS ONLY
 		 * ===================================================== */
-		if ( is_singular( 'video' ) ) {
+		if ( is_singular( 'video' ) || ( isset( $post ) && get_post_type( $post ) === 'video' ) ) {
 
 			echo '<div class="breadcrumbs-area"><div class="row"><div id="breadcrumbs">';
 			echo '<a href="' . esc_url( $homeLink ) . '">' . esc_html( $home ) . '</a>';
