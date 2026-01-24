@@ -82,6 +82,29 @@ function wpst_breadcrumbs() {
                     echo $before . get_the_title() . $after;
                 }
             }
+        } elseif (!is_single() && !is_page() && get_post_type() != 'post' && !is_404()) {
+            $post_type_object = get_post_type_object(get_post_type());
+            if ($post_type_object) {
+                echo '<span class="separator">' . $delimiter . '</span>';
+                echo $before . esc_html($post_type_object->labels->singular_name) . $after;
+            }
+
+            $filter = '';
+            if (isset($_GET['filter'])) {
+                $filter = sanitize_key(wp_unslash($_GET['filter']));
+            }
+
+            if ($filter && is_post_type_archive('video')) {
+                // [TMW-BREADCRUMB-FILTER] Append filter label for video archives.
+                $filter_labels = array(
+                    'random' => __('Random', 'wpst'),
+                    'latest' => __('Latest', 'wpst'),
+                    'top' => __('Top', 'wpst'),
+                );
+                $filter_label = $filter_labels[$filter] ?? ucwords(str_replace(array('-', '_'), ' ', $filter));
+                echo '<span class="separator">' . $delimiter . '</span>';
+                echo $before . esc_html($filter_label) . $after;
+            }
         } elseif (is_page() && !is_front_page()) {
             if ($show_current) {
                 echo '<span class="separator">' . $delimiter . '</span>';
