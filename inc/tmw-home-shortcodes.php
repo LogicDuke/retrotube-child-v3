@@ -197,6 +197,69 @@ if (!function_exists('tmw_home_get_category_image_url')) {
     }
 }
 
+/**
+ * ---------------------------------------------------------
+ * HOME CATEGORY REPRESENTATIVE POST (HOME ONLY)
+ * ---------------------------------------------------------
+ */
+if (!function_exists('tmw_home_get_category_representative_post')) {
+
+    function tmw_home_get_category_representative_post(WP_Term $term): ?WP_Post {
+
+        $query = new WP_Query([
+            'post_type'           => 'post',
+            'posts_per_page'      => 1,
+            'no_found_rows'       => true,
+            'ignore_sticky_posts' => true,
+            'post_status'         => 'publish',
+            'orderby'             => 'date',
+            'order'               => 'DESC',
+            'tax_query'           => [
+                [
+                    'taxonomy' => 'category',
+                    'field'    => 'term_id',
+                    'terms'    => $term->term_id,
+                ],
+            ],
+        ]);
+
+        if (!empty($query->posts[0]) && $query->posts[0] instanceof WP_Post) {
+            return $query->posts[0];
+        }
+
+        return null;
+    }
+}
+
+/**
+ * ---------------------------------------------------------
+ * HOME CATEGORY IMAGE RESOLVER (POST CONTEXT)
+ * ---------------------------------------------------------
+ */
+if (!function_exists('tmw_home_get_category_image_from_post')) {
+
+    function tmw_home_get_category_image_from_post(WP_Post $post): string {
+
+        if (has_post_thumbnail($post)) {
+            $image_url = get_the_post_thumbnail_url($post, 'medium');
+            if (is_string($image_url) && $image_url !== '') {
+                return $image_url;
+            }
+        }
+
+        $thumb = get_post_meta($post->ID, 'thumb', true);
+        if (is_string($thumb) && $thumb !== '') {
+            return $thumb;
+        }
+
+        if (function_exists('tmw_placeholder_image_url')) {
+            return tmw_placeholder_image_url();
+        }
+
+        return '';
+    }
+}
+
 
 /**
  * ---------------------------------------------------------
@@ -244,7 +307,12 @@ if (!function_exists('tmw_home_categories_shortcode')) {
                         continue;
                     }
 
-                    $image_url = tmw_home_get_category_image_url($term);
+                    $post = tmw_home_get_category_representative_post($term);
+                    $image_url = '';
+
+                    if ($post) {
+                        $image_url = tmw_home_get_category_image_from_post($post);
+                    }
                     ?>
                     <article class="video-item tmw-home-category-card">
                         <a class="video-thumb"
