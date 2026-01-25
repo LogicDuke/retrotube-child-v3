@@ -50,10 +50,15 @@
 }
 
 .tmw-accordion-content h2,
-.tmw-accordion-content h3 {
+.tmw-accordion-content h3,
+.tmw-accordion-content h4 {
     font-size: 16px;
     margin: 15px 0 8px;
     color: #fff;
+}
+
+.tmw-accordion-content .tmw-accordion-auto-h3 {
+    margin: 15px 0 8px;
 }
 
 /* === TOGGLE WRAPPER WITH RED LINES === */
