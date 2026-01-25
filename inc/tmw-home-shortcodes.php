@@ -199,70 +199,6 @@ if (!function_exists('tmw_home_get_category_image_url')) {
 
 /**
  * ---------------------------------------------------------
- * HOME CATEGORY REPRESENTATIVE POST (HOME ONLY)
- * ---------------------------------------------------------
- */
-if (!function_exists('tmw_home_get_category_representative_post')) {
-
-    function tmw_home_get_category_representative_post(WP_Term $term): ?WP_Post {
-
-        $query = new WP_Query([
-            'post_type'           => 'post',
-            'posts_per_page'      => 1,
-            'no_found_rows'       => true,
-            'ignore_sticky_posts' => true,
-            'post_status'         => 'publish',
-            'orderby'             => 'date',
-            'order'               => 'DESC',
-            'tax_query'           => [
-                [
-                    'taxonomy' => 'category',
-                    'field'    => 'term_id',
-                    'terms'    => $term->term_id,
-                ],
-            ],
-        ]);
-
-        if (!empty($query->posts[0]) && $query->posts[0] instanceof WP_Post) {
-            return $query->posts[0];
-        }
-
-        return null;
-    }
-}
-
-/**
- * ---------------------------------------------------------
- * HOME CATEGORY IMAGE RESOLVER (POST CONTEXT)
- * ---------------------------------------------------------
- */
-if (!function_exists('tmw_home_get_category_image_from_post')) {
-
-    function tmw_home_get_category_image_from_post(WP_Post $post): string {
-
-        if (has_post_thumbnail($post)) {
-            $image_url = get_the_post_thumbnail_url($post, 'medium');
-            if (is_string($image_url) && $image_url !== '') {
-                return $image_url;
-            }
-        }
-
-        $thumb = get_post_meta($post->ID, 'thumb', true);
-        if (is_string($thumb) && $thumb !== '') {
-            return $thumb;
-        }
-
-        if (function_exists('tmw_placeholder_image_url')) {
-            return tmw_placeholder_image_url();
-        }
-
-        return '';
-    }
-}
-
-
-/**
- * ---------------------------------------------------------
  * HOME CATEGORIES SHORTCODE
  * [tmw_home_categories limit="6"]
  * ---------------------------------------------------------
@@ -282,9 +218,48 @@ if (!function_exists('tmw_home_categories_shortcode')) {
         $limit    = max(1, (int) $atts['limit']);
         $taxonomy = apply_filters('tmw_home_categories_taxonomy', 'category');
 
+        $catThumbQuality = 'medium';
+        if (function_exists('xbox_get_field_value')) {
+            $value = xbox_get_field_value('wpst-options', 'categories-thumbnail-quality');
+            if (is_string($value) && $value !== '') {
+                $catThumbQuality = $value;
+            }
+        }
+
+        $categoriesPerRow = 3;
+        if (function_exists('xbox_get_field_value')) {
+            $value = xbox_get_field_value('wpst-options', 'categories-per-row');
+            if (is_numeric($value)) {
+                $value = (int) $value;
+                if ($value > 0) {
+                    $categoriesPerRow = $value;
+                }
+            }
+        }
+
+        switch ($categoriesPerRow) {
+            case 2:
+                $thumbBlockWidth = 50;
+                break;
+            case 3:
+                $thumbBlockWidth = 33.33;
+                break;
+            case 4:
+                $thumbBlockWidth = 25;
+                break;
+            case 5:
+                $thumbBlockWidth = 20;
+                break;
+            case 6:
+                $thumbBlockWidth = 16.66;
+                break;
+            default:
+                $thumbBlockWidth = 20;
+        }
+
         $terms = get_terms([
             'taxonomy'   => $taxonomy,
-            'hide_empty' => false,
+            'hide_empty' => true,
             'number'     => $limit,
         ]);
 
@@ -294,8 +269,16 @@ if (!function_exists('tmw_home_categories_shortcode')) {
 
         ob_start();
         ?>
-        <section class="widget widget_categories">
-            <div class="video-grid tmw-home-category-grid">
+        <div class="tmw-home-categories-list categories-list">
+            <style>
+                @media only screen and (min-width:64.001em) and (max-width:84em) {
+                    .tmw-home-categories-list .thumb-block { width: <?php echo esc_html((string) $thumbBlockWidth); ?>% !important; }
+                }
+                @media only screen and (min-width:84.001em) {
+                    .tmw-home-categories-list .thumb-block { width: <?php echo esc_html((string) $thumbBlockWidth); ?>% !important; }
+                }
+            </style>
+            <div class="videos-list">
                 <?php foreach ($terms as $term) : ?>
                     <?php
                     if (!$term instanceof WP_Term) {
@@ -307,35 +290,62 @@ if (!function_exists('tmw_home_categories_shortcode')) {
                         continue;
                     }
 
-                    $post = tmw_home_get_category_representative_post($term);
-                    $image_url = '';
+                    $query = new WP_Query([
+                        'post_type'           => 'post',
+                        'posts_per_page'      => 1,
+                        'post_status'         => 'publish',
+                        'orderby'             => 'rand',
+                        'tax_query'           => [
+                            [
+                                'taxonomy' => 'category',
+                                'field'    => 'slug',
+                                'terms'    => $term->slug,
+                            ],
+                        ],
+                    ]);
 
-                    if ($post) {
-                        $image_url = tmw_home_get_category_image_from_post($post);
+                    $thumbnail_html = '';
+                    $image_id = (int) get_term_meta($term->term_id, 'category-image-id', true);
+                    if ($image_id > 0) {
+                        $thumbnail_html = wp_get_attachment_image($image_id, $catThumbQuality);
+                    }
+
+                    $post = null;
+                    if ($thumbnail_html === '' && $query->have_posts()) {
+                        $post = $query->posts[0];
+                        if ($post instanceof WP_Post) {
+                            $thumbnail_html = get_the_post_thumbnail($post, $catThumbQuality);
+                            if ($thumbnail_html === '') {
+                                $thumb = get_post_meta($post->ID, 'thumb', true);
+                                if (is_string($thumb) && $thumb !== '') {
+                                    $thumbnail_html = sprintf(
+                                        '<img src="%1$s" alt="%2$s" />',
+                                        esc_url($thumb),
+                                        esc_attr($term->name)
+                                    );
+                                }
+                            }
+                        }
+                    }
+
+                    if ($thumbnail_html === '') {
+                        $thumbnail_html = '<div class="no-thumb"><span><i class="fa fa-image"></i> No image</span></div>';
                     }
                     ?>
-                    <article class="video-item tmw-home-category-card">
-                        <a class="video-thumb"
-                           href="<?php echo esc_url($term_link); ?>"
-                           aria-label="<?php echo esc_attr($term->name); ?>">
-                            <?php if ($image_url !== '') : ?>
-                                <img class="video-thumb-img"
-                                     src="<?php echo esc_url($image_url); ?>"
-                                     alt="<?php echo esc_attr($term->name); ?>"
-                                     loading="lazy"
-                                     decoding="async"
-                                     fetchpriority="low" />
-                            <?php endif; ?>
+                    <article class="thumb-block tmw-home-category">
+                        <a href="<?php echo esc_url($term_link); ?>" title="<?php echo esc_attr($term->name); ?>">
+                            <div class="post-thumbnail">
+                                <?php echo $thumbnail_html; ?>
+                            </div>
+                            <header class="entry-header">
+                                <span class="cat-title"><?php echo esc_html($term->name); ?></span>
+                            </header>
                         </a>
-                        <h4 class="video-title">
-                            <a href="<?php echo esc_url($term_link); ?>">
-                                <?php echo esc_html($term->name); ?>
-                            </a>
-                        </h4>
                     </article>
+                    <?php wp_reset_postdata(); ?>
                 <?php endforeach; ?>
             </div>
-        </section>
+        </div>
         <?php
 
         return (string) ob_get_clean();
