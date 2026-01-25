@@ -162,11 +162,14 @@ if (!function_exists('tmw_home_categories_shortcode')) {
     ], $atts, 'tmw_home_categories');
 
     $limit = max(1, (int) $atts['limit']);
-    $terms = get_terms([
-      'taxonomy'   => 'category',
-      'hide_empty' => false,
-      'number'     => $limit,
-    ]);
+    $taxonomy = apply_filters('tmw_home_categories_taxonomy', 'category');
+
+$terms = get_terms([
+  'taxonomy'   => $taxonomy,
+  'hide_empty' => false,
+  'number'     => $limit,
+]);
+
 
     if (is_wp_error($terms) || empty($terms)) {
       return '';
