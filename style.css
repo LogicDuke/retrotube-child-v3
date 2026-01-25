@@ -1152,3 +1152,23 @@ a.tag-link {
 }
 
 /* HOME CATEGORIES — MATCH ARCHIVE GRID (inherit video-grid styles) */
+.video-grid.tmw-home-category-grid {
+  /* no new rules — inherit parent .video-grid behavior */
+}
+
+.video-grid.tmw-home-category-grid .video-item.tmw-home-category-card {
+  /* inherit parent .video-item rules */
+}
+
+.video-grid.tmw-home-category-grid .video-thumb,
+.video-grid.tmw-home-category-grid .video-thumb-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.video-grid.tmw-home-category-grid .video-title {
+  all: unset;
+  display: block;
+}
