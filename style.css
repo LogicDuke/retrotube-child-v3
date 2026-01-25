@@ -1151,41 +1151,4 @@ a.tag-link {
   }
 }
 
-/* HOME CATEGORIES — FORCE 2x3 HORIZONTAL GRID */
-.tmw-home-categories,
-.tmw-home-category-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-
-.tmw-home-category,
-.tmw-home-category-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.tmw-home-category img,
-.tmw-home-category-card img {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  display: block;
-}
-
-/* Tablet */
-@media (max-width: 1024px) {
-  .tmw-home-categories,
-  .tmw-home-category-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Mobile */
-@media (max-width: 640px) {
-  .tmw-home-categories,
-  .tmw-home-category-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* HOME CATEGORIES — MATCH ARCHIVE GRID (inherit video-grid styles) */
