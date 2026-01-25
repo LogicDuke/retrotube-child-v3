@@ -1152,23 +1152,28 @@ a.tag-link {
 }
 
 /* HOME CATEGORIES — MATCH ARCHIVE GRID (inherit video-grid styles) */
+/* REMOVE WIDGET LAYOUT INFLUENCE FOR HOME CATEGORIES */
+.widget.widget_categories:has(.tmw-home-category-grid) {
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+}
+
+/* FORCE ARCHIVE CONTENT CONTEXT */
 .video-grid.tmw-home-category-grid {
-  /* no new rules — inherit parent .video-grid behavior */
+  max-width: var(--content-width, 100%);
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.video-grid.tmw-home-category-grid .video-item.tmw-home-category-card {
-  /* inherit parent .video-item rules */
-}
-
-.video-grid.tmw-home-category-grid .video-thumb,
-.video-grid.tmw-home-category-grid .video-thumb-img {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-}
-
-.video-grid.tmw-home-category-grid .video-title {
+/* REMOVE HOME-SPECIFIC OVERRIDES */
+.video-item.tmw-home-category-card {
   all: unset;
   display: block;
+}
+
+/* RE-ATTACH TO PARENT GRID RULES */
+.video-grid.tmw-home-category-grid .video-item {
+  all: revert;
 }
