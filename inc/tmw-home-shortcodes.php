@@ -135,13 +135,23 @@ add_shortcode('tmw_home_videos', 'tmw_home_videos_shortcode');
 
 /**
  * ---------------------------------------------------------
- * CATEGORY IMAGE RESOLVER (REUSE THEME LOGIC)
+ * CATEGORY IMAGE RESOLVER (AUTHORITATIVE PARENT LOGIC)
  * ---------------------------------------------------------
  */
 if (!function_exists('tmw_home_get_category_image_url')) {
 
     function tmw_home_get_category_image_url(WP_Term $term): string {
 
+        // ✅ Parent theme authoritative source
+        $image_id = (int) get_term_meta($term->term_id, 'category-image-id', true);
+        if ($image_id > 0) {
+            $image_url = wp_get_attachment_image_url($image_id, 'medium');
+            if (is_string($image_url) && $image_url !== '') {
+                return $image_url;
+            }
+        }
+
+        // Legacy / fallback resolvers
         if (function_exists('wpst_get_term_image')) {
             $image_url = wpst_get_term_image($term);
             if (is_string($image_url) && $image_url !== '') {
@@ -164,7 +174,7 @@ if (!function_exists('tmw_home_get_category_image_url')) {
         }
 
         $thumbnail_id = (int) get_term_meta($term->term_id, 'thumbnail_id', true);
-        if ($thumbnail_id) {
+        if ($thumbnail_id > 0) {
             $image = wp_get_attachment_image_src($thumbnail_id, 'medium');
             if (is_array($image) && !empty($image[0])) {
                 return (string) $image[0];
