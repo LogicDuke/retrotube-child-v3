@@ -209,13 +209,13 @@ if (!function_exists('tmw_home_categories_shortcode')) {
 
         $atts = shortcode_atts(
             [
-                'limit' => 6,
+                'limit' => 8,
             ],
             $atts,
             'tmw_home_categories'
         );
 
-        $limit    = max(1, (int) $atts['limit']);
+        $limit    = max(1, absint($atts['limit']));
         $taxonomy = apply_filters('tmw_home_categories_taxonomy', 'category');
 
         $catThumbQuality = 'medium';
