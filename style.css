@@ -1151,29 +1151,8 @@ a.tag-link {
   }
 }
 
-/* HOME CATEGORIES — MATCH ARCHIVE GRID (inherit video-grid styles) */
-/* REMOVE WIDGET LAYOUT INFLUENCE FOR HOME CATEGORIES */
-.widget.widget_categories:has(.tmw-home-category-grid) {
-  padding: 0;
-  margin: 0;
-  background: none;
-  border: none;
-}
-
-/* FORCE ARCHIVE CONTENT CONTEXT */
-.video-grid.tmw-home-category-grid {
-  max-width: var(--content-width, 100%);
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* REMOVE HOME-SPECIFIC OVERRIDES */
-.video-item.tmw-home-category-card {
-  all: unset;
+.tmw-home-categories-list .videos-list:after {
+  content: "";
   display: block;
-}
-
-/* RE-ATTACH TO PARENT GRID RULES */
-.video-grid.tmw-home-category-grid .video-item {
-  all: revert;
+  clear: both;
 }
