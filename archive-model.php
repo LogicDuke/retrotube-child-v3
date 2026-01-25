@@ -33,7 +33,7 @@ if ($models_page) {
   <div class="tmw-layout container">
     <section class="tmw-content" data-mobile-guard="true">
       <header class="entry-header tmw-models-archive-header">
-        <h1 class="widget-title"><span class="tmw-star">★</span> Top Models</h1>
+        <h1 class="widget-title"><span class="tmw-star">★</span> <?php echo esc_html(post_type_archive_title('', false)); ?></h1>
       </header>
       
       <?php if (!empty($seo_text)) : ?>
