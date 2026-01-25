@@ -73,6 +73,21 @@ if (is_admin()) {
 
 require_once get_stylesheet_directory() . '/inc/tmw-mail-fix.php';
 
+// [TMW-BREADCRUMB-WP] Render breadcrumbs only after the main query is ready.
+add_action('wp', function () {
+    add_action('tmw_render_breadcrumbs', function () {
+        if (!function_exists('wpst_breadcrumbs')) {
+            return;
+        }
+
+        if (xbox_get_field_value('wpst-options', 'enable-breadcrumbs') != 'on') {
+            return;
+        }
+
+        wpst_breadcrumbs();
+    }, 20);
+});
+
 // [TMW-BREADCRUMB] Disable parent breadcrumb rendering on single videos.
 add_action('wp', function () {
     if (!is_singular('video')) {
