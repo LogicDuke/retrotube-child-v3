@@ -49,7 +49,15 @@ add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $a
 
     $item_url = $item->url ?? '';
     $matches_videos = $is_videos($item_url);
-    $matches_models = $is_models($item_url);
+    $matches_models = (
+        isset($item->type, $item->object)
+        && $item->type === 'post_type_archive'
+        && $item->object === 'model'
+    );
+
+    if (!$matches_models) {
+        $matches_models = $is_models($item_url);
+    }
 
     if (!$matches_videos && !$matches_models) {
         return $item_output;
