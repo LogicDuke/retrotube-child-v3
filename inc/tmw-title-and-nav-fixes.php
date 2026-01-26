@@ -47,6 +47,10 @@ add_filter('pre_get_document_title', function ($title) {
  * [TMW-NAV-ICON] Add star icon to Models menu item.
  */
 add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $args) {
+    if ((int) $depth !== 0) {
+        return $item_output;
+    }
+
     if (is_object($args) && !empty($args->theme_location)) {
         $location = (string) $args->theme_location;
         if (!in_array($location, ['primary', 'main'], true)) {
