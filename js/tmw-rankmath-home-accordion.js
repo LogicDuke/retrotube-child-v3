@@ -49,6 +49,7 @@
             .map((shortcode) => {
                 const title = shortcode.title || 'Top Models';
                 const headingTag = isFrontPage ? 'h1' : 'h2';
+                const level = title.toLowerCase().includes('models') ? 'h1' : 'h2';
                 const autoHeading = `${title} Webcam Directory`;
                 const innerText = shortcode.inner
                     .replace(/\[[^\]]*\]/g, '')
@@ -58,7 +59,7 @@
 
                 return [
                     `<${headingTag}>${escapeHtml(title)}</${headingTag}>`,
-                    `<h3>${escapeHtml(autoHeading)}</h3>`,
+                    `<${level} class="tmw-accordion-auto-${level}">${escapeHtml(autoHeading)}</${level}>`,
                     paragraph,
                 ].join('');
             })
