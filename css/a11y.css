@@ -9,3 +9,35 @@
   white-space:nowrap !important;
   border:0 !important;
 }
+
+/* [TMW-A11Y-CONTRAST] Top bar contrast fix (desktop/PageSpeed) */
+#masthead .top-bar,
+#masthead .top-bar.br-top-10 {
+  color: #ffffff !important;
+}
+
+#masthead .top-bar small,
+#masthead .top-bar.br-top-10 small {
+  color: #ffffff !important;
+  opacity: 1 !important; /* guard against inherited low-opacity text */
+}
+
+#masthead .top-bar a,
+#masthead .top-bar.br-top-10 a {
+  color: #ffffff !important;
+  text-decoration-color: currentColor;
+}
+
+#masthead .top-bar a:hover,
+#masthead .top-bar a:focus,
+#masthead .top-bar.br-top-10 a:hover,
+#masthead .top-bar.br-top-10 a:focus {
+  color: #d10000 !important; /* red hover/focus */
+}
+
+/* Optional but safe: visible keyboard focus without layout shift */
+#masthead .top-bar a:focus-visible,
+#masthead .top-bar.br-top-10 a:focus-visible {
+  outline: 2px solid #d10000;
+  outline-offset: 2px;
+}
