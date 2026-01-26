@@ -1166,6 +1166,59 @@ a.tag-link {
   color: #ffffff !important;
 }
 
+/* =========================================================
+   Accessibility Fix — Footer & Consent Contrast
+   WCAG AA / PageSpeed Compliance
+   ========================================================= */
+
+/* Footer base text */
+#colophon,
+#colophon p,
+#colophon span {
+  color: #eaeaea !important;
+}
+
+/* Footer links */
+#colophon a,
+#colophon a:visited {
+  color: #ffffff !important;
+  text-decoration: underline;
+}
+
+/* Footer link hover (optional, but safe) */
+#colophon a:hover,
+#colophon a:focus {
+  color: #ffffff !important;
+}
+
+/* Consent / Age verification buttons */
+.av_btn,
+.av_btn.av_go,
+.av_btn.av_no {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Ensure buttons remain readable on dark overlays */
+.av_btn {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Cookie / consent modal text */
+.adde_modal_detector,
+.adde_modal_detector *,
+.cookie,
+.cookie * {
+  color: #ffffff !important;
+}
+
+/* Links inside overlays */
+.adde_modal_detector a,
+.cookie a {
+  color: #ffffff !important;
+  text-decoration: underline;
+}
+
 .screen-reader-text {
   position: absolute;
   width: 1px;
