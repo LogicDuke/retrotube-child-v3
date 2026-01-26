@@ -1230,3 +1230,22 @@ a.tag-link {
   white-space: nowrap;
   border: 0;
 }
+
+/* [TMW-A11Y-CONTRAST] Footer legal/menu links hover/focus */
+#colophon a:hover,
+#colophon a:focus,
+#colophon a:focus-visible {
+  color: #db011a !important;
+  text-decoration: underline;
+}
+
+/* [TMW-A11Y-CONTRAST] Fallback specificity */
+footer#colophon .site-footer a:hover,
+footer#colophon .site-footer a:focus,
+footer#colophon .site-footer a:focus-visible,
+footer#colophon ul li a:hover,
+footer#colophon ul li a:focus,
+footer#colophon ul li a:focus-visible {
+  color: #db011a !important;
+  text-decoration: underline;
+}
