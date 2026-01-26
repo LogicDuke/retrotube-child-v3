@@ -28,12 +28,14 @@ if ($models_page) {
     $seo_text = trim($seo_text);
     $seo_text = tmw_sanitize_accordion_html($seo_text);
 }
+
+$models_archive_title = post_type_archive_title('', false);
 ?>
 <main id="primary" class="site-main">
   <div class="tmw-layout container">
     <section class="tmw-content" data-mobile-guard="true">
       <header class="entry-header tmw-models-archive-header">
-        <h1 class="widget-title"><span class="tmw-star">★</span> <?php echo esc_html(post_type_archive_title('', false)); ?></h1>
+        <h1 class="widget-title"><span class="tmw-star">★</span> <?php echo esc_html($models_archive_title); ?></h1>
       </header>
       
       <?php if (!empty($seo_text)) : ?>
