@@ -239,6 +239,10 @@ if (!function_exists('tmw_render_model_banner')) {
 
       $attachment_id = tmw_get_attachment_id_cached($url);
       $image_size    = apply_filters('tmw/model_banner/image_size', 'large');
+      $alt           = $attachment_id ? (string) get_post_meta($attachment_id, '_wp_attachment_image_alt', true) : '';
+      if ($alt === '') {
+        $alt = get_the_title($model_id) . ' – live webcam model profile image';
+      }
       $dimensions    = function_exists('tmw_child_image_dimensions')
         ? tmw_child_image_dimensions($url, 1035, 350)
         : ['width' => 1035, 'height' => 350];
@@ -269,7 +273,7 @@ if (!function_exists('tmw_render_model_banner')) {
 
         $attrs = [
           'src'           => esc_url($desktop_url),
-          'alt'           => '',
+          'alt'           => $alt,
           'decoding'      => 'async',
           'loading'       => 'eager',
           'fetchpriority' => 'high',
@@ -299,7 +303,7 @@ if (!function_exists('tmw_render_model_banner')) {
       } else {
         $attrs = [
           'src'           => esc_url($url),
-          'alt'           => '',
+          'alt'           => $alt,
           'decoding'      => 'async',
           'width'         => (int) $dimensions['width'],
           'height'        => (int) $dimensions['height'],
