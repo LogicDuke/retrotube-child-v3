@@ -57,6 +57,7 @@ require_once get_stylesheet_directory() . '/inc/tmw-archive-schema.php';
 require_once __DIR__ . '/inc/tmw-tml-bridge.php';
 require_once TMW_CHILD_PATH . '/inc/frontend/tmw-voting.php';
 require_once get_stylesheet_directory() . '/inc/tmw-home-shortcodes.php';
+require_once get_stylesheet_directory() . '/inc/tmw-title-and-nav-fixes.php';
 
 // Ensure legacy experiments don't affect the default reset email contents.
 remove_all_filters('retrieve_password_message');
