@@ -9,9 +9,51 @@ add_action('wp_enqueue_scripts', function () {
         return;
     }
 
-    if (!isset($_GET['tmw_seo']) || $_GET['tmw_seo'] !== '1') {
+    $get_flag = isset($_GET['tmw_seo']) ? sanitize_text_field(wp_unslash($_GET['tmw_seo'])) : '';
+    $cookie_flag = isset($_COOKIE['tmw_seo']) ? sanitize_text_field(wp_unslash($_COOKIE['tmw_seo'])) : '';
+    $enabled = ($get_flag === '1' || $cookie_flag === '1');
+    if (!$enabled) {
         return;
     }
+
+    if ($get_flag === '1') {
+        setcookie(
+            'tmw_seo',
+            '1',
+            time() + 1800,
+            COOKIEPATH,
+            COOKIE_DOMAIN,
+            is_ssl(),
+            true
+        );
+        $_COOKIE['tmw_seo'] = '1';
+        $cookie_flag = '1';
+    }
+
+    nocache_headers();
+    if (!defined('DONOTCACHEPAGE')) {
+        define('DONOTCACHEPAGE', true);
+    }
+    if (!defined('DONOTCACHEOBJECT')) {
+        define('DONOTCACHEOBJECT', true);
+    }
+    if (!defined('DONOTCACHEDB')) {
+        define('DONOTCACHEDB', true);
+    }
+
+    $prefix = '[TMW-SEO-LINKTEXT]';
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+    $current_user = wp_get_current_user();
+    $user_label = $current_user && $current_user->exists() ? $current_user->user_login : 'unknown';
+    error_log(sprintf(
+        '%s enabled=1 uri=%s get=%s cookie=%s user=%s',
+        $prefix,
+        $request_uri,
+        $get_flag,
+        $cookie_flag,
+        $user_label
+    ));
+    error_log(sprintf('%s file_loaded=1', $prefix));
 
     if (wp_doing_ajax() || is_feed()) {
         return;
@@ -30,7 +72,8 @@ add_action('wp_enqueue_scripts', function () {
   const nonce = __NONCE__;
   const selector = 'a[href*="technologies/cookies"]';
   const seen = new Set();
-  const startedAt = Date.now();
+
+  console.log('[TMW-SEO-LINKTEXT] audit js active');
 
   const buildPath = (node) => {
     const parts = [];
@@ -58,7 +101,16 @@ add_action('wp_enqueue_scripts', function () {
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
         body
-      }).catch(() => {});
+      }).catch(() => {
+        if (navigator.sendBeacon) {
+          const beaconBody = new URLSearchParams(body);
+          navigator.sendBeacon(ajaxUrl, beaconBody);
+          return;
+        }
+        const params = new URLSearchParams(body);
+        const img = new Image();
+        img.src = `${ajaxUrl}?${params.toString()}`;
+      });
     } catch (_) {}
   };
 
@@ -86,6 +138,7 @@ add_action('wp_enqueue_scripts', function () {
   };
 
   const start = () => {
+    postLog({ reason: 'boot', href: location.href, text: 'boot', path: 'boot' });
     scan('domready');
     const obs = new MutationObserver(() => {
       scan('mutation');
@@ -119,13 +172,20 @@ add_action('wp_ajax_tmw_seo_linktext_audit_log', function () {
 
     check_ajax_referer('tmw_seo_linktext_audit', 'nonce');
 
-    $reason = isset($_POST['reason']) ? sanitize_text_field(wp_unslash($_POST['reason'])) : '';
-    $href = isset($_POST['href']) ? esc_url_raw(wp_unslash($_POST['href'])) : '';
-    $text = isset($_POST['text']) ? sanitize_text_field(wp_unslash($_POST['text'])) : '';
-    $path = isset($_POST['path']) ? sanitize_text_field(wp_unslash($_POST['path'])) : '';
+    $reason = isset($_REQUEST['reason']) ? sanitize_text_field(wp_unslash($_REQUEST['reason'])) : '';
+    $href = isset($_REQUEST['href']) ? esc_url_raw(wp_unslash($_REQUEST['href'])) : '';
+    $text = isset($_REQUEST['text']) ? sanitize_text_field(wp_unslash($_REQUEST['text'])) : '';
+    $path = isset($_REQUEST['path']) ? sanitize_text_field(wp_unslash($_REQUEST['path'])) : '';
 
     $prefix = '[TMW-SEO-LINKTEXT]';
-    error_log(sprintf('%s reason=%s href=%s text=%s path=%s', $prefix, $reason, $href, $text, $path));
+    error_log(sprintf(
+        '%s ajax_hit reason=%s href=%s text=%s path=%s',
+        $prefix,
+        $reason,
+        $href,
+        $text,
+        $path
+    ));
 
-    wp_send_json_success();
+    wp_send_json_success(['ok' => true]);
 });
