@@ -77,19 +77,27 @@ function tmw_child_perf_buffer_rewrite(string $html): string {
             'defer' => preg_match('/\bdefer\b/i', $tag) === 1,
         ];
 
-        return tmw_child_perf_buffer_build_tag($tag, $src, $flags);
+        $data_attrs = [];
+        if ($key === 'quality') {
+            $data_attrs['data-tmw-guard'] = 'videojs';
+        }
+
+        return tmw_child_perf_buffer_build_tag($tag, $src, $flags, $data_attrs);
     }, $html);
 }
 
 /**
  * Convert a script tag to a delayed loader placeholder.
  */
-function tmw_child_perf_buffer_build_tag(string $tag, string $src, array $flags): string {
+function tmw_child_perf_buffer_build_tag(string $tag, string $src, array $flags, array $data_attrs = []): string {
     $tag = preg_replace('/\s+src\s*=\s*(["\']).*?\1/i', '', $tag);
     $tag = preg_replace('/\s+\basync\b/i', '', $tag);
     $tag = preg_replace('/\s+\bdefer\b/i', '', $tag);
 
     $data = ' data-tmw-delay="1" data-src="' . esc_url($src) . '"';
+    foreach ($data_attrs as $name => $value) {
+        $data .= ' ' . $name . '="' . esc_attr($value) . '"';
+    }
     if (!empty($flags['async'])) {
         $data .= ' data-async="1"';
     }

@@ -63,6 +63,12 @@
                 return;
             }
 
+            var guard = placeholder.getAttribute('data-tmw-guard');
+            if (guard === 'videojs' && !(window.videojs && typeof window.videojs.getComponent === 'function')) {
+                loadNext();
+                return;
+            }
+
             var script = document.createElement('script');
             script.src = src;
             script.async = false;
