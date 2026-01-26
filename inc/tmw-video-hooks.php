@@ -428,7 +428,7 @@ if (!function_exists('tmw_featured_models_shortcode')) {
     ob_start();
     echo '<div class="tmwfm-wrap">';
     if (!empty($atts['title'])) {
-      echo '<h3 class="tmwfm-heading">'.esc_html($atts['title']).'</h3>';
+      echo '<h2 class="tmwfm-heading">'.esc_html($atts['title']).'</h2>';
     }
     echo '<div class="tmwfm-grid">';
     foreach ($terms as $t) {
