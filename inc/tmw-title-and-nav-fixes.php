@@ -46,11 +46,11 @@ add_filter('pre_get_document_title', function ($title) {
 /**
  * [TMW-NAV-ICON] Add star icon to Models menu item.
  */
-add_filter('nav_menu_item_title', function ($title, $item, $args, $depth) {
+add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $args) {
     if (is_object($args) && !empty($args->theme_location)) {
         $location = (string) $args->theme_location;
         if (!in_array($location, ['primary', 'main'], true)) {
-            return $title;
+            return $item_output;
         }
     }
 
@@ -70,12 +70,42 @@ add_filter('nav_menu_item_title', function ($title, $item, $args, $depth) {
     }
 
     if (!$matches_models_item) {
-        return $title;
+        return $item_output;
     }
 
-    if (strpos($title, '★') !== false || stripos($title, '<i') !== false) {
-        return $title;
+    if (stripos($item_output, 'fa-star') !== false
+        || stripos($item_output, 'tmw-star') !== false
+        || strpos($item_output, '★') !== false) {
+        return $item_output;
     }
 
-    return '<span class="tmw-star" aria-hidden="true">★</span> ' . $title;
+    $use_fa = function_exists('wp_style_is')
+        && (wp_style_is('font-awesome', 'enqueued')
+            || wp_style_is('fontawesome', 'enqueued')
+            || wp_style_is('fa', 'enqueued'));
+
+    $icon_markup = $use_fa
+        ? '<i class="fa fa-star" aria-hidden="true"></i>'
+        : '<span class="tmw-star" aria-hidden="true">★</span>';
+
+    $anchor_pos = strpos($item_output, '<a');
+    if ($anchor_pos === false) {
+        return $item_output;
+    }
+
+    $anchor_close = strpos($item_output, '>', $anchor_pos);
+    if ($anchor_close === false) {
+        return $item_output;
+    }
+
+    $insertion = ' ' . $icon_markup . ' ';
+    $item_output = substr_replace($item_output, $insertion, $anchor_close + 1, 0);
+
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log(
+            '[TMW-NAV-ICON] injected=models item_id=' . (int) $item->ID . ' url=' . (string) $item->url
+        );
+    }
+
+    return $item_output;
 }, 10, 4);
