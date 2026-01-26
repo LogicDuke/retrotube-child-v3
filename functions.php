@@ -38,6 +38,7 @@ require_once get_stylesheet_directory() . '/inc/tmw-video-breadcrumbs.php';
 require_once get_stylesheet_directory() . '/inc/tmw-a11y-viewport-audit.php';
 require_once get_stylesheet_directory() . '/inc/tmw-a11y-link-names.php';
 require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-audit.php';
+require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-audit-js.php';
 
 // Single include: all logic is now in /inc/bootstrap.php
 require_once TMW_CHILD_PATH . '/inc/bootstrap.php';
