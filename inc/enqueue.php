@@ -49,6 +49,17 @@ add_action('wp_enqueue_scripts', function () {
     $child_version
   );
 
+  $topbar_contrast_path = get_stylesheet_directory() . '/css/tmw-topbar-contrast.css';
+  if (file_exists($topbar_contrast_path)) {
+    $topbar_contrast_ver = filemtime($topbar_contrast_path) ?: $child_version;
+    wp_enqueue_style(
+      'tmw-topbar-contrast',
+      get_stylesheet_directory_uri() . '/css/tmw-topbar-contrast.css',
+      ['retrotube-child-style'],
+      $topbar_contrast_ver
+    );
+  }
+
   $accordion_style_path = get_stylesheet_directory() . '/css/tmw-accordion.css';
   $accordion_style_ver  = file_exists($accordion_style_path) ? filemtime($accordion_style_path) : $child_version;
   wp_enqueue_style(
