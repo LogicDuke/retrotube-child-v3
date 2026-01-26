@@ -538,7 +538,7 @@ function tmw_models_flipboxes_cb($atts){
   ]);
   if (is_wp_error($terms)) return '';
 
-  $total   = (function_exists('tmw_count_terms') ? tmw_count_terms('models', $hide_empty) : 0);
+  $total   = (function_exists('tmw_count_terms') ? tmw_count_terms('models', true) : 0);
   $total_p = max(1, (int)ceil($total / $per_page));
 
   ob_start();
