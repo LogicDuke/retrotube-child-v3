@@ -47,6 +47,8 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     if (file_exists($tmw_rankmath_hook_audit)) { require_once $tmw_rankmath_hook_audit; }
     $tmw_document_title_audit = get_stylesheet_directory() . '/inc/tmw-document-title-audit.php';
     if (file_exists($tmw_document_title_audit)) { require_once $tmw_document_title_audit; }
+    $tmw_model_pagination_audit = get_stylesheet_directory() . '/inc/tmw-model-pagination-audit.php';
+    if (file_exists($tmw_model_pagination_audit)) { require_once $tmw_model_pagination_audit; }
 }
 require_once get_stylesheet_directory() . '/inc/tmw-seo-category-bridge.php';
 require_once get_stylesheet_directory() . '/inc/tmw-seo-model-bridge.php';
