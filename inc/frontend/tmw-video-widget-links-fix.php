@@ -100,7 +100,9 @@ add_action('widgets_init', function () {
                 ob_start();
                 parent::widget($args, $instance);
                 $html = ob_get_clean();
-                echo tmw_rewrite_video_filter_hrefs_to_videos_page($html);
+                $html = tmw_rewrite_video_filter_hrefs_to_videos_page($html);
+                $html = tmw_a11y_fix_more_videos_links($html);
+                echo $html;
             }
         }
     }

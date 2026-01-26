@@ -36,6 +36,7 @@ define('TMW_CHILD_URL',  get_stylesheet_directory_uri());
 require_once get_stylesheet_directory() . '/inc/breadcrumbs.php';
 require_once get_stylesheet_directory() . '/inc/tmw-video-breadcrumbs.php';
 require_once get_stylesheet_directory() . '/inc/tmw-a11y-viewport-audit.php';
+require_once get_stylesheet_directory() . '/inc/tmw-a11y-link-names.php';
 
 // Single include: all logic is now in /inc/bootstrap.php
 require_once TMW_CHILD_PATH . '/inc/bootstrap.php';
