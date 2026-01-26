@@ -1156,3 +1156,12 @@ a.tag-link {
   display: block;
   clear: both;
 }
+
+/* [TMW-STYLE][FOOTER] Footer legal menu links must be white */
+.site-footer .footer-bottom .menu a,
+.site-footer .footer-bottom .menu a:visited,
+.site-footer .footer-bottom .menu a:hover,
+.site-footer .footer-bottom .menu a:focus,
+.site-footer .footer-bottom .menu a:active {
+  color: #ffffff !important;
+}
