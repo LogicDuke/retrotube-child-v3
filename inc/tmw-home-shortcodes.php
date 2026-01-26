@@ -3,6 +3,23 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (!function_exists('tmw_page_has_h1')) {
+    function tmw_page_has_h1(): bool {
+        static $has_h1 = null;
+
+        if ($has_h1 !== null) {
+            return $has_h1;
+        }
+
+        ob_start();
+        do_action('wp_head');
+        $head = ob_get_clean();
+
+        $has_h1 = (bool) preg_match('/<h1\b/i', (string) $head);
+        return $has_h1;
+    }
+}
+
 /**
  * ---------------------------------------------------------
  * HOME ACCORDION SHORTCODE
@@ -34,20 +51,26 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
 
         $has_heading = (bool) preg_match('/<h[2-6][^>]*>/i', $content_html);
         if (!$has_heading) {
-            $auto_h3_text = $title . ' Webcam Directory';
-            $auto_h3_html = sprintf(
-                '<h3 class="tmw-accordion-auto-h3">%s</h3>',
-                esc_html($auto_h3_text)
+            $auto_level = 'h2';
+            if (stripos($title, 'models') !== false && !tmw_page_has_h1()) {
+                $auto_level = 'h1';
+            }
+
+            $auto_heading_text = $title . ' Webcam Directory';
+            $auto_heading_html = sprintf(
+                '<%1$s class="tmw-accordion-auto-%1$s">%2$s</%1$s>',
+                esc_attr($auto_level),
+                esc_html($auto_heading_text)
             );
 
             $paragraph_close = stripos($content_html, '</p>');
             if ($paragraph_close !== false) {
                 $insert_at = $paragraph_close + strlen('</p>');
                 $content_html = substr($content_html, 0, $insert_at)
-                    . $auto_h3_html
+                    . $auto_heading_html
                     . substr($content_html, $insert_at);
             } else {
-                $content_html = $auto_h3_html . $content_html;
+                $content_html = $auto_heading_html . $content_html;
             }
         }
 
