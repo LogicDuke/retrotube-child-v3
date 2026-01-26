@@ -33,7 +33,7 @@ add_filter('rank_math/frontend/title', function ($title) {
     }
 
     return tmw_models_archive_title();
-}, 999);
+}, PHP_INT_MAX);
 
 add_filter('pre_get_document_title', function ($title) {
     if (!is_post_type_archive('model')) {
@@ -41,7 +41,20 @@ add_filter('pre_get_document_title', function ($title) {
     }
 
     return tmw_models_archive_title();
-}, 999);
+}, PHP_INT_MAX);
+
+add_filter('document_title_parts', function ($parts) {
+    if (!is_post_type_archive('model')) {
+        return $parts;
+    }
+
+    $archive_title = post_type_archive_title('', false);
+    $archive_title = $archive_title !== '' ? $archive_title : 'Models';
+    $parts['title'] = $archive_title;
+    $parts['site'] = get_bloginfo('name');
+    unset($parts['tagline'], $parts['page']);
+    return $parts;
+}, PHP_INT_MAX);
 
 /**
  * [TMW-NAV-ICON] Add star icon to Models menu item.
@@ -49,7 +62,7 @@ add_filter('pre_get_document_title', function ($title) {
 add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $args) {
     if (is_object($args) && !empty($args->theme_location)) {
         $location = (string) $args->theme_location;
-        if (!in_array($location, ['primary', 'main'], true)) {
+        if (!in_array($location, ['primary', 'main', 'wpst-main-menu'], true)) {
             return $item_output;
         }
     }
