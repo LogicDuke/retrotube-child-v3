@@ -541,6 +541,19 @@ function tmw_models_flipboxes_cb($atts){
   $total   = (function_exists('tmw_count_terms') ? tmw_count_terms('models', true) : 0);
   $total_p = max(1, (int)ceil($total / $per_page));
 
+  $should_audit = defined('WP_DEBUG') && WP_DEBUG;
+  if ($should_audit && function_exists('tmw_model_pag_audit_is_models_request')) {
+    $should_audit = tmw_model_pag_audit_is_models_request();
+  } elseif ($should_audit) {
+    $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+    $should_audit = (function_exists('is_post_type_archive') && is_post_type_archive('model'))
+      || ($uri !== '' && strpos($uri, '/models') === 0);
+  }
+
+  if ($should_audit) {
+    error_log(sprintf('[TMW-MODEL-PAG-AUDIT] TERMS total=%s per_page=%s paged=%s total_pages=%s', $total, $per_page, $paged, $total_p));
+  }
+
   ob_start();
   printf('<div class="tmw-grid tmw-cols-%d">', (int)$a['cols']);
 
@@ -656,7 +669,7 @@ function tmw_models_flipboxes_cb($atts){
     } else {
       $base  = remove_query_arg($a['page_var']);
       $base  = add_query_arg($a['page_var'], '%#%', $base);
-      $links = paginate_links([
+      $paginate_args = [
         'base'      => $base,
         'format'    => '',
         'current'   => $paged,
@@ -664,7 +677,17 @@ function tmw_models_flipboxes_cb($atts){
         'type'      => 'array',
         'prev_text' => '« Prev',
         'next_text' => 'Next »',
-      ]);
+      ];
+      if ($should_audit) {
+        error_log(sprintf(
+          '[TMW-MODEL-PAG-AUDIT] PAGINATE_LINKS total=%s current=%s base=%s format=%s',
+          $paginate_args['total'],
+          $paginate_args['current'],
+          $paginate_args['base'],
+          $paginate_args['format']
+        ));
+      }
+      $links = paginate_links($paginate_args);
       if (!empty($links)) {
         echo '<div class="pagination"><ul>';
         foreach ($links as $link) {
