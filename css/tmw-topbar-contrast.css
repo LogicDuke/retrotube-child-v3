@@ -23,6 +23,7 @@
   text-decoration-color: currentColor;
 }
 
+/* General top-bar link hover - red text (excludes social-share) */
 #masthead .top-bar a:hover,
 #masthead .top-bar a:focus,
 #masthead .top-bar.br-top-10 a:hover,
@@ -61,17 +62,14 @@
 }
 
 /* ============================================================
-   [TMW-SOCIAL] Social Icons in Top Bar
-   Original theme hover effect (red #ff2b2b)
+   [TMW-SOCIAL] Social Icons in Top Bar - .social-share class
+   Original theme hover: RED BACKGROUND + WHITE ICON
    ============================================================ */
 
-/* Social icons container - ensure visibility in top bar */
-#masthead .top-bar .social,
-#masthead .top-bar .social-icons,
-#masthead .top-bar .socials,
-#masthead .top-bar .social-links,
-.site-header .top-bar .social,
-.site-header .top-bar .social-icons {
+/* Social-share container */
+#masthead .top-bar .social-share,
+.site-header .top-bar .social-share,
+.top-bar .social-share {
   display: inline-flex !important;
   align-items: center;
   gap: 0.5em;
@@ -80,38 +78,41 @@
   list-style: none;
 }
 
-/* Social icon links - base state (white, inherits hover from general top-bar a rules) */
-#masthead .top-bar .social a,
-#masthead .top-bar .social-icons a,
-#masthead .top-bar .socials a,
-#masthead .top-bar .social-links a {
+/* Social-share links - base state: WHITE icon */
+#masthead .top-bar .social-share a,
+.site-header .top-bar .social-share a,
+.top-bar .social-share a {
   color: #ffffff !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0.25em;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  text-decoration: none !important;
 }
 
-/* Social icons FontAwesome - ensure proper sizing */
-#masthead .top-bar .social i,
-#masthead .top-bar .social-icons i,
-#masthead .top-bar .socials i,
-#masthead .top-bar .social-links i,
-.site-header .top-bar .social i {
+/* Social-share icons base state */
+#masthead .top-bar .social-share a i,
+.site-header .top-bar .social-share a i,
+.top-bar .social-share a i {
   font-size: 1.1em;
-  color: inherit;
+  color: #ffffff !important;
 }
 
-/* Social icon hover - original theme: red background, white icon */
-#masthead .top-bar .social a:hover,
-#masthead .top-bar .social a:focus,
-#masthead .top-bar .social-icons a:hover,
-#masthead .top-bar .social-icons a:focus,
-#masthead .top-bar .socials a:hover,
-#masthead .top-bar .socials a:focus,
-#masthead .top-bar .social-links a:hover,
-#masthead .top-bar .social-links a:focus {
+/* ============================================================
+   HOVER STATE: RED BACKGROUND + WHITE ICON (theme original)
+   Using maximum specificity to override all other rules
+   ============================================================ */
+
+/* Social-share link hover - RED background, keep text white */
+#masthead#masthead .top-bar .social-share a:hover,
+#masthead#masthead .top-bar .social-share a:focus,
+#masthead .top-bar .social-share a:hover,
+#masthead .top-bar .social-share a:focus,
+.site-header .top-bar .social-share a:hover,
+.site-header .top-bar .social-share a:focus,
+.top-bar .social-share a:hover,
+.top-bar .social-share a:focus {
   background-color: #ff2b2b !important;
   color: #ffffff !important;
   border-radius: 3px;
@@ -119,29 +120,24 @@
   text-decoration: none !important;
 }
 
-/* BULLETPROOF: Force icon white on hover - ultra-high specificity */
-#masthead#masthead .top-bar .social a:hover i,
-#masthead#masthead .top-bar .social a:focus i,
-#masthead#masthead .top-bar .social-icons a:hover i,
-#masthead#masthead .top-bar .social-icons a:focus i,
-#masthead#masthead .top-bar .socials a:hover i,
-#masthead#masthead .top-bar .socials a:focus i,
-#masthead#masthead .top-bar .social-links a:hover i,
-#masthead#masthead .top-bar .social-links a:focus i,
-#masthead .top-bar .social a:hover i,
-#masthead .top-bar .social a:focus i,
-#masthead .top-bar .social-icons a:hover i,
-#masthead .top-bar .social-icons a:focus i,
-#masthead .top-bar .socials a:hover i,
-#masthead .top-bar .socials a:focus i,
-#masthead .top-bar .social-links a:hover i,
-#masthead .top-bar .social-links a:focus i {
+/* CRITICAL: Force icon to stay WHITE on hover */
+#masthead#masthead#masthead .top-bar .social-share a:hover i,
+#masthead#masthead#masthead .top-bar .social-share a:focus i,
+#masthead#masthead .top-bar .social-share a:hover i,
+#masthead#masthead .top-bar .social-share a:focus i,
+#masthead .top-bar .social-share a:hover i,
+#masthead .top-bar .social-share a:focus i,
+.site-header .top-bar .social-share a:hover i,
+.site-header .top-bar .social-share a:focus i,
+.top-bar .social-share a:hover i,
+.top-bar .social-share a:focus i {
   color: #ffffff !important;
 }
 
 /* Focus visible outline for accessibility */
-#masthead .top-bar .social a:focus-visible,
-#masthead .top-bar .social-icons a:focus-visible {
-  outline: 2px solid #ff2b2b;
+#masthead .top-bar .social-share a:focus-visible,
+.site-header .top-bar .social-share a:focus-visible,
+.top-bar .social-share a:focus-visible {
+  outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
