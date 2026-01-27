@@ -47,6 +47,7 @@ require_once get_stylesheet_directory() . '/inc/tmw-rankmath-category-pages.php'
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-excluded-sanitizer.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-sanity.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-content-analysis-home.php';
+require_once get_stylesheet_directory() . '/inc/tmw-rankmath-tag-archives.php';
 if (defined('WP_DEBUG') && WP_DEBUG) {
     $tmw_rankmath_hook_audit = get_stylesheet_directory() . '/inc/tmw-rankmath-hook-audit.php';
     if (file_exists($tmw_rankmath_hook_audit)) { require_once $tmw_rankmath_hook_audit; }
