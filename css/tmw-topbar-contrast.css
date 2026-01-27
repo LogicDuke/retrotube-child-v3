@@ -60,34 +60,65 @@
   stroke: currentColor;
 }
 
-/* [TMW-UI] Top-bar social icons: white at rest, keep original hover */
-#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active),
-#masthead .top-bar .social-share a[target="_blank"]:visited:not(:hover):not(:focus):not(:active) {
+/* ============================================================
+   [TMW-SOCIAL] Social Icons in Top Bar
+   Original theme hover effect (red #ff2b2b)
+   ============================================================ */
+
+/* Social icons container - ensure visibility in top bar */
+#masthead .top-bar .social,
+#masthead .top-bar .social-icons,
+#masthead .top-bar .socials,
+#masthead .top-bar .social-links,
+.site-header .top-bar .social,
+.site-header .top-bar .social-icons {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Social icon links - base state (white, inherits hover from general top-bar a rules) */
+#masthead .top-bar .social a,
+#masthead .top-bar .social-icons a,
+#masthead .top-bar .socials a,
+#masthead .top-bar .social-links a {
   color: #ffffff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25em;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
-/* Font icons + dashicons follow currentColor (rest state only) */
-#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) i,
-#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) .dashicons {
-  color: currentColor !important;
+/* Social icons FontAwesome - ensure proper sizing */
+#masthead .top-bar .social i,
+#masthead .top-bar .social-icons i,
+#masthead .top-bar .socials i,
+#masthead .top-bar .social-links i,
+.site-header .top-bar .social i {
+  font-size: 1.1em;
+  color: inherit;
 }
 
-/* Inline SVG follows currentColor (rest state only) */
-#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) svg,
-#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) svg * {
-  fill: currentColor !important;
-  stroke: currentColor !important;
+/* Social icon hover - original theme red + subtle scale */
+#masthead .top-bar .social a:hover,
+#masthead .top-bar .social a:focus,
+#masthead .top-bar .social-icons a:hover,
+#masthead .top-bar .social-icons a:focus,
+#masthead .top-bar .socials a:hover,
+#masthead .top-bar .socials a:focus,
+#masthead .top-bar .social-links a:hover,
+#masthead .top-bar .social-links a:focus {
+  color: #ff2b2b !important;
+  transform: scale(1.15);
 }
 
-/* If icons are IMG assets, invert only at rest; remove filter on hover/focus/active */
-#masthead .top-bar .social-share a[target="_blank"] img {
-  filter: none;
-}
-#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) img {
-  filter: brightness(0) invert(1) !important;
-}
-#masthead .top-bar .social-share a[target="_blank"]:hover img,
-#masthead .top-bar .social-share a[target="_blank"]:focus img,
-#masthead .top-bar .social-share a[target="_blank"]:active img {
-  filter: none !important;
+/* Focus visible outline for accessibility */
+#masthead .top-bar .social a:focus-visible,
+#masthead .top-bar .social-icons a:focus-visible {
+  outline: 2px solid #ff2b2b;
+  outline-offset: 2px;
 }
