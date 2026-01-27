@@ -70,6 +70,26 @@ add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
         return $html;
     }
 
+    $icon_css_handles = [
+        'font-awesome',
+        'fontawesome',
+        'fontawesome-all',
+        'fontawesome-free',
+        'fa',
+        'socicon',
+        'dashicons',
+    ];
+
+    $is_icon_css = in_array($handle, $icon_css_handles, true);
+
+    if (!$is_icon_css && is_string($href)) {
+        $is_icon_css = (bool) preg_match('/font-?awesome|fontawesome|socicon|dashicons|\\/all\\.min\\.css|\\/fa(\\.min)?\\.css/i', $href);
+    }
+
+    if ($is_icon_css) {
+        return $html;
+    }
+
     $host = parse_url($href, PHP_URL_HOST);
 
     $critical_handles = [
@@ -86,9 +106,6 @@ add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
         'jquery-fancybox',
         'fancybox',
         'fancybox-css',
-        'font-awesome',
-        'fontawesome',
-        'fontawesome-all',
         'videojs',
         'video-js',
         'videojs-quality',
