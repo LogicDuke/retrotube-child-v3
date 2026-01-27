@@ -97,10 +97,46 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
             ? 'h1'
             : 'h2';
 
+        $title_html = esc_html($title);
+        $is_home_context = is_front_page() || is_home();
+        if (
+            $is_home_context
+            && stripos($title, '<') === false
+            && stripos($title, 'tmw-home-title-icon') === false
+        ) {
+            $normalized_title = strtolower($title);
+            $icons = [
+                'categories' => '<i class="fa fa-folder-open" aria-hidden="true"></i>',
+                'videos' => '<i class="fa fa-video-camera fas fa-video" aria-hidden="true" role="img"></i>',
+            ];
+            $icons = apply_filters('tmw_home_accordion_title_icons', $icons);
+
+            if (isset($icons[$normalized_title])) {
+                $title_html = sprintf(
+                    '<span class="tmw-home-title-icon">%1$s</span><span class="tmw-home-title-text">%2$s</span>',
+                    $icons[$normalized_title],
+                    esc_html($title)
+                );
+                $title_html = wp_kses(
+                    $title_html,
+                    [
+                        'span' => [
+                            'class' => true,
+                        ],
+                        'i' => [
+                            'class' => true,
+                            'aria-hidden' => true,
+                            'role' => true,
+                        ],
+                    ]
+                );
+            }
+        }
+
         return sprintf(
             '<%1$s class="widget-title">%2$s</%1$s>%3$s',
             $heading_level,
-            esc_html($title),
+            $title_html,
             $accordion_html
         );
     }

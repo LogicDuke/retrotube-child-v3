@@ -29,6 +29,21 @@ Text Domain: retrotube-child-v3
   line-height: 1;
 }
 
+#site-navigation a[href*="/models"] i.fa.fa-star,
+#site-navigation a[href*="/models"] span.tmw-star {
+  font-size: 1.25em;
+  line-height: 1;
+  vertical-align: -0.05em;
+}
+
+.home .tmw-home-title-icon,
+.front-page .tmw-home-title-icon {
+  margin-right: 10px;
+  display: inline-block;
+  line-height: 1;
+  vertical-align: -0.05em;
+}
+
 /* =========================
    2. Hero / Banner
    ========================= */
