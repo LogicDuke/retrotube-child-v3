@@ -11,6 +11,22 @@ if (!function_exists('tmw_cat_hub_log_once')) {
   }
 }
 
+if (!function_exists('tmw_cat_hub_audit_log')) {
+  function tmw_cat_hub_audit_log(string $message): void {
+    if (!defined('WP_DEBUG') || !WP_DEBUG) { return; }
+    error_log('[TMW-CAT-HUB-PAG-AUDIT] ' . $message);
+  }
+}
+
+if (!function_exists('tmw_cat_hub_audit_value')) {
+  function tmw_cat_hub_audit_value($value): string {
+    if (is_bool($value)) { return $value ? 'true' : 'false'; }
+    if ($value === null) { return 'null'; }
+    if (is_array($value)) { return wp_json_encode($value); }
+    return (string) $value;
+  }
+}
+
 add_action('pre_get_posts', function ($query) {
   if (is_admin() || wp_doing_ajax() || !($query instanceof WP_Query)) { return; }
   if (!$query->is_main_query() || !$query->is_category()) { return; }
@@ -24,6 +40,36 @@ add_action('pre_get_posts', function ($query) {
     tmw_cat_hub_log_once('no_tag_' . $cat_term->term_id, 'No matching tag for category slug="' . $cat_term->slug . '". Default category query kept.');
     return;
   }
+
+  tmw_cat_hub_audit_log(
+    'uri=' . tmw_cat_hub_audit_value($_SERVER['REQUEST_URI'] ?? '')
+    . ' paged=' . tmw_cat_hub_audit_value($query->get('paged'))
+    . ' qv_paged=' . tmw_cat_hub_audit_value(get_query_var('paged'))
+    . ' qv_page=' . tmw_cat_hub_audit_value(get_query_var('page'))
+    . ' offset=' . tmw_cat_hub_audit_value($query->get('offset'))
+    . ' posts_per_page=' . tmw_cat_hub_audit_value($query->get('posts_per_page'))
+    . ' is_paged=' . tmw_cat_hub_audit_value($query->is_paged())
+  );
+
+  add_filter('posts_request', function (string $sql, WP_Query $filter_query) use ($query): string {
+    if (!defined('WP_DEBUG') || !WP_DEBUG) { return $sql; }
+    if ($filter_query !== $query) { return $sql; }
+    $limit = 'none';
+    if (preg_match('/\\sLIMIT\\s+(.+)$/i', $sql, $matches)) {
+      $limit = trim($matches[1]);
+    }
+    tmw_cat_hub_audit_log('limit=' . $limit);
+    return $sql;
+  }, 10, 2);
+
+  add_filter('the_posts', function (array $posts, WP_Query $filter_query) use ($query): array {
+    if (!defined('WP_DEBUG') || !WP_DEBUG) { return $posts; }
+    if ($filter_query !== $query) { return $posts; }
+    $ids = array_slice(wp_list_pluck($posts, 'ID'), 0, 10);
+    $ids_log = $ids ? implode(',', $ids) : 'none';
+    tmw_cat_hub_audit_log('count=' . count($posts) . ' ids=' . $ids_log);
+    return $posts;
+  }, 10, 2);
 
   // CRITICAL: remove native category vars so WP doesn't force an implicit AND.
   $query->set('cat', 0);
