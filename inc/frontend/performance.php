@@ -70,6 +70,28 @@ add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
         return $html;
     }
 
+    $autoptimize_prefixes = [
+        'autoptimize_',
+        'autoptimize-',
+        'ao-',
+    ];
+
+    $is_autoptimize = false;
+    foreach ($autoptimize_prefixes as $prefix) {
+        if (strpos($handle, $prefix) === 0) {
+            $is_autoptimize = true;
+            break;
+        }
+    }
+
+    if (!$is_autoptimize && is_string($href)) {
+        $is_autoptimize = stripos($href, 'autoptimize') !== false;
+    }
+
+    if ($is_autoptimize) {
+        return $html;
+    }
+
     $icon_css_handles = [
         'font-awesome',
         'fontawesome',
@@ -112,27 +134,12 @@ add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
         'videojs-quality-selector',
     ];
 
-    $delay_prefixes = [
-        'autoptimize_',
-        'autoptimize-',
-        'ao-',
-    ];
-
     $delay_hosts = [
         'vjs.zencdn.net',
         'unpkg.com',
     ];
 
     $should_delay = in_array($handle, $delay_handles, true);
-
-    if (!$should_delay) {
-        foreach ($delay_prefixes as $prefix) {
-            if (strpos($handle, $prefix) === 0) {
-                $should_delay = true;
-                break;
-            }
-        }
-    }
 
     if (!$should_delay) {
         if ($host && in_array($host, $delay_hosts, true)) {
