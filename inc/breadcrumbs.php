@@ -146,6 +146,11 @@ function wpst_breadcrumbs() {
                         ? $post_type_object->labels->name
                         : $post_type_object->labels->singular_name;
                     echo '<a href="' . esc_url(home_url('/videos/')) . '">' . esc_html($video_label) . '</a>';
+                } elseif (is_post_type_archive('model')) {
+                    $models_label = !empty($post_type_object->labels->name)
+                        ? $post_type_object->labels->name
+                        : $post_type_object->labels->singular_name;
+                    echo $before . esc_html($models_label) . $after;
                 } else {
                     echo $before . esc_html($post_type_object->labels->singular_name) . $after;
                 }
