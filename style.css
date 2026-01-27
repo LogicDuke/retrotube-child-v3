@@ -31,7 +31,7 @@ Text Domain: retrotube-child-v3
 
 #site-navigation a[href*="/models"] i.fa.fa-star,
 #site-navigation a[href*="/models"] span.tmw-star {
-  font-size: 1.25em;
+  font-size: 2.25em;
   line-height: 1;
   vertical-align: -0.05em;
 }
