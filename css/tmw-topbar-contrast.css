@@ -116,9 +116,18 @@
   color: #ffffff !important;
   border-radius: 3px;
   transform: scale(1.1);
+  text-decoration: none !important;
 }
 
-/* Ensure icon stays white on hover */
+/* BULLETPROOF: Force icon white on hover - ultra-high specificity */
+#masthead#masthead .top-bar .social a:hover i,
+#masthead#masthead .top-bar .social a:focus i,
+#masthead#masthead .top-bar .social-icons a:hover i,
+#masthead#masthead .top-bar .social-icons a:focus i,
+#masthead#masthead .top-bar .socials a:hover i,
+#masthead#masthead .top-bar .socials a:focus i,
+#masthead#masthead .top-bar .social-links a:hover i,
+#masthead#masthead .top-bar .social-links a:focus i,
 #masthead .top-bar .social a:hover i,
 #masthead .top-bar .social a:focus i,
 #masthead .top-bar .social-icons a:hover i,
