@@ -141,3 +141,17 @@
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
+
+/* [TMW-FA-BRANDS] Fix top-bar social icons (Brands glyphs) */
+#masthead .top-bar .social-share i.fa-facebook,
+#masthead .top-bar .social-share i.fa-instagram,
+#masthead .top-bar .social-share i.fa-reddit,
+#masthead .top-bar .social-share i.fa-twitter,
+#masthead .top-bar .social-share i.fa-x-twitter,
+#masthead .top-bar .social-share i.fa-facebook-f,
+#masthead .top-bar .social-share i.fa-instagram-square,
+#masthead .top-bar .social-share i.fa-reddit-alien,
+#masthead .top-bar .social-share i.fa-twitter-square {
+  font-family: "Font Awesome 6 Brands", "Font Awesome 5 Brands", "Font Awesome Brands" !important;
+  font-weight: 400 !important;
+}
