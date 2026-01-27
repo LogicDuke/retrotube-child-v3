@@ -35,21 +35,17 @@
   color: #d10000 !important; /* red hover/focus */
 }
 
-/* Keep social icons white on hover (red bg handled in tmw-topbar-contrast.css) */
-#masthead#masthead .top-bar .social a:hover,
-#masthead#masthead .top-bar .social a:focus,
-#masthead#masthead .top-bar .social-icons a:hover,
-#masthead#masthead .top-bar .social-icons a:focus,
-#masthead#masthead .top-bar .socials a:hover,
-#masthead#masthead .top-bar .socials a:focus,
-#masthead#masthead .top-bar .social-links a:hover,
-#masthead#masthead .top-bar .social-links a:focus {
+/* Social-share icons: WHITE on hover (red bg in tmw-topbar-contrast.css) */
+#masthead#masthead#masthead .top-bar .social-share a:hover,
+#masthead#masthead#masthead .top-bar .social-share a:focus,
+#masthead#masthead .top-bar .social-share a:hover,
+#masthead#masthead .top-bar .social-share a:focus {
   color: #ffffff !important;
 }
-#masthead#masthead .top-bar .social a:hover i,
-#masthead#masthead .top-bar .social a:focus i,
-#masthead#masthead .top-bar .social-icons a:hover i,
-#masthead#masthead .top-bar .social-icons a:focus i {
+#masthead#masthead#masthead .top-bar .social-share a:hover i,
+#masthead#masthead#masthead .top-bar .social-share a:focus i,
+#masthead#masthead .top-bar .social-share a:hover i,
+#masthead#masthead .top-bar .social-share a:focus i {
   color: #ffffff !important;
 }
 
