@@ -86,22 +86,6 @@ if (!function_exists('tmw_child_flipbox_front_image_markup')) {
         ? tmw_child_image_dimensions($front_url)
         : ['width' => 364, 'height' => 546];
 
-      if (function_exists('tmw_child_front_page_lcp_image')) {
-        $lcp_image = tmw_child_front_page_lcp_image();
-        if (!empty($lcp_image['attachment_id'])) {
-          $attachment_id = (int) $lcp_image['attachment_id'];
-        }
-        if (!empty($lcp_image['url'])) {
-          $front_url = $lcp_image['url'];
-        }
-        if (!empty($lcp_image['width'])) {
-          $dims['width'] = (int) $lcp_image['width'];
-        }
-        if (!empty($lcp_image['height'])) {
-          $dims['height'] = (int) $lcp_image['height'];
-        }
-      }
-
       $width  = isset($dims['width']) ? (int) $dims['width'] : 364;
       $height = isset($dims['height']) ? (int) $dims['height'] : 546;
 
