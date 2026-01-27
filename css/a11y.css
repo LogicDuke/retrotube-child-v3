@@ -35,6 +35,24 @@
   color: #d10000 !important; /* red hover/focus */
 }
 
+/* Keep social icons white on hover (red bg handled in tmw-topbar-contrast.css) */
+#masthead#masthead .top-bar .social a:hover,
+#masthead#masthead .top-bar .social a:focus,
+#masthead#masthead .top-bar .social-icons a:hover,
+#masthead#masthead .top-bar .social-icons a:focus,
+#masthead#masthead .top-bar .socials a:hover,
+#masthead#masthead .top-bar .socials a:focus,
+#masthead#masthead .top-bar .social-links a:hover,
+#masthead#masthead .top-bar .social-links a:focus {
+  color: #ffffff !important;
+}
+#masthead#masthead .top-bar .social a:hover i,
+#masthead#masthead .top-bar .social a:focus i,
+#masthead#masthead .top-bar .social-icons a:hover i,
+#masthead#masthead .top-bar .social-icons a:focus i {
+  color: #ffffff !important;
+}
+
 /* Optional but safe: visible keyboard focus without layout shift */
 #masthead .top-bar a:focus-visible,
 #masthead .top-bar.br-top-10 a:focus-visible {
