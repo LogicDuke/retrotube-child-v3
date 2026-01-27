@@ -35,7 +35,10 @@ add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $a
         return ($last === 'videos');
     };
 
-    if (!$is_videos($item->url ?? '')) {
+    $item_url = $item->url ?? '';
+    $matches_videos = $is_videos($item_url);
+
+    if (!$matches_videos) {
         return $item_output;
     }
 
@@ -52,4 +55,49 @@ add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $a
     // Both FA4 and FA5 classes; whichever stack is present will render.
     $icon_html = '<i class="fa fa-video-camera fas fa-video" aria-hidden="true" role="img"></i> ';
     return substr($item_output, 0, $a_gt + 1) . $icon_html . substr($item_output, $a_gt + 1);
+}, 10, 4);
+
+add_filter('nav_menu_css_class', function ($classes, $item, $args, $depth) {
+    // Top-level only (matches how the theme styles main nav)
+    if ((int) $depth !== 0) {
+        return $classes;
+    }
+
+    // Are we in the Models section?
+    $is_models_context =
+        is_page('models')
+        || is_page_template('page-models-grid.php')
+        || is_post_type_archive('model')
+        || is_singular('model')
+        || (function_exists('is_tax') && is_tax('models'));
+
+    if (!$is_models_context) {
+        return $classes;
+    }
+
+    // Normalize URL to check the last path segment.
+    $url = isset($item->url) ? (string) $item->url : '';
+    $home = trailingslashit(home_url('/'));
+    $rel  = preg_replace('#^' . preg_quote($home, '#') . '#i', '/', $url);
+    $rel  = strtok($rel, '?#');
+    $path = trim(urldecode((string) $rel), '/');
+    $segments = $path !== '' ? explode('/', $path) : [];
+    $last = $segments ? strtolower((string) end($segments)) : '';
+
+    $title = isset($item->title) ? strtolower(trim(wp_strip_all_tags((string) $item->title))) : '';
+
+    // Match the Models menu item by URL or title.
+    $matches_models_item = ($last === 'models') || ($title === 'models');
+
+    if (!$matches_models_item) {
+        return $classes;
+    }
+
+    foreach (['current-menu-item', 'current_page_item'] as $c) {
+        if (!in_array($c, $classes, true)) {
+            $classes[] = $c;
+        }
+    }
+
+    return $classes;
 }, 10, 4);

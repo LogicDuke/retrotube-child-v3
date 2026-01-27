@@ -60,32 +60,14 @@ add_filter('rank_math/frontend/breadcrumb/items', function ($crumbs) {
   }
 
   $post_id = get_queried_object_id();
-  $terms = get_the_terms($post_id, 'category');
-  $primary_term = null;
-
-  if (is_array($terms) && !empty($terms)) {
-    $primary_term = reset($terms);
-  }
 
   $crumbs = [
-    ['label' => 'Home', 'url' => home_url('/')],
-    ['label' => 'Videos', 'url' => home_url('/videos/')],
+    ['link' => home_url('/'), 'name' => __('Home', 'wpst')],
+    ['link' => home_url('/videos/'), 'name' => __('Videos', 'wpst')],
+    ['link' => '', 'name' => get_the_title($post_id)],
   ];
 
-  if ($primary_term instanceof WP_Term) {
-    $term_link = get_term_link($primary_term);
-    $crumbs[] = [
-      'label' => $primary_term->name,
-      'url'   => is_wp_error($term_link) ? '' : $term_link,
-    ];
-  }
-
-  $crumbs[] = [
-    'label' => get_the_title($post_id),
-    'url'   => '',
-  ];
-
-  error_log(sprintf('[TMW-BREADCRUMB-VIDEO] Rank Math breadcrumb overridden for video ID %d', (int) $post_id));
+  error_log(sprintf('[TMW-BREAD-VIDEO] Single video breadcrumb normalized (no category) ID %d', (int) $post_id));
 
   return $crumbs;
 });
@@ -103,22 +85,6 @@ if (!function_exists('tmw_child_flipbox_front_image_markup')) {
       $dims = function_exists('tmw_child_image_dimensions')
         ? tmw_child_image_dimensions($front_url)
         : ['width' => 364, 'height' => 546];
-
-      if (function_exists('tmw_child_front_page_lcp_image')) {
-        $lcp_image = tmw_child_front_page_lcp_image();
-        if (!empty($lcp_image['attachment_id'])) {
-          $attachment_id = (int) $lcp_image['attachment_id'];
-        }
-        if (!empty($lcp_image['url'])) {
-          $front_url = $lcp_image['url'];
-        }
-        if (!empty($lcp_image['width'])) {
-          $dims['width'] = (int) $lcp_image['width'];
-        }
-        if (!empty($lcp_image['height'])) {
-          $dims['height'] = (int) $lcp_image['height'];
-        }
-      }
 
       $width  = isset($dims['width']) ? (int) $dims['width'] : 364;
       $height = isset($dims['height']) ? (int) $dims['height'] : 546;
@@ -446,7 +412,7 @@ if (!function_exists('tmw_featured_models_shortcode')) {
     ob_start();
     echo '<div class="tmwfm-wrap">';
     if (!empty($atts['title'])) {
-      echo '<h3 class="tmwfm-heading">'.esc_html($atts['title']).'</h3>';
+      echo '<h2 class="tmwfm-heading">'.esc_html($atts['title']).'</h2>';
     }
     echo '<div class="tmwfm-grid">';
     foreach ($terms as $t) {
@@ -556,8 +522,21 @@ function tmw_models_flipboxes_cb($atts){
   ]);
   if (is_wp_error($terms)) return '';
 
-  $total   = (function_exists('tmw_count_terms') ? tmw_count_terms('models', $hide_empty) : 0);
+  $total   = (function_exists('tmw_count_terms') ? tmw_count_terms('models', false) : 0);
   $total_p = max(1, (int)ceil($total / $per_page));
+
+  $should_audit = defined('WP_DEBUG') && WP_DEBUG;
+  if ($should_audit && function_exists('tmw_model_pag_audit_is_models_request')) {
+    $should_audit = tmw_model_pag_audit_is_models_request();
+  } elseif ($should_audit) {
+    $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+    $should_audit = (function_exists('is_post_type_archive') && is_post_type_archive('model'))
+      || ($uri !== '' && strpos($uri, '/models') === 0);
+  }
+
+  if ($should_audit) {
+    error_log(sprintf('[TMW-MODEL-PAG-AUDIT] TERMS total=%s per_page=%s paged=%s total_pages=%s', $total, $per_page, $paged, $total_p));
+  }
 
   ob_start();
   printf('<div class="tmw-grid tmw-cols-%d">', (int)$a['cols']);
@@ -674,7 +653,7 @@ function tmw_models_flipboxes_cb($atts){
     } else {
       $base  = remove_query_arg($a['page_var']);
       $base  = add_query_arg($a['page_var'], '%#%', $base);
-      $links = paginate_links([
+      $paginate_args = [
         'base'      => $base,
         'format'    => '',
         'current'   => $paged,
@@ -682,7 +661,17 @@ function tmw_models_flipboxes_cb($atts){
         'type'      => 'array',
         'prev_text' => '« Prev',
         'next_text' => 'Next »',
-      ]);
+      ];
+      if ($should_audit) {
+        error_log(sprintf(
+          '[TMW-MODEL-PAG-AUDIT] PAGINATE_LINKS total=%s current=%s base=%s format=%s',
+          $paginate_args['total'],
+          $paginate_args['current'],
+          $paginate_args['base'],
+          $paginate_args['format']
+        ));
+      }
+      $links = paginate_links($paginate_args);
       if (!empty($links)) {
         echo '<div class="pagination"><ul>';
         foreach ($links as $link) {

@@ -27,23 +27,32 @@ if (file_exists($__tmw_filter_canonical)) { require_once $__tmw_filter_canonical
 
 /**
  * RetroTube Child (Flipbox Edition) v3 — Bootstrap
- * v4.2.0: logic moved into /inc (no behavior change).
+ * v4.2.1: logic moved into /inc (no behavior change).
  */
-define('TMW_CHILD_VERSION', '4.2.0');
+define('TMW_CHILD_VERSION', '4.2.1');
 define('TMW_CHILD_PATH', get_stylesheet_directory());
 define('TMW_CHILD_URL',  get_stylesheet_directory_uri());
 
 require_once get_stylesheet_directory() . '/inc/breadcrumbs.php';
 require_once get_stylesheet_directory() . '/inc/tmw-video-breadcrumbs.php';
+require_once get_stylesheet_directory() . '/inc/tmw-a11y-viewport-audit.php';
+require_once get_stylesheet_directory() . '/inc/tmw-a11y-link-names.php';
+require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-audit.php';
+require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-audit-js.php';
+require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-fix.php';
 
 // Single include: all logic is now in /inc/bootstrap.php
 require_once TMW_CHILD_PATH . '/inc/bootstrap.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-category-pages.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-excluded-sanitizer.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-sanity.php';
+require_once get_stylesheet_directory() . '/inc/tmw-rankmath-content-analysis-home.php';
+require_once get_stylesheet_directory() . '/inc/tmw-rankmath-tag-archives.php';
 if (defined('WP_DEBUG') && WP_DEBUG) {
     $tmw_rankmath_hook_audit = get_stylesheet_directory() . '/inc/tmw-rankmath-hook-audit.php';
     if (file_exists($tmw_rankmath_hook_audit)) { require_once $tmw_rankmath_hook_audit; }
+    $tmw_model_pagination_audit = get_stylesheet_directory() . '/inc/tmw-model-pagination-audit.php';
+    if (file_exists($tmw_model_pagination_audit)) { require_once $tmw_model_pagination_audit; }
 }
 require_once get_stylesheet_directory() . '/inc/tmw-seo-category-bridge.php';
 require_once get_stylesheet_directory() . '/inc/tmw-seo-model-bridge.php';
@@ -53,6 +62,8 @@ require_once get_stylesheet_directory() . '/inc/tmw-video-opengraph.php';
 require_once get_stylesheet_directory() . '/inc/tmw-archive-schema.php';
 require_once __DIR__ . '/inc/tmw-tml-bridge.php';
 require_once TMW_CHILD_PATH . '/inc/frontend/tmw-voting.php';
+require_once get_stylesheet_directory() . '/inc/tmw-home-shortcodes.php';
+require_once get_stylesheet_directory() . '/inc/tmw-title-and-nav-fixes.php';
 
 // Ensure legacy experiments don't affect the default reset email contents.
 remove_all_filters('retrieve_password_message');
@@ -72,6 +83,30 @@ if (is_admin()) {
 }
 
 require_once get_stylesheet_directory() . '/inc/tmw-mail-fix.php';
+
+// [TMW-BREADCRUMB-WP] Render breadcrumbs only after the main query is ready.
+add_action('wp', function () {
+    add_action('tmw_render_breadcrumbs', function () {
+        if (!function_exists('wpst_breadcrumbs')) {
+            return;
+        }
+
+        if (xbox_get_field_value('wpst-options', 'enable-breadcrumbs') != 'on') {
+            return;
+        }
+
+        wpst_breadcrumbs();
+    }, 20);
+});
+
+// [TMW-BREADCRUMB] Disable parent breadcrumb rendering on single videos.
+add_action('wp', function () {
+    if (!is_singular('video')) {
+        return;
+    }
+
+    remove_all_actions('wpst_breadcrumbs');
+}, 20);
 
 add_action('wp_head', function () {
     if (!is_front_page()) {
@@ -206,13 +241,11 @@ add_action('wp', function () {
     remove_all_actions('wpst_breadcrumbs');
     remove_all_actions('breadcrumb');
     remove_all_actions('breadcrumbs');
-    remove_all_actions('rank_math/breadcrumbs');
-    remove_action('wpst_breadcrumbs', 'rank_math_the_breadcrumbs');
     remove_action('wpst_breadcrumbs', 'wpst_breadcrumbs');
 
     static $logged = false;
     if (!$logged) {
-        error_log('[TMW-BREADCRUMB] Parent & Rank Math breadcrumbs disabled for single video');
+        error_log('[TMW-BREADCRUMB-VIDEO] Parent breadcrumbs disabled for single video (RankMath kept)');
         $logged = true;
     }
 }, 9);

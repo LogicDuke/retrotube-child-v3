@@ -180,7 +180,12 @@ add_filter('script_loader_tag', function ($tag, $handle, $src) {
     ];
 
     if ($host && in_array($host, $delay_hosts, true)) {
-        return '<script type="text/plain" data-tmw-delay="true" data-tmw-defer="true" data-src="' . esc_url($src) . '"></script>';
+        $guard_attr = '';
+        if (stripos($src, 'unpkg.com/@silvermine/videojs-quality-selector') !== false) {
+            $guard_attr = ' data-tmw-guard="videojs"';
+        }
+
+        return '<script type="text/plain" data-tmw-delay="true" data-tmw-defer="true" data-src="' . esc_url($src) . '"' . $guard_attr . '></script>';
     }
 
     $is_videojs = stripos($handle, 'videojs') !== false || stripos($handle, 'video-js') !== false || $host === 'vjs.zencdn.net';
@@ -204,6 +209,10 @@ add_action('wp_footer', function () {
             delayed.forEach(function (node) {
                 var src = node.getAttribute('data-src');
                 if (!src) { return; }
+                var guard = node.getAttribute('data-tmw-guard');
+                if (guard === 'videojs' && !(window.videojs && typeof window.videojs.getComponent === 'function')) {
+                    return;
+                }
                 var s = document.createElement('script');
                 s.src = src;
                 s.async = true;

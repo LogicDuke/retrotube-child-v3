@@ -158,16 +158,37 @@ $is_rated_yet   = ( 0 === ( $likes_count + $dislikes_count ) ) ? ' not-rated-yet
 						$tmw_model_tags       = get_query_var('tmw_model_tags_data', []);
 						?>
                         <?php if ( $tmw_model_tags_count !== null ) : ?>
+								<?php
+								$hub_model_tags = [];
+								$hidden_nonhub  = 0;
+								$shown_hub      = 0;
+
+								if ( $tmw_model_tags_count > 0 && is_array( $tmw_model_tags ) ) {
+									foreach ( $tmw_model_tags as $tag ) {
+										$hub_cat = get_term_by( 'slug', $tag->slug, 'category' );
+										if ( empty( $hub_cat ) || is_wp_error( $hub_cat ) ) {
+											$hidden_nonhub++;
+											continue;
+										}
+										$shown_hub++;
+										$hub_model_tags[] = $tag;
+									}
+								}
+
+								if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+									error_log( sprintf( '[TMW-HUB-TAG-UI] hidden_nonhub=%d shown_hub=%d post_id=%d', $hidden_nonhub, $shown_hub, (int) get_the_ID() ) );
+								}
+								?>
                                 <!-- === TMW-TAGS-BULLETPROOF-RESTORE === -->
-                                <div class="post-tags entry-tags tmw-model-tags<?php echo $tmw_model_tags_count === 0 ? ' no-tags' : ''; ?>">
+                                <div class="post-tags entry-tags tmw-model-tags<?php echo $shown_hub === 0 ? ' no-tags' : ''; ?>">
                                         <span class="tag-title">
                                                 <i class="fa fa-tags" aria-hidden="true"></i>
                                                 <?php
                                                 echo esc_html__('Tags:', 'retrotube');
                                                 ?>
                                         </span>
-                                        <?php if ($tmw_model_tags_count > 0 && is_array($tmw_model_tags)) : ?>
-                                                <?php foreach ($tmw_model_tags as $tag) : ?>
+                                        <?php if ( $shown_hub > 0 && is_array( $hub_model_tags ) ) : ?>
+                                                <?php foreach ( $hub_model_tags as $tag ) : ?>
                                                         <a href="<?php echo esc_url( get_tag_link( $tag->term_id ) ); ?>"
                                                                 class="label"
                                                                 title="<?php echo esc_attr( $tag->name ); ?>">

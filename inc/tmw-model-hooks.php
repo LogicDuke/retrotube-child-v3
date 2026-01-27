@@ -11,6 +11,7 @@ require_once __DIR__ . '/models/tmw-model-banner.php';
 require_once __DIR__ . '/models/tmw-model-migrations.php';
 require_once __DIR__ . '/models/tmw-model-term-sync.php';
 require_once __DIR__ . '/models/tmw-model-image-utils.php';
+require_once __DIR__ . '/models/tmw-model-archive-query-fix.php';
 require_once __DIR__ . '/models/tmw-model-admin-meta.php';
 require_once __DIR__ . '/models/tmw-model-template-helpers.php';
 require_once __DIR__ . '/models/tmw-model-frontend-hooks.php';

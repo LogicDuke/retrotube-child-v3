@@ -1,0 +1,143 @@
+/* [TMW-A11Y-CONTRAST] [TMW-TOPBAR] Global top bar contrast override */
+#masthead .top-bar,
+#masthead .top-bar.br-top-10,
+.site-header .top-bar,
+.top-bar.br-top-10 {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+}
+
+#masthead .top-bar small,
+#masthead .top-bar.br-top-10 small,
+.site-header .top-bar small,
+.top-bar.br-top-10 small {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+#masthead .top-bar a,
+#masthead .top-bar.br-top-10 a,
+.site-header .top-bar a,
+.top-bar.br-top-10 a {
+  color: #ffffff !important;
+  text-decoration-color: currentColor;
+}
+
+/* General top-bar link hover - red text (excludes social-share) */
+#masthead .top-bar a:hover,
+#masthead .top-bar a:focus,
+#masthead .top-bar.br-top-10 a:hover,
+#masthead .top-bar.br-top-10 a:focus,
+.site-header .top-bar a:hover,
+.site-header .top-bar a:focus,
+.top-bar.br-top-10 a:hover,
+.top-bar.br-top-10 a:focus {
+  color: #ff2b2b !important;
+  text-decoration: underline;
+}
+
+#masthead .top-bar a:focus-visible,
+#masthead .top-bar.br-top-10 a:focus-visible,
+.site-header .top-bar a:focus-visible,
+.top-bar.br-top-10 a:focus-visible {
+  outline: 2px solid #ff2b2b;
+  outline-offset: 2px;
+}
+
+#masthead .top-bar svg,
+#masthead .top-bar.br-top-10 svg,
+.site-header .top-bar svg,
+.top-bar.br-top-10 svg,
+#masthead .top-bar i,
+#masthead .top-bar.br-top-10 i,
+.site-header .top-bar i,
+.top-bar.br-top-10 i,
+#masthead .top-bar .dashicons,
+#masthead .top-bar.br-top-10 .dashicons,
+.site-header .top-bar .dashicons,
+.top-bar.br-top-10 .dashicons {
+  color: currentColor;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+/* ============================================================
+   [TMW-SOCIAL] Social Icons in Top Bar - .social-share class
+   Original theme hover: RED BACKGROUND + WHITE ICON
+   ============================================================ */
+
+/* Social-share container */
+#masthead .top-bar .social-share,
+.site-header .top-bar .social-share,
+.top-bar .social-share {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Social-share links - base state: WHITE icon */
+#masthead .top-bar .social-share a,
+.site-header .top-bar .social-share a,
+.top-bar .social-share a {
+  color: #ffffff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25em;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  text-decoration: none !important;
+}
+
+/* Social-share icons base state */
+#masthead .top-bar .social-share a i,
+.site-header .top-bar .social-share a i,
+.top-bar .social-share a i {
+  font-size: 1.1em;
+  color: #ffffff !important;
+}
+
+/* ============================================================
+   HOVER STATE: RED BACKGROUND + WHITE ICON (theme original)
+   Using maximum specificity to override all other rules
+   ============================================================ */
+
+/* Social-share link hover - RED background, keep text white */
+#masthead#masthead .top-bar .social-share a:hover,
+#masthead#masthead .top-bar .social-share a:focus,
+#masthead .top-bar .social-share a:hover,
+#masthead .top-bar .social-share a:focus,
+.site-header .top-bar .social-share a:hover,
+.site-header .top-bar .social-share a:focus,
+.top-bar .social-share a:hover,
+.top-bar .social-share a:focus {
+  background-color: #ff2b2b !important;
+  color: #ffffff !important;
+  border-radius: 3px;
+  transform: scale(1.1);
+  text-decoration: none !important;
+}
+
+/* CRITICAL: Force icon to stay WHITE on hover */
+#masthead#masthead#masthead .top-bar .social-share a:hover i,
+#masthead#masthead#masthead .top-bar .social-share a:focus i,
+#masthead#masthead .top-bar .social-share a:hover i,
+#masthead#masthead .top-bar .social-share a:focus i,
+#masthead .top-bar .social-share a:hover i,
+#masthead .top-bar .social-share a:focus i,
+.site-header .top-bar .social-share a:hover i,
+.site-header .top-bar .social-share a:focus i,
+.top-bar .social-share a:hover i,
+.top-bar .social-share a:focus i {
+  color: #ffffff !important;
+}
+
+/* Focus visible outline for accessibility */
+#masthead .top-bar .social-share a:focus-visible,
+.site-header .top-bar .social-share a:focus-visible,
+.top-bar .social-share a:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
