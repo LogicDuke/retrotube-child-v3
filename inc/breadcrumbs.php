@@ -29,6 +29,8 @@ function wpst_breadcrumbs() {
             $categories_page = get_page_by_path('categories');
             $categories_link = $categories_page ? get_permalink($categories_page) : '';
             $filter = isset($_GET['filter']) ? sanitize_key(wp_unslash($_GET['filter'])) : '';
+            $is_paged_archive = ((int) get_query_var('paged') > 1);
+            static $paged_category_logged = false;
 
             // [TMW-BREADCRUMB-FIX] Link Categories to real hub page only.
             echo '<span class="separator">' . $delimiter . '</span>';
@@ -40,10 +42,20 @@ function wpst_breadcrumbs() {
 
             if ($term && !is_wp_error($category_link)) {
                 echo '<span class="separator">' . $delimiter . '</span>';
-                if ($filter) {
+                if ($filter || $is_paged_archive) {
                     echo '<a href="' . esc_url($category_link) . '">' . esc_html($term->name) . '</a>';
                 } else {
                     echo $before . esc_html($term->name) . $after;
+                }
+
+                if ($is_paged_archive && defined('WP_DEBUG') && WP_DEBUG && !$paged_category_logged) {
+                    $paged_category_logged = true;
+                    error_log(sprintf(
+                        '[TMW-BREADCRUMB-PAGED] term_id=%d slug=%s paged=%d',
+                        (int) $term->term_id,
+                        isset($term->slug) ? $term->slug : '',
+                        (int) get_query_var('paged')
+                    ));
                 }
             }
 
