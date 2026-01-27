@@ -1185,11 +1185,6 @@ a.tag-link {
   text-decoration: underline;
 }
 
-/* Footer link hover (optional, but safe) */
-#colophon a:hover,
-#colophon a:focus {
-  color: #ffffff !important;
-}
 
 /* Consent / Age verification buttons */
 .av_btn,
@@ -1231,21 +1226,19 @@ a.tag-link {
   border: 0;
 }
 
-/* [TMW-A11Y-CONTRAST] Footer legal/menu links hover/focus */
-#colophon a:hover,
-#colophon a:focus,
-#colophon a:focus-visible {
-  color: #db011a !important;
-  text-decoration: underline;
-}
-
-/* [TMW-A11Y-CONTRAST] Fallback specificity */
-footer#colophon .site-footer a:hover,
-footer#colophon .site-footer a:focus,
-footer#colophon .site-footer a:focus-visible,
-footer#colophon ul li a:hover,
-footer#colophon ul li a:focus,
-footer#colophon ul li a:focus-visible {
-  color: #db011a !important;
+/* [TMW-A11Y-FOOTER-HOVER] Legal footer links: red on hover/focus (scope to 4 known URLs only) */
+footer#colophon.site-footer a[href*="/terms-of-use-of-top-models-webcam-directory/"]:hover,
+footer#colophon.site-footer a[href*="/terms-of-use-of-top-models-webcam-directory/"]:focus,
+footer#colophon.site-footer a[href*="/terms-of-use-of-top-models-webcam-directory/"]:focus-visible,
+footer#colophon.site-footer a[href*="/privacy-policy-top-models-webcam/"]:hover,
+footer#colophon.site-footer a[href*="/privacy-policy-top-models-webcam/"]:focus,
+footer#colophon.site-footer a[href*="/privacy-policy-top-models-webcam/"]:focus-visible,
+footer#colophon.site-footer a[href*="/dmca/"]:hover,
+footer#colophon.site-footer a[href*="/dmca/"]:focus,
+footer#colophon.site-footer a[href*="/dmca/"]:focus-visible,
+footer#colophon.site-footer a[href*="/18-u-s-c-2257/"]:hover,
+footer#colophon.site-footer a[href*="/18-u-s-c-2257/"]:focus,
+footer#colophon.site-footer a[href*="/18-u-s-c-2257/"]:focus-visible {
+  color: #e00000 !important;
   text-decoration: underline;
 }
