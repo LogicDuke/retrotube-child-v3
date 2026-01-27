@@ -59,3 +59,35 @@
   fill: currentColor;
   stroke: currentColor;
 }
+
+/* [TMW-UI] Top-bar social icons: white at rest, keep original hover */
+#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active),
+#masthead .top-bar .social-share a[target="_blank"]:visited:not(:hover):not(:focus):not(:active) {
+  color: #ffffff !important;
+}
+
+/* Font icons + dashicons follow currentColor (rest state only) */
+#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) i,
+#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) .dashicons {
+  color: currentColor !important;
+}
+
+/* Inline SVG follows currentColor (rest state only) */
+#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) svg,
+#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) svg * {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* If icons are IMG assets, invert only at rest; remove filter on hover/focus/active */
+#masthead .top-bar .social-share a[target="_blank"] img {
+  filter: none;
+}
+#masthead .top-bar .social-share a[target="_blank"]:not(:hover):not(:focus):not(:active) img {
+  filter: brightness(0) invert(1) !important;
+}
+#masthead .top-bar .social-share a[target="_blank"]:hover img,
+#masthead .top-bar .social-share a[target="_blank"]:focus img,
+#masthead .top-bar .social-share a[target="_blank"]:active img {
+  filter: none !important;
+}
