@@ -103,7 +103,7 @@
   color: inherit;
 }
 
-/* Social icon hover - original theme red + subtle scale */
+/* Social icon hover - original theme: red background, white icon */
 #masthead .top-bar .social a:hover,
 #masthead .top-bar .social a:focus,
 #masthead .top-bar .social-icons a:hover,
@@ -112,8 +112,22 @@
 #masthead .top-bar .socials a:focus,
 #masthead .top-bar .social-links a:hover,
 #masthead .top-bar .social-links a:focus {
-  color: #ff2b2b !important;
-  transform: scale(1.15);
+  background-color: #ff2b2b !important;
+  color: #ffffff !important;
+  border-radius: 3px;
+  transform: scale(1.1);
+}
+
+/* Ensure icon stays white on hover */
+#masthead .top-bar .social a:hover i,
+#masthead .top-bar .social a:focus i,
+#masthead .top-bar .social-icons a:hover i,
+#masthead .top-bar .social-icons a:focus i,
+#masthead .top-bar .socials a:hover i,
+#masthead .top-bar .socials a:focus i,
+#masthead .top-bar .social-links a:hover i,
+#masthead .top-bar .social-links a:focus i {
+  color: #ffffff !important;
 }
 
 /* Focus visible outline for accessibility */
