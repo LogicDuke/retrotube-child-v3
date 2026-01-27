@@ -208,8 +208,27 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 	if ( xbox_get_field_value( 'wpst-options', 'show-tags-video-about' ) == 'on' ) :
 		$video_tags = get_the_tags( get_the_ID() );
 		$video_tags_count = is_array( $video_tags ) ? count( $video_tags ) : 0;
+		$hub_video_tags   = array();
+		$hidden_nonhub    = 0;
+		$shown_hub        = 0;
 
-		if ( $video_tags_count > 0 ) :
+		if ( $video_tags_count > 0 ) {
+			foreach ( $video_tags as $tag ) {
+				$hub_cat = get_term_by( 'slug', $tag->slug, 'category' );
+				if ( empty( $hub_cat ) || is_wp_error( $hub_cat ) ) {
+					$hidden_nonhub++;
+					continue;
+				}
+				$shown_hub++;
+				$hub_video_tags[] = $tag;
+			}
+		}
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( sprintf( '[TMW-HUB-TAG-UI] hidden_nonhub=%d shown_hub=%d post_id=%d', $hidden_nonhub, $shown_hub, (int) get_the_ID() ) );
+		}
+
+		if ( $shown_hub > 0 ) :
 		?>
 		<!-- === TMW-VIDEO-TAGS-UNIFIED === -->
 		<div class="post-tags entry-tags tmw-model-tags tmw-video-tags">
@@ -217,7 +236,7 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 				<i class="fa fa-tags" aria-hidden="true"></i>
 				<?php echo esc_html__( 'Tags:', 'retrotube' ); ?>
 			</span>
-			<?php foreach ( $video_tags as $tag ) : ?>
+			<?php foreach ( $hub_video_tags as $tag ) : ?>
 				<a href="<?php echo esc_url( get_tag_link( $tag->term_id ) ); ?>"
 					class="label"
 					title="<?php echo esc_attr( $tag->name ); ?>">
