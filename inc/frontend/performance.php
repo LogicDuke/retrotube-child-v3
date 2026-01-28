@@ -66,7 +66,8 @@ add_action('wp_enqueue_scripts', function () {
  * Delay non-critical styles on heavy media views without changing final appearance.
  */
 add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
-    if (is_admin() || !tmw_child_is_heavy_media_view()) {
+    // Skip style delay on front page - breaks social icons in top bar
+    if (is_admin() || is_front_page() || !tmw_child_is_heavy_media_view()) {
         return $html;
     }
 
