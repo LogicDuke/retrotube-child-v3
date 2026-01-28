@@ -5,7 +5,8 @@ if (!defined('ABSPATH')) { exit; }
  * Determine whether the performance buffer rewrite should run.
  */
 function tmw_child_perf_buffer_should_run(): bool {
-    if (is_admin() || is_user_logged_in() || is_preview()) {
+    // Skip on front page - can interfere with top bar icons
+    if (is_admin() || is_user_logged_in() || is_preview() || is_front_page()) {
         return false;
     }
 
