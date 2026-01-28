@@ -76,6 +76,10 @@ add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
         'retrotube-parent',
         'retrotube-child-style',
         'rt-child-flip',
+        // Font Awesome must load immediately - icons (including social icons in top bar) break otherwise
+        'font-awesome',
+        'fontawesome',
+        'fontawesome-all',
     ];
 
     if (in_array($handle, $critical_handles, true)) {
@@ -86,9 +90,6 @@ add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
         'jquery-fancybox',
         'fancybox',
         'fancybox-css',
-        'font-awesome',
-        'fontawesome',
-        'fontawesome-all',
         'videojs',
         'video-js',
         'videojs-quality',
