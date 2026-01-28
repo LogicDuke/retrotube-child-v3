@@ -80,9 +80,24 @@ add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
         'font-awesome',
         'fontawesome',
         'fontawesome-all',
+        'wpst-font-awesome',
+        'retrotube-fontawesome',
+        'fa',
+        'fa-css',
     ];
 
     if (in_array($handle, $critical_handles, true)) {
+        return $html;
+    }
+
+    // Also check the href URL for Font Awesome references (handles Autoptimize aggregation)
+    $href_lower = strtolower($href);
+    if (strpos($href_lower, 'font-awesome') !== false || 
+        strpos($href_lower, 'fontawesome') !== false ||
+        strpos($href_lower, '/fa.') !== false ||
+        strpos($href_lower, '/fa/') !== false ||
+        strpos($handle, 'font-awesome') !== false ||
+        strpos($handle, 'fontawesome') !== false) {
         return $html;
     }
 
