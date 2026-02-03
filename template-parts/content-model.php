@@ -176,7 +176,7 @@ $is_rated_yet   = ( 0 === ( $likes_count + $dislikes_count ) ) ? ' not-rated-yet
 								}
 
 								if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-									error_log( sprintf( '[TMW-HUB-TAG-UI] hidden_nonhub=%d shown_hub=%d post_id=%d', $hidden_nonhub, $shown_hub, (int) get_the_ID() ) );
+									if (defined('WP_DEBUG') && WP_DEBUG) { error_log( sprintf( '[TMW-HUB-TAG-UI] hidden_nonhub=%d shown_hub=%d post_id=%d', $hidden_nonhub, $shown_hub, (int) get_the_ID() ) ); }
 								}
 								?>
                                 <!-- === TMW-TAGS-BULLETPROOF-RESTORE === -->

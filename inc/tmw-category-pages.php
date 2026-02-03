@@ -22,7 +22,7 @@ if (!function_exists('tmw_category_page_log_once')) {
         }
 
         $logged[$tag] = true;
-        error_log($tag . ' ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log($tag . ' ' . $message); }
     }
 }
 
@@ -35,7 +35,7 @@ if (!function_exists('tmw_category_page_audit_log_once')) {
         }
 
         $logged[$key] = true;
-        error_log('[TMW-CAT-ADMIN-AUDIT] ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-ADMIN-AUDIT] ' . $message); }
     }
 }
 
@@ -99,7 +99,7 @@ add_action('init', function () {
     ];
 
     register_post_type(TMW_CATEGORY_PAGE_CPT, $args);
-    error_log('[TMW-CAT-CPT-VISIBILITY] Registered Category Page CPT.');
+    if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-CPT-VISIBILITY] Registered Category Page CPT.'); }
 }, 5);
 
 add_action('template_redirect', function () {
@@ -129,7 +129,7 @@ add_action('template_redirect', function () {
         return;
     }
 
-    error_log('[TMW-CAT-REDIRECT] Redirecting category page post ' . $post_id . ' to term ' . $term->term_id . '.');
+    if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-REDIRECT] Redirecting category page post ' . $post_id . ' to term ' . $term->term_id . '.'); }
     wp_safe_redirect($term_link);
     exit;
 });
@@ -254,7 +254,7 @@ if (!function_exists('tmw_get_category_page_post')) {
 
         if (count($posts) > 1) {
             $ids = wp_list_pluck($posts, 'ID');
-            error_log('[TMW-CAT-GUARD] Multiple category page posts detected for term ' . $category->term_id . ': ' . implode(',', $ids));
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-GUARD] Multiple category page posts detected for term ' . $category->term_id . ': ' . implode(',', $ids)); }
         }
 
         if (!empty($posts)) {
@@ -270,13 +270,13 @@ if (!function_exists('tmw_get_category_page_post')) {
 
         if (count($slug_match) > 1) {
             $ids = wp_list_pluck($slug_match, 'ID');
-            error_log('[TMW-CAT-GUARD] Multiple slug matches for category term ' . $category->term_id . ': ' . implode(',', $ids));
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-GUARD] Multiple slug matches for category term ' . $category->term_id . ': ' . implode(',', $ids)); }
         }
 
         if (!empty($slug_match)) {
             update_post_meta($slug_match[0]->ID, '_tmw_linked_term_id', $category->term_id);
             update_post_meta($slug_match[0]->ID, '_tmw_linked_taxonomy', 'category');
-            error_log('[TMW-CAT-LINK] Linked existing category page post ' . $slug_match[0]->ID . ' to term ' . $category->term_id . '.');
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-LINK] Linked existing category page post ' . $slug_match[0]->ID . ' to term ' . $category->term_id . '.'); }
             return $slug_match[0];
         }
 
@@ -378,7 +378,7 @@ if (!function_exists('tmw_create_category_page_post')) {
             return $post_id;
         }
 
-        error_log('[TMW-CAT-LINK] Created category page post ' . $post_id . ' for term ' . $category->term_id . '.');
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-LINK] Created category page post ' . $post_id . ' for term ' . $category->term_id . '.'); }
         return $post_id;
     }
 }
@@ -528,7 +528,7 @@ add_action('admin_post_tmw_category_page_edit', function () {
         'term_id=' . $term->term_id . ' post_id=' . $post->ID . ' redirect=' . $redirect_url . ' url=' . $current_url . ' user_id=' . $user_id
     );
 
-    error_log('[TMW-CAT-ADMIN] Opening category page edit for term ' . $term->term_id . ' (post ' . $post->ID . ').');
+    if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-ADMIN] Opening category page edit for term ' . $term->term_id . ' (post ' . $post->ID . ').'); }
 
     wp_safe_redirect($redirect_url);
     exit;
@@ -620,9 +620,11 @@ if (!function_exists('tmw_category_append_cpt_to_archive_description')) {
         $post = tmw_get_category_page_post($term);
         if (!$post instanceof WP_Post || $post->post_status !== 'publish') {
             if (!$tmw_cat_page_injection_logged) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log(
                     '[TMW-CAT-ACC-INJECT] term_id=' . $term->term_id . ' appended=0 reason=no_post'
                 );
+                }
                 $tmw_cat_page_injection_logged = true;
             }
             return $description;
@@ -635,9 +637,11 @@ if (!function_exists('tmw_category_append_cpt_to_archive_description')) {
 
         if ($intro_html === '' && $body_html === '' && $faq_html === '') {
             if (!$tmw_cat_page_injection_logged) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log(
                     '[TMW-CAT-ACC-INJECT] term_id=' . $term->term_id . ' post_id=' . $post->ID . ' appended=0 reason=empty'
                 );
+                }
                 $tmw_cat_page_injection_logged = true;
             }
             return $description;
@@ -656,6 +660,7 @@ if (!function_exists('tmw_category_append_cpt_to_archive_description')) {
         $content_block .= '</div>';
 
         if (!$tmw_cat_page_injection_logged) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log(
                 '[TMW-CAT-ACC-INJECT] term_id=' . $term->term_id
                 . ' post_id=' . $post->ID
@@ -664,6 +669,7 @@ if (!function_exists('tmw_category_append_cpt_to_archive_description')) {
                 . ' body_len=' . strlen($body_html)
                 . ' faq_len=' . strlen($faq_html)
             );
+            }
             $tmw_cat_page_injection_logged = true;
         }
 

@@ -225,7 +225,7 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 		}
 
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( sprintf( '[TMW-HUB-TAG-UI] hidden_nonhub=%d shown_hub=%d post_id=%d', $hidden_nonhub, $shown_hub, (int) get_the_ID() ) );
+			if (defined('WP_DEBUG') && WP_DEBUG) { error_log( sprintf( '[TMW-HUB-TAG-UI] hidden_nonhub=%d shown_hub=%d post_id=%d', $hidden_nonhub, $shown_hub, (int) get_the_ID() ) ); }
 		}
 
 		if ( $shown_hub > 0 ) :

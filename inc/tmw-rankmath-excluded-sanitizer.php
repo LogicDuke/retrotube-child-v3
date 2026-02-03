@@ -24,11 +24,13 @@ if (!function_exists('tmw_rm_strip_invalid_rankmath_post_types')) {
 
         if ($removed_count > 0) {
             $uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+            if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log(sprintf(
                 '[TMW-RM-FIX] excluded_post_types_removed=category_page removed_count=%d uri=%s',
                 $removed_count,
                 $uri
             ));
+            }
         }
 
         $should_audit = current_user_can('manage_options')
@@ -36,11 +38,13 @@ if (!function_exists('tmw_rm_strip_invalid_rankmath_post_types')) {
 
         if ($should_audit) {
             $uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+            if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log(sprintf(
                 '[TMW-RM-AUDIT] excluded_post_types_final=%s uri=%s',
                 implode(',', $sanitized),
                 $uri
             ));
+            }
         }
 
         return $removed_count > 0 ? $sanitized : $post_types;

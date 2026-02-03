@@ -19,7 +19,7 @@ if (!function_exists('tmw_seo_category_bridge_log_once')) {
         }
 
         $logged[$key] = true;
-        error_log($tag . ' ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log($tag . ' ' . $message); }
     }
 }
 

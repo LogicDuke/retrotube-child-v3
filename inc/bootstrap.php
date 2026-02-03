@@ -13,10 +13,12 @@ spl_autoload_register(function($class){
 /** Constants shared across modules */
 require_once __DIR__ . '/constants.php';
 
-// Shared CLI/helpers for hybrid model scan.
-$hybrid_scan = TMW_CHILD_PATH . '/assets/php/tmw-hybrid-model-scan.php';
-if (is_readable($hybrid_scan)) {
-    require_once $hybrid_scan;
+// WP-CLI only: hybrid model scan commands/helpers.
+if (defined('WP_CLI') && WP_CLI) {
+    $hybrid_scan = TMW_CHILD_PATH . '/assets/php/tmw-hybrid-model-scan.php';
+    if (is_readable($hybrid_scan)) {
+        require_once $hybrid_scan;
+    }
 }
 
 /** Setup & assets */

@@ -14,7 +14,7 @@ if (!function_exists('tmw_model_pag_audit_log_line')) {
         if (!defined('WP_DEBUG') || !WP_DEBUG) {
             return;
         }
-        error_log('[TMW-MODEL-PAG-AUDIT] ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-MODEL-PAG-AUDIT] ' . $message); }
     }
 }
 

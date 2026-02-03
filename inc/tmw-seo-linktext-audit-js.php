@@ -45,6 +45,7 @@ add_action('wp_enqueue_scripts', function () {
     $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
     $current_user = wp_get_current_user();
     $user_label = $current_user && $current_user->exists() ? $current_user->user_login : 'unknown';
+    if (defined('WP_DEBUG') && WP_DEBUG) {
     error_log(sprintf(
         '%s enabled=1 uri=%s get=%s cookie=%s user=%s',
         $prefix,
@@ -53,7 +54,8 @@ add_action('wp_enqueue_scripts', function () {
         $cookie_flag,
         $user_label
     ));
-    error_log(sprintf('%s file_loaded=1', $prefix));
+    }
+    if (defined('WP_DEBUG') && WP_DEBUG) { error_log(sprintf('%s file_loaded=1', $prefix)); }
 
     if (wp_doing_ajax() || is_feed()) {
         return;
@@ -178,6 +180,7 @@ add_action('wp_ajax_tmw_seo_linktext_audit_log', function () {
     $path = isset($_REQUEST['path']) ? sanitize_text_field(wp_unslash($_REQUEST['path'])) : '';
 
     $prefix = '[TMW-SEO-LINKTEXT]';
+    if (defined('WP_DEBUG') && WP_DEBUG) {
     error_log(sprintf(
         '%s ajax_hit reason=%s href=%s text=%s path=%s',
         $prefix,
@@ -186,6 +189,7 @@ add_action('wp_ajax_tmw_seo_linktext_audit_log', function () {
         $text,
         $path
     ));
+    }
 
     wp_send_json_success(['ok' => true]);
 });

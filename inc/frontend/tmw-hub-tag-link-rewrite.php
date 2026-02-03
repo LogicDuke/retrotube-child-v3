@@ -7,7 +7,7 @@ if (!function_exists('tmw_hub_link_log_once')) {
         static $seen = [];
         if (isset($seen[$key])) { return; }
         $seen[$key] = true;
-        error_log('[TMW-HUB-LINK] ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-HUB-LINK] ' . $message); }
     }
 }
 

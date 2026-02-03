@@ -40,7 +40,7 @@ function tmw_render_video_breadcrumbs() {
     $output = ob_get_clean();
 
     echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-    error_log(sprintf('[TMW-BREADCRUMB] Video breadcrumb rendered for ID %d', (int) $post_id));
+    if (defined('WP_DEBUG') && WP_DEBUG) { error_log(sprintf('[TMW-BREADCRUMB] Video breadcrumb rendered for ID %d', (int) $post_id)); }
 
     return $output;
 }

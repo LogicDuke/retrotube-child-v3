@@ -15,7 +15,7 @@ if (!function_exists('tmw_seo_linktext_audit_enabled')) {
 
 if (!function_exists('tmw_seo_linktext_audit_log')) {
     function tmw_seo_linktext_audit_log(string $message): void {
-        error_log('[TMW-SEO-LINKTEXT] ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-SEO-LINKTEXT] ' . $message); }
     }
 }
 

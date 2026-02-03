@@ -19,7 +19,7 @@ function tmw_models_archive_title(): string
     if (defined('WP_DEBUG') && WP_DEBUG) {
         static $logged = false;
         if (!$logged) {
-            error_log('[TMW-TITLE-FIX] models_archive_title="' . $title . '"');
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-TITLE-FIX] models_archive_title="' . $title . '"'); }
             $logged = true;
         }
     }

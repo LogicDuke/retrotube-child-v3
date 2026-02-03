@@ -19,7 +19,6 @@ DELETE_BLOCK_START TMW-FILTER-CANONICAL v<=3.6.3
 // require_once __DIR__ . '/inc/tmw-filter-canonical.php';
 DELETE_BLOCK_END
 */
-if (!defined('ABSPATH')) { exit; }
 $__tmw_filter_links = __DIR__ . '/inc/tmw-filter-links.php';
 if (file_exists($__tmw_filter_links)) { require_once $__tmw_filter_links; }
 $__tmw_filter_canonical = __DIR__ . '/inc/tmw-filter-canonical.php';
@@ -27,18 +26,23 @@ if (file_exists($__tmw_filter_canonical)) { require_once $__tmw_filter_canonical
 
 /**
  * RetroTube Child (Flipbox Edition) v3 — Bootstrap
- * v4.2.1: logic moved into /inc (no behavior change).
+ * v4.2.2: production hardening (no behavior change).
  */
-define('TMW_CHILD_VERSION', '4.2.1');
+define('TMW_CHILD_VERSION', '4.2.4');
 define('TMW_CHILD_PATH', get_stylesheet_directory());
 define('TMW_CHILD_URL',  get_stylesheet_directory_uri());
 
 require_once get_stylesheet_directory() . '/inc/breadcrumbs.php';
 require_once get_stylesheet_directory() . '/inc/tmw-video-breadcrumbs.php';
-require_once get_stylesheet_directory() . '/inc/tmw-a11y-viewport-audit.php';
+// Dev-only audits: keep out of production for performance + cleanliness.
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    require_once get_stylesheet_directory() . '/inc/tmw-a11y-viewport-audit.php';
+}
 require_once get_stylesheet_directory() . '/inc/tmw-a11y-link-names.php';
-require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-audit.php';
-require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-audit-js.php';
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-audit.php';
+    require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-audit-js.php';
+}
 require_once get_stylesheet_directory() . '/inc/tmw-seo-linktext-fix.php';
 
 // Single include: all logic is now in /inc/bootstrap.php
@@ -245,7 +249,7 @@ add_action('wp', function () {
 
     static $logged = false;
     if (!$logged) {
-        error_log('[TMW-BREADCRUMB-VIDEO] Parent breadcrumbs disabled for single video (RankMath kept)');
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-BREADCRUMB-VIDEO] Parent breadcrumbs disabled for single video (RankMath kept)'); }
         $logged = true;
     }
 }, 9);

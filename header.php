@@ -6,19 +6,12 @@
 <head>
 <meta charset="<?php bloginfo( 'charset' ); ?>">
 <meta content='width=device-width, initial-scale=1.0' name='viewport' />
-<link rel="profile" href="http://gmpg.org/xfn/11">
+<link rel="profile" href="https://gmpg.org/xfn/11">
 <?php
 	$favicon       = xbox_get_field_value( 'wpst-options', 'favicon' );
 	$niche_favicon = xbox_get_field_value( 'wpst-options', 'niche-favicon' );
 ?>
-<link rel="icon" href="
-<?php
-if ( ! empty( $favicon ) ) {
-	echo $favicon;
-} elseif ( ! empty( $niche_favicon ) ) {
-	echo get_template_directory_uri() . $niche_favicon; }
-?>
-">
+<link rel="icon" href="<?php echo esc_url( ! empty( $favicon ) ? $favicon : ( ! empty( $niche_favicon ) ? ( get_template_directory_uri() . $niche_favicon ) : '' ) ); ?>">
 
 <!-- Meta social networks -->
 <?php
@@ -68,10 +61,10 @@ if ( xbox_get_field_value( 'wpst-options', 'custom-background' ) == 'on' ) {
 														<?php
 													if ( xbox_get_field_value( 'wpst-options', 'icon-logo' ) != '' ) :
 														?>
-							<i class="fa fa-<?php echo xbox_get_field_value( 'wpst-options', 'icon-logo' ); ?>"></i><?php endif; ?> <?php
+							<i class="fa fa-<?php echo esc_attr( xbox_get_field_value( 'wpst-options', 'icon-logo' ) ); ?>"></i><?php endif; ?> <?php
 							if ( xbox_get_field_value( 'wpst-options', 'text-logo' ) != '' ) :
 								?>
-														<?php echo xbox_get_field_value( 'wpst-options', 'text-logo' ); ?>
+													<?php echo esc_html( xbox_get_field_value( 'wpst-options', 'text-logo' ) ); ?>
 								<?php
 else :
 	?>
@@ -81,10 +74,10 @@ else :
 														<?php
 													if ( xbox_get_field_value( 'wpst-options', 'icon-logo' ) != '' ) :
 														?>
-							<i class="fa fa-<?php echo xbox_get_field_value( 'wpst-options', 'icon-logo' ); ?>"></i><?php endif; ?> <?php
+							<i class="fa fa-<?php echo esc_attr( xbox_get_field_value( 'wpst-options', 'icon-logo' ) ); ?>"></i><?php endif; ?> <?php
 							if ( xbox_get_field_value( 'wpst-options', 'text-logo' ) != '' ) :
 								?>
-														<?php echo xbox_get_field_value( 'wpst-options', 'text-logo' ); ?>
+													<?php echo esc_html( xbox_get_field_value( 'wpst-options', 'text-logo' ) ); ?>
 								<?php
 else :
 	?>
@@ -95,14 +88,14 @@ else :
 					$image_logo_file       = xbox_get_field_value( 'wpst-options', 'image-logo-file' );
 					$niche_image_logo_file = xbox_get_field_value( 'wpst-options', 'niche-image-logo-file' );
 					?>
-					<a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home" title="<?php echo get_bloginfo( 'name' ); ?>"><img src="
+					<a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home" title="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>"><img src="
 									<?php
 									if ( ! empty( $image_logo_file ) ) {
-										echo $image_logo_file;
+										echo esc_url( $image_logo_file );
 									} elseif ( ! empty( $niche_image_logo_file ) ) {
-										echo get_template_directory_uri() . $niche_image_logo_file; }
+										echo esc_url( get_template_directory_uri() . $niche_image_logo_file ); }
 									?>
-					" alt="<?php echo get_bloginfo( 'name' ); ?>"></a>
+					" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>"></a>
 				<?php endif; ?>
 
 				<?php if ( xbox_get_field_value( 'wpst-options', 'show-text-slogan' ) == 'on' ) : ?>
@@ -110,7 +103,7 @@ else :
 					<?php
 					if ( xbox_get_field_value( 'wpst-options', 'text-slogan' ) != '' ) :
 						?>
-						<?php echo xbox_get_field_value( 'wpst-options', 'text-slogan' ); ?>
+						<?php echo esc_html( xbox_get_field_value( 'wpst-options', 'text-slogan' ) ); ?>
 					<?php else : ?>
 						<?php bloginfo( 'description', 'display' ); ?><?php endif; ?></p>
 				<?php endif; ?>

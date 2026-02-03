@@ -31,7 +31,7 @@ if (!function_exists('tmw_seo_model_bridge_log_once')) {
 
         $logged[$key] = true;
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log($tag . ' ' . $message);
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log($tag . ' ' . $message); }
         }
     }
 }

@@ -177,6 +177,7 @@ if (!function_exists('tmw_category_archive_desc_to_accordion')) {
       $slug = $term instanceof WP_Term ? $term->slug : '';
       $desc_len = strlen($description);
       $is_wrapped = stripos($description, 'tmw-accordion') !== false;
+      if (defined('WP_DEBUG') && WP_DEBUG) {
       error_log(sprintf(
         '[TMW-CAT-ACC-AUDIT] source=archive_description_wrapper term_id=%d slug=%s len=%d wrapped=%s',
         $term_id,
@@ -184,11 +185,13 @@ if (!function_exists('tmw_category_archive_desc_to_accordion')) {
         $desc_len,
         $is_wrapped ? '1' : '0'
       ));
+      }
       if (
         isset($_GET['tmw_rm_sanity'])
         && current_user_can('manage_options')
         && defined('WP_DEBUG') && WP_DEBUG
       ) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log(sprintf(
           '[TMW-CAT-ACC-AUDIT] sanity_check=1 source=archive_description_wrapper term_id=%d slug=%s len=%d wrapped=%s',
           $term_id,
@@ -196,6 +199,7 @@ if (!function_exists('tmw_category_archive_desc_to_accordion')) {
           $desc_len,
           $is_wrapped ? '1' : '0'
         ));
+        }
       }
       $tmw_cat_desc_logged = true;
     }

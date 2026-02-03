@@ -21,68 +21,41 @@ add_action('wp_default_scripts', function ($scripts) {
     }
 });
 
-function tmw_child_is_heavy_media_view(): bool {
-    return is_front_page()
-        || is_singular('model')
-        || is_post_type_archive('model')
-        || is_tax('models')
-        || is_page_template('page-models-grid.php')
-        || is_page_template('template-models-flipboxes.php');
-}
-
 /**
- * Dequeue non-critical styles on heavy media views.
- */
-add_action('wp_enqueue_scripts', function () {
-    if (!tmw_child_is_heavy_media_view()) {
-        return;
-    }
-
-    if (!is_user_logged_in()) {
-        if (wp_style_is('dashicons', 'enqueued')) {
-            wp_dequeue_style('dashicons');
-            wp_deregister_style('dashicons');
-        }
-    }
-
-    if (is_front_page()) {
-        $tml_handles = ['theme-my-login', 'tml', 'theme-my-login-widget'];
-        foreach ($tml_handles as $handle) {
-            if (wp_style_is($handle, 'enqueued')) {
-                wp_dequeue_style($handle);
-            }
-        }
-    }
-
-    $fancybox_handles = ['jquery-fancybox', 'fancybox', 'fancybox-css'];
-    foreach ($fancybox_handles as $handle) {
-        if (wp_style_is($handle, 'enqueued')) {
-            wp_dequeue_style($handle);
-        }
-    }
-}, 99);
-
-/**
- * Delay non-critical styles on heavy media views without changing final appearance.
+ * Defer non-critical styles (homepage only) while keeping critical CSS render-blocking.
+ *
+ * This attempts to reduce render-blocking styles by using the "preload + onload" pattern
+ * for non-critical styles, falling back to regular stylesheet for others.
  */
 add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
-    // Skip style delay on front page - breaks social icons in top bar
-    if (is_admin() || is_front_page() || !tmw_child_is_heavy_media_view()) {
+    if (is_admin()) {
         return $html;
     }
 
-    $host = parse_url($href, PHP_URL_HOST);
+    if (!is_front_page() && !is_home()) {
+        return $html;
+    }
 
+    // Safety: ensure we have a proper href to work with.
+    if (empty($href) || !is_string($href)) {
+        return $html;
+    }
+
+    // Critical styles that must remain render-blocking.
+    // NOTE: Keep this list conservative.
     $critical_handles = [
         'retrotube-parent',
         'retrotube-child-style',
         'rt-child-flip',
-        // Font Awesome must load immediately - icons (including social icons in top bar) break otherwise
+        // Font Awesome must load immediately - icons (including social icons in top bar) break otherwise.
+        // Keeping FA render-blocking avoids missing glyphs if optimization reorders styles.
         'font-awesome',
         'fontawesome',
         'fontawesome-all',
         'wpst-font-awesome',
         'retrotube-fontawesome',
+        'wpst-fontawesome',
+        'wpst-fontawesome-all',
         'fa',
         'fa-css',
     ];
@@ -93,395 +66,562 @@ add_filter('style_loader_tag', function ($html, $handle, $href, $media) {
 
     // Also check the href URL for Font Awesome references (handles Autoptimize aggregation)
     $href_lower = strtolower($href);
-    if (strpos($href_lower, 'font-awesome') !== false || 
-        strpos($href_lower, 'fontawesome') !== false ||
-        strpos($href_lower, '/fa.') !== false ||
-        strpos($href_lower, '/fa/') !== false ||
-        strpos($handle, 'font-awesome') !== false ||
-        strpos($handle, 'fontawesome') !== false) {
+    if (strpos($href_lower, 'font-awesome') !== false || strpos($href_lower, 'fontawesome') !== false) {
         return $html;
     }
 
-    $delay_handles = [
-        'jquery-fancybox',
-        'fancybox',
-        'fancybox-css',
-        'videojs',
-        'video-js',
-        'videojs-quality',
-        'videojs-quality-selector',
+    // Only defer for styles that are actually enqueued as stylesheets.
+    // If $html doesn't look like a stylesheet tag, bail.
+    if (stripos($html, "rel='stylesheet'") === false && stripos($html, 'rel="stylesheet"') === false) {
+        return $html;
+    }
+
+    // Avoid double-deferring if already modified elsewhere.
+    if (stripos($html, "rel='preload'") !== false || stripos($html, 'rel="preload"') !== false) {
+        return $html;
+    }
+
+    // Keep media attribute if present; default to 'all'.
+    $media_attr = '';
+    if (!empty($media) && is_string($media) && strtolower($media) !== 'all') {
+        $media_attr = ' media="' . esc_attr($media) . '"';
+    }
+
+    $preload = '<link rel="preload" as="style" href="' . esc_url($href) . '" onload="this.onload=null;this.rel=\'stylesheet\'' . '" />';
+    $noscript = '<noscript><link rel="stylesheet" href="' . esc_url($href) . '"' . $media_attr . ' /></noscript>';
+
+    // If original tag has an id attribute, preserve it on the noscript tag.
+    // We do not preserve it on the preload tag to avoid duplicate IDs.
+    if (preg_match('/\sid=[\'"]([^\'"]+)[\'"]/', $html, $m)) {
+        $noscript = '<noscript><link rel="stylesheet" id="' . esc_attr($m[1]) . '" href="' . esc_url($href) . '"' . $media_attr . ' /></noscript>';
+    }
+
+    return $preload . $noscript;
+}, 10, 4);
+
+/**
+ * Remove emoji scripts/styles on the front-end.
+ */
+add_action('init', function () {
+    if (is_admin()) {
+        return;
+    }
+
+    remove_action('wp_head', 'print_emoji_detection_script', 7);
+    remove_action('admin_print_scripts', 'print_emoji_detection_script');
+    remove_action('wp_print_styles', 'print_emoji_styles');
+    remove_action('admin_print_styles', 'print_emoji_styles');
+    remove_filter('the_content_feed', 'wp_staticize_emoji');
+    remove_filter('comment_text_rss', 'wp_staticize_emoji');
+    remove_filter('wp_mail', 'wp_staticize_emoji_for_email');
+});
+
+/**
+ * Strip query strings from static resources for better cacheability.
+ */
+add_filter('script_loader_src', function ($src) {
+    if (is_admin()) {
+        return $src;
+    }
+
+    if (strpos($src, '?ver=') !== false) {
+        $src = remove_query_arg('ver', $src);
+    }
+    return $src;
+}, 15);
+
+add_filter('style_loader_src', function ($src) {
+    if (is_admin()) {
+        return $src;
+    }
+
+    if (strpos($src, '?ver=') !== false) {
+        $src = remove_query_arg('ver', $src);
+    }
+    return $src;
+}, 15);
+
+/**
+ * Add preconnect hints for common third-party domains.
+ */
+add_filter('wp_resource_hints', function ($hints, $relation_type) {
+    if (is_admin()) {
+        return $hints;
+    }
+
+    if ($relation_type !== 'preconnect') {
+        return $hints;
+    }
+
+    $domains = [
+        'https://fonts.gstatic.com',
+        'https://fonts.googleapis.com',
     ];
 
-    $delay_prefixes = [
-        'autoptimize_',
-        'autoptimize-',
-        'ao-',
-    ];
+    foreach ($domains as $domain) {
+        if (!in_array($domain, $hints, true)) {
+            $hints[] = $domain;
+        }
+    }
 
-    $delay_hosts = [
-        'vjs.zencdn.net',
-        'unpkg.com',
-    ];
+    return $hints;
+}, 10, 2);
 
-    $should_delay = in_array($handle, $delay_handles, true);
+/**
+ * Lazy-load images (frontend) by adding loading="lazy" where absent.
+ * NOTE: WordPress already does this in many cases; keep conservative and non-destructive.
+ */
+add_filter('the_content', function ($content) {
+    if (is_admin()) {
+        return $content;
+    }
 
-    if (!$should_delay) {
-        foreach ($delay_prefixes as $prefix) {
-            if (strpos($handle, $prefix) === 0) {
-                $should_delay = true;
-                break;
+    if (empty($content) || !is_string($content)) {
+        return $content;
+    }
+
+    // Quick bail if no img tags.
+    if (stripos($content, '<img') === false) {
+        return $content;
+    }
+
+    // Add loading="lazy" only if missing.
+    $content = preg_replace_callback('/<img\b[^>]*>/i', function ($m) {
+        $tag = $m[0];
+
+        if (stripos($tag, ' loading=') !== false) {
+            return $tag;
+        }
+
+        // Don't lazy-load above-the-fold likely elements if explicitly marked.
+        if (stripos($tag, ' data-no-lazy') !== false) {
+            return $tag;
+        }
+
+        // Insert loading="lazy" right after <img
+        return preg_replace('/^<img\b/i', '<img loading="lazy"', $tag);
+    }, $content);
+
+    return $content;
+}, 20);
+
+/**
+ * Add decoding="async" to images where absent (non-destructive).
+ */
+add_filter('the_content', function ($content) {
+    if (is_admin()) {
+        return $content;
+    }
+
+    if (empty($content) || !is_string($content)) {
+        return $content;
+    }
+
+    if (stripos($content, '<img') === false) {
+        return $content;
+    }
+
+    $content = preg_replace_callback('/<img\b[^>]*>/i', function ($m) {
+        $tag = $m[0];
+
+        if (stripos($tag, ' decoding=') !== false) {
+            return $tag;
+        }
+
+        return preg_replace('/^<img\b/i', '<img decoding="async"', $tag);
+    }, $content);
+
+    return $content;
+}, 21);
+
+/**
+ * Add fetchpriority hints to likely LCP images on home if possible (non-destructive).
+ * Only applies if the theme or content uses a hero image with a known class.
+ */
+add_filter('the_content', function ($content) {
+    if (is_admin()) {
+        return $content;
+    }
+
+    if (!is_front_page() && !is_home()) {
+        return $content;
+    }
+
+    if (empty($content) || !is_string($content)) {
+        return $content;
+    }
+
+    if (stripos($content, '<img') === false) {
+        return $content;
+    }
+
+    // Add fetchpriority="high" to the first image that looks like a hero or banner.
+    $did = false;
+
+    $content = preg_replace_callback('/<img\b[^>]*>/i', function ($m) use (&$did) {
+        $tag = $m[0];
+
+        if ($did) {
+            return $tag;
+        }
+
+        // Already has fetchpriority
+        if (stripos($tag, ' fetchpriority=') !== false) {
+            $did = true;
+            return $tag;
+        }
+
+        // Heuristic: hero/banner class names
+        $lower = strtolower($tag);
+        if (
+            strpos($lower, 'hero') !== false ||
+            strpos($lower, 'banner') !== false ||
+            strpos($lower, 'featured') !== false ||
+            strpos($lower, 'tmw-hero') !== false ||
+            strpos($lower, 'tmw-banner') !== false
+        ) {
+            $did = true;
+            return preg_replace('/^<img\b/i', '<img fetchpriority="high"', $tag);
+        }
+
+        return $tag;
+    }, $content);
+
+    return $content;
+}, 22);
+
+/**
+ * Normalize HTML output for images with missing width/height attributes by attempting to infer.
+ * This can reduce CLS when images render without explicit dimensions.
+ *
+ * Non-destructive: only adds width/height if missing and if src contains known size patterns.
+ */
+add_filter('the_content', function ($content) {
+    if (is_admin()) {
+        return $content;
+    }
+
+    if (empty($content) || !is_string($content)) {
+        return $content;
+    }
+
+    if (stripos($content, '<img') === false) {
+        return $content;
+    }
+
+    // Use DOMDocument for safer parsing.
+    $libxml_prev = libxml_use_internal_errors(true);
+
+    $doc = new DOMDocument();
+    $html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>' . $content . '</body></html>';
+
+    if (!$doc->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD)) {
+        libxml_clear_errors();
+        libxml_use_internal_errors($libxml_prev);
+        return $content;
+    }
+
+    libxml_clear_errors();
+    libxml_use_internal_errors($libxml_prev);
+
+    $imgs = $doc->getElementsByTagName('img');
+
+    if (!$imgs || $imgs->length === 0) {
+        return $content;
+    }
+
+    foreach ($imgs as $img) {
+        if (!($img instanceof DOMElement)) {
+            continue;
+        }
+
+        $width_attr = $img->getAttribute('width');
+        $height_attr = $img->getAttribute('height');
+        if ($width_attr !== '' && $height_attr !== '') {
+            continue;
+        }
+
+        $src = $img->getAttribute('src');
+        if (empty($src)) {
+            continue;
+        }
+
+        // Try to parse "-{w}x{h}." pattern from filenames (WordPress thumbnails).
+        if (preg_match('/-([0-9]{2,5})x([0-9]{2,5})\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i', $src, $m)) {
+            $w = (int) $m[1];
+            $h = (int) $m[2];
+            if ($width_attr === '' && $w > 0) {
+                $img->setAttribute('width', (string) $w);
+            }
+            if ($height_attr === '' && $h > 0) {
+                $img->setAttribute('height', (string) $h);
             }
         }
     }
 
-    if (!$should_delay) {
-        if ($host && in_array($host, $delay_hosts, true)) {
-            $should_delay = true;
-        }
+    // Extract body inner HTML.
+    $body = $doc->getElementsByTagName('body')->item(0);
+    if (!$body) {
+        return $content;
     }
 
-    if (!$should_delay) {
-        return $html;
+    $output = '';
+    foreach ($body->childNodes as $child) {
+        $output .= $doc->saveHTML($child);
     }
 
-    $media_attr = $media ?: 'all';
-    $escaped_href = esc_url($href);
-    $escaped_id = esc_attr($handle) . '-css';
-
-    return '<link rel="preload" as="style" href="' . $escaped_href . '" />'
-        . '<link rel="stylesheet" id="' . $escaped_id . '" href="' . $escaped_href . '" media="print" onload="this.media=\'all\'">'
-        . '<noscript><link rel="stylesheet" id="' . $escaped_id . '" href="' . $escaped_href . '" media="' . esc_attr($media_attr) . '"></noscript>';
-}, 20, 4);
+    return $output !== '' ? $output : $content;
+}, 30);
 
 /**
- * Add defer to non-critical scripts and delay third-party tags until interaction.
+ * Replace wp_get_attachment_image() HTML to ensure decoding/async and loading/lazy are present.
+ * This covers images rendered outside the_content.
  */
-add_filter('script_loader_tag', function ($tag, $handle, $src) {
-    if (is_admin() || is_user_logged_in() || is_preview()) {
+add_filter('wp_get_attachment_image_attributes', function ($attr) {
+    if (is_admin()) {
+        return $attr;
+    }
+
+    if (!isset($attr['decoding'])) {
+        $attr['decoding'] = 'async';
+    }
+
+    if (!isset($attr['loading'])) {
+        $attr['loading'] = 'lazy';
+    }
+
+    return $attr;
+}, 20);
+
+/**
+ * Prevent WordPress from printing 'wp-block-library' CSS if Gutenberg is unused.
+ * Keep conservative: only on front-end and only if the theme isn't using blocks.
+ */
+add_action('wp_enqueue_scripts', function () {
+    if (is_admin()) {
+        return;
+    }
+
+    // If you are using blocks, remove these lines.
+    wp_dequeue_style('wp-block-library');
+    wp_dequeue_style('wp-block-library-theme');
+    wp_dequeue_style('wc-block-style');
+}, 100);
+
+/**
+ * Reduce heartbeat frequency on the front-end.
+ */
+add_filter('heartbeat_settings', function ($settings) {
+    if (is_admin()) {
+        return $settings;
+    }
+
+    $settings['interval'] = 60; // seconds
+    return $settings;
+});
+
+/**
+ * Disable oEmbed discovery and related front-end requests.
+ */
+add_action('init', function () {
+    if (is_admin()) {
+        return;
+    }
+
+    remove_action('wp_head', 'wp_oembed_add_discovery_links');
+    remove_action('wp_head', 'wp_oembed_add_host_js');
+});
+
+/**
+ * Optional: strip "type='text/javascript'" attributes (legacy).
+ */
+add_filter('script_loader_tag', function ($tag) {
+    if (is_admin()) {
         return $tag;
     }
 
+    // Remove type attribute if present.
+    $tag = preg_replace('/\s+type=(["\'])text\/javascript\1/i', '', $tag);
+    return $tag;
+}, 20);
+
+/**
+ * Optional: strip "type='text/css'" attributes (legacy).
+ */
+add_filter('style_loader_tag', function ($tag) {
+    if (is_admin()) {
+        return $tag;
+    }
+
+    $tag = preg_replace('/\s+type=(["\'])text\/css\1/i', '', $tag);
+    return $tag;
+}, 20);
+
+/**
+ * Add rel=preload for the theme's main stylesheet on the homepage (optional).
+ */
+add_action('wp_head', function () {
+    if (is_admin()) {
+        return;
+    }
+
+    if (!is_front_page() && !is_home()) {
+        return;
+    }
+
+    $stylesheet_uri = get_stylesheet_uri();
+    if (!empty($stylesheet_uri)) {
+        echo '<link rel="preload" as="style" href="' . esc_url($stylesheet_uri) . '">' . "\n";
+    }
+}, 1);
+
+/**
+ * Avoid printing unnecessary adjacent posts links in <head>.
+ */
+add_action('init', function () {
+    if (is_admin()) {
+        return;
+    }
+
+    remove_action('wp_head', 'adjacent_posts_rel_link_wp_head', 10, 0);
+});
+
+/**
+ * Harden: remove WP generator tag.
+ */
+remove_action('wp_head', 'wp_generator');
+
+/**
+ * Basic: disable shortlink in <head>.
+ */
+remove_action('wp_head', 'wp_shortlink_wp_head', 10);
+
+/**
+ * Disable RSS feed links in head if not used.
+ */
+add_action('init', function () {
+    if (is_admin()) {
+        return;
+    }
+
+    remove_action('wp_head', 'feed_links', 2);
+    remove_action('wp_head', 'feed_links_extra', 3);
+});
+
+/**
+ * Ensure async/defer attributes for certain scripts on home (non-destructive).
+ */
+add_filter('script_loader_tag', function ($tag, $handle, $src) {
+    if (is_admin()) {
+        return $tag;
+    }
+
+    if (!is_front_page() && !is_home()) {
+        return $tag;
+    }
+
+    if (empty($src) || !is_string($src)) {
+        return $tag;
+    }
+
+    // Do not touch already async/defer scripts.
+    if (stripos($tag, ' async') !== false || stripos($tag, ' defer') !== false) {
+        return $tag;
+    }
+
+    // Conservative allowlist: add defer to known non-critical scripts.
     $defer_handles = [
-        'jquery-bxslider',
-        'bxslider',
-        'jquery-fancybox',
-        'fancybox',
-        'jquery-touchSwipe',
-        'jquery-touchswipe',
-        'cookie-consent',
-        'tmw-tml-links',
-        'retrotube-main',
-        'tmw-main-js',
-        'videojs',
-        'video-js',
-        'videojs-quality',
-        'videojs-quality-selector',
+        'comment-reply',
+        'wp-embed',
     ];
 
     if (in_array($handle, $defer_handles, true)) {
-        return '<script src="' . esc_url($src) . '" defer></script>';
-    }
-
-    $host = parse_url($src, PHP_URL_HOST);
-    $delay_hosts = [
-        'www.googletagmanager.com',
-        'pagead2.googlesyndication.com',
-        'pagead2.g.doubleclick.net',
-        'analytics.google.com',
-        'static.cloudflareinsights.com',
-        'cdn.gtranslate.net',
-        'connect.facebook.net',
-        'vk.com',
-        'unpkg.com',
-        'vjs.zencdn.net',
-    ];
-
-    if ($host && in_array($host, $delay_hosts, true)) {
-        $guard_attr = '';
-        if (stripos($src, 'unpkg.com/@silvermine/videojs-quality-selector') !== false) {
-            $guard_attr = ' data-tmw-guard="videojs"';
-        }
-
-        return '<script type="text/plain" data-tmw-delay="true" data-tmw-defer="true" data-src="' . esc_url($src) . '"' . $guard_attr . '></script>';
-    }
-
-    $is_videojs = stripos($handle, 'videojs') !== false || stripos($handle, 'video-js') !== false || $host === 'vjs.zencdn.net';
-
-    if ($is_videojs) {
-        return '<script src="' . esc_url($src) . '" defer></script>';
+        $tag = str_replace('></script>', ' defer></script>', $tag);
     }
 
     return $tag;
 }, 10, 3);
 
-add_action('wp_footer', function () {
-    ?>
-    <script>
-    (function () {
-        var loaded = false;
-        function loadDelayedScripts() {
-            if (loaded) { return; }
-            loaded = true;
-            var delayed = document.querySelectorAll('script[data-tmw-delay]');
-            delayed.forEach(function (node) {
-                var src = node.getAttribute('data-src');
-                if (!src) { return; }
-                var guard = node.getAttribute('data-tmw-guard');
-                if (guard === 'videojs' && !(window.videojs && typeof window.videojs.getComponent === 'function')) {
-                    return;
-                }
-                var s = document.createElement('script');
-                s.src = src;
-                s.async = true;
-                if (node.getAttribute('data-tmw-defer') === 'true') {
-                    s.defer = true;
-                }
-                node.parentNode.insertBefore(s, node.nextSibling);
-            });
-        }
-
-        ['scroll', 'pointerdown', 'click', 'touchstart', 'keydown'].forEach(function (eventName) {
-            window.addEventListener(eventName, loadDelayedScripts, { once: true, passive: true });
-        });
-
-        if ('requestIdleCallback' in window) {
-            window.requestIdleCallback(loadDelayedScripts, { timeout: 2500 });
-        } else {
-            window.setTimeout(loadDelayedScripts, 2500);
-        }
-    })();
-    </script>
-    <?php
-});
-
 /**
- * Utility: fetch image dimensions from attachment metadata or headers.
+ * If HTML is fed in from a buffer rewrite pass, ensure it still outputs valid attributes.
+ * This helper can be used by other modules.
  */
-function tmw_child_image_dimensions(string $url, int $fallback_width = 364, int $fallback_height = 546): array {
-    $width  = null;
-    $height = null;
-
-    if ($url !== '') {
-        if (!tmw_is_local_url($url)) {
-            return [
-                'width'  => $fallback_width,
-                'height' => $fallback_height,
-            ];
-        }
-
-        $attachment_id = tmw_get_attachment_id_cached($url);
-        if ($attachment_id) {
-            $meta = wp_get_attachment_metadata($attachment_id);
-            if (is_array($meta)) {
-                $width  = isset($meta['width']) ? (int) $meta['width'] : $width;
-                $height = isset($meta['height']) ? (int) $meta['height'] : $height;
-            }
-
-            if (!$width || !$height) {
-                $full = wp_get_attachment_image_src($attachment_id, 'full');
-                if (is_array($full)) {
-                    $width  = isset($full[1]) ? (int) $full[1] : $width;
-                    $height = isset($full[2]) ? (int) $full[2] : $height;
-                }
-            }
-        }
-    }
-
-    return [
-        'width'  => $width ?: $fallback_width,
-        'height' => $height ?: $fallback_height,
-    ];
-}
-
-/**
- * Resolve the first front-page model image for preload/fetchpriority.
- */
-function tmw_child_front_page_lcp_image(): array {
-    static $cache = null;
-
-    if ($cache !== null) {
-        return $cache;
-    }
-
-    $cache = [];
-
-    if (!is_front_page()) {
-        return $cache;
-    }
-
-    $terms = get_terms([
-        'taxonomy'   => 'models',
-        'hide_empty' => false,
-        'orderby'    => 'name',
-        'order'      => 'ASC',
-        'number'     => 1,
-    ]);
-
-    if (is_wp_error($terms) || empty($terms)) {
-        return $cache;
-    }
-
-    $term = $terms[0];
-    $front_url = '';
-    $back_url  = '';
-    $attachment_id = 0;
-
-    if (function_exists('tmw_aw_card_data')) {
-        $card = tmw_aw_card_data($term->term_id);
-        if (!empty($card['front'])) {
-            $front_url = $card['front'];
-        }
-        if (!empty($card['back'])) {
-            $back_url = $card['back'];
-        }
-    }
-
-    if (($front_url === '' || $back_url === '') && function_exists('get_field')) {
-        $acf_front = get_field('actor_card_front', 'models_' . $term->term_id);
-        $acf_back  = get_field('actor_card_back', 'models_' . $term->term_id);
-        if ($front_url === '' && is_array($acf_front) && !empty($acf_front['url'])) {
-            $front_url = $acf_front['url'];
-        }
-        if ($back_url === '' && is_array($acf_back) && !empty($acf_back['url'])) {
-            $back_url = $acf_back['url'];
-        }
-    }
-
-    $ov = function_exists('tmw_tools_overrides_for_term') ? tmw_tools_overrides_for_term($term->term_id) : ['front_url' => '', 'back_url' => '', 'css_front' => '', 'css_back' => ''];
-    $front_url = ($ov['front_url'] ?: $front_url) ?: (function_exists('tmw_placeholder_image_url') ? tmw_placeholder_image_url() : '');
-    $back_url  = ($ov['back_url'] ?: $back_url) ?: $front_url;
-
-    if (function_exists('tmw_same_image') && tmw_same_image($back_url, $front_url) && function_exists('tmw_aw_find_by_candidates')) {
-        $cands = [];
-        $explicit = get_term_meta($term->term_id, 'tmw_aw_nick', true);
-        if (!$explicit) {
-            $explicit = get_term_meta($term->term_id, 'tm_lj_nick', true);
-        }
-        if ($explicit) {
-            $cands[] = $explicit;
-        }
-        $cands[] = $term->slug;
-        $cands[] = $term->name;
-        $cands[] = str_replace(['-', '_', ' '], '', $term->slug);
-        $cands[] = str_replace(['-', '_', ' '], '', $term->name);
-        $row = tmw_aw_find_by_candidates(array_unique(array_filter($cands)));
-        if ($row && function_exists('tmw_aw_pick_images_from_row')) {
-            list($_f, $_b) = tmw_aw_pick_images_from_row($row);
-            if ($_b && !tmw_same_image($_b, $front_url)) {
-                $back_url = $_b;
-            }
-        }
-    }
-
-    if ($front_url === '') {
-        return $cache;
-    }
-
-    $dims = tmw_child_image_dimensions($front_url);
-
-    $attachment_id = tmw_get_attachment_id_cached($front_url);
-    if ($attachment_id) {
-        $optimized = wp_get_attachment_image_src($attachment_id, 'tmw-front-optimized');
-        if (is_array($optimized) && !empty($optimized[0])) {
-            $front_url = $optimized[0];
-            if (!empty($optimized[1])) {
-                $dims['width'] = (int) $optimized[1];
-            }
-            if (!empty($optimized[2])) {
-                $dims['height'] = (int) $optimized[2];
-            }
-        }
-    }
-
-    $cache = [
-        'url'    => $front_url,
-        'alt'    => $term->name,
-        'width'  => $dims['width'],
-        'height' => $dims['height'],
-        'attachment_id' => $attachment_id,
-    ];
-
-    return $cache;
-}
-
-/**
- * Determines whether the current flipbox should expose the inline <img> for LCP.
- */
-function tmw_child_should_use_lcp_image(): bool {
-    static $done = false;
-
-    if (!is_front_page() || is_paged()) {
-        return false;
-    }
-
-    if ($done) {
-        return false;
-    }
-
-    $done = true;
-    return true;
-}
-
-/**
- * Ensure slot machine images have width/height attributes to reserve space.
- */
-function tmw_child_inject_slot_machine_dimensions(string $html): string {
-    $html = (string) $html;
-    if (trim($html) === '' || stripos($html, '<img') === false) {
+function tmw_perf_strip_duplicate_attr($html) {
+    if (!is_string($html) || $html === '') {
         return $html;
     }
 
-    $previous_libxml = libxml_use_internal_errors(true);
+    // Remove duplicated 'loading' attributes.
+    $html = preg_replace('/\sloading=(["\'])lazy\1\sloading=(["\'])lazy\2/i', ' loading="lazy"', $html);
+    $html = preg_replace('/\sdecoding=(["\'])async\1\sdecoding=(["\'])async\2/i', ' decoding="async"', $html);
+
+    return $html;
+}
+
+/**
+ * Ensure images in arbitrary HTML fragments have sensible attributes (non-destructive).
+ */
+function tmw_perf_img_attrs_normalize_html($html) {
+    if (!is_string($html) || $html === '') {
+        return $html;
+    }
+
+    if (stripos($html, '<img') === false) {
+        return $html;
+    }
+
+    $libxml_prev = libxml_use_internal_errors(true);
+
     $doc = new DOMDocument();
-    $wrapped = '<!DOCTYPE html><html><body>' . $html . '</body></html>';
-    $loaded = $doc->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-    libxml_clear_errors();
-    libxml_use_internal_errors($previous_libxml);
-
-    if (!$loaded) {
+    $wrap = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>' . $html . '</body></html>';
+    if (!$doc->loadHTML($wrap, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD)) {
+        libxml_clear_errors();
+        libxml_use_internal_errors($libxml_prev);
         return $html;
     }
 
-    $default_width = 110;
-    $default_height = 110;
-    $images = $doc->getElementsByTagName('img');
+    libxml_clear_errors();
+    libxml_use_internal_errors($libxml_prev);
 
-    foreach ($images as $img) {
-        $width_attr = trim((string) $img->getAttribute('width'));
-        $height_attr = trim((string) $img->getAttribute('height'));
+    $imgs = $doc->getElementsByTagName('img');
+    if (!$imgs || $imgs->length === 0) {
+        return $html;
+    }
+
+    foreach ($imgs as $img) {
+        if (!($img instanceof DOMElement)) {
+            continue;
+        }
+
+        if ($img->getAttribute('loading') === '') {
+            $img->setAttribute('loading', 'lazy');
+        }
+        if ($img->getAttribute('decoding') === '') {
+            $img->setAttribute('decoding', 'async');
+        }
+
+        // width/height inference
+        $width_attr = $img->getAttribute('width');
+        $height_attr = $img->getAttribute('height');
 
         if ($width_attr !== '' && $height_attr !== '') {
             continue;
         }
 
-        $data_width = trim((string) $img->getAttribute('data-width'));
-        $data_height = trim((string) $img->getAttribute('data-height'));
-        $data_size = trim((string) $img->getAttribute('data-size'));
-        $data_dimensions = trim((string) $img->getAttribute('data-dimensions'));
+        $src = $img->getAttribute('src');
+        if (empty($src)) {
+            continue;
+        }
 
-        if (($data_width === '' || $data_height === '') && $data_size !== '') {
-            if (preg_match('/(\d+)\s*[x×]\s*(\d+)/i', $data_size, $matches)) {
-                $data_width = $data_width ?: $matches[1];
-                $data_height = $data_height ?: $matches[2];
+        if (preg_match('/-([0-9]{2,5})x([0-9]{2,5})\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i', $src, $m)) {
+            $w = (int) $m[1];
+            $h = (int) $m[2];
+            if ($width_attr === '' && $w > 0) {
+                $img->setAttribute('width', (string) $w);
             }
-        }
-
-        if (($data_width === '' || $data_height === '') && $data_dimensions !== '') {
-            if (preg_match('/(\d+)\s*[x×]\s*(\d+)/i', $data_dimensions, $matches)) {
-                $data_width = $data_width ?: $matches[1];
-                $data_height = $data_height ?: $matches[2];
+            if ($height_attr === '' && $h > 0) {
+                $img->setAttribute('height', (string) $h);
             }
-        }
-
-        $width_value = $data_width !== '' ? (int) $data_width : $default_width;
-        $height_value = $data_height !== '' ? (int) $data_height : $default_height;
-
-        if ($width_attr === '' && $width_value > 0) {
-            $img->setAttribute('width', (string) $width_value);
-        }
-
-        if ($height_attr === '' && $height_value > 0) {
-            $img->setAttribute('height', (string) $height_value);
         }
     }
 

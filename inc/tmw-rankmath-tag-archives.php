@@ -15,7 +15,7 @@ if (!function_exists('tmw_rm_tag_archives_log_once')) {
         }
         $seen[$key] = true;
 
-        error_log($message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log($message); }
     }
 }
 

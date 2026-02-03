@@ -28,7 +28,7 @@ if (!function_exists('tmw_archive_schema_log_once')) {
 
         $logged[$message] = true;
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[TMW-ARCHIVE-SCHEMA] ' . $message);
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-ARCHIVE-SCHEMA] ' . $message); }
         }
     }
 }
@@ -170,6 +170,11 @@ add_filter('rank_math/json_ld', function ($data) {
     if (!is_category()) {
         return $data;
     }
+    // If the SEO Category Bridge is active, let it own category schema to avoid duplicates.
+    if (function_exists('tmw_seo_category_bridge_ensure_collection_page_schema')) {
+        return $data;
+    }
+
 
     $term = get_queried_object();
     if (!$term instanceof WP_Term) {

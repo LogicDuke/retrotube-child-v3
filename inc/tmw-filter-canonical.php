@@ -18,7 +18,7 @@ if (!function_exists('tmw_canonical_log_once')) {
         }
 
         $logged[$message] = true;
-        error_log('[TMW-CANONICAL] ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CANONICAL] ' . $message); }
     }
 }
 
@@ -49,7 +49,18 @@ if (!function_exists('tmw_canonical_get_category_term_link')) {
             return null;
         }
 
-        $link = get_term_link($term);
+        
+
+        if (function_exists('tmw_seo_category_bridge_get_category_page_post')) {
+            $post = tmw_seo_category_bridge_get_category_page_post();
+            if ($post instanceof WP_Post) {
+                $custom = (string) get_post_meta($post->ID, 'rank_math_canonical_url', true);
+                if ($custom !== '') {
+                    return $custom;
+                }
+            }
+        }
+$link = get_term_link($term);
         if (is_wp_error($link)) {
             return null;
         }
@@ -70,7 +81,13 @@ if (!function_exists('tmw_canonical_get_category_page_link')) {
             return null;
         }
 
-        if (function_exists('tmw_category_page_get_linked_term_url')) {
+        
+
+        $custom = (string) get_post_meta($post_id, 'rank_math_canonical_url', true);
+        if ($custom !== '') {
+            return $custom;
+        }
+if (function_exists('tmw_category_page_get_linked_term_url')) {
             $term_link = tmw_category_page_get_linked_term_url($post_id);
             if ($term_link) {
                 return $term_link;
@@ -122,7 +139,12 @@ if (!function_exists('tmw_canonical_get_model_term_link')) {
         }
 
         if ($post instanceof WP_Post) {
-            $link = get_permalink($post);
+            
+            $custom = (string) get_post_meta($post->ID, 'rank_math_canonical_url', true);
+            if ($custom !== '') {
+                return $custom;
+            }
+$link = get_permalink($post);
             if ($link) {
                 return $link;
             }
@@ -148,7 +170,13 @@ if (!function_exists('tmw_canonical_get_model_post_link')) {
             return null;
         }
 
-        $link = get_permalink($post_id);
+        
+
+        $custom = (string) get_post_meta($post_id, 'rank_math_canonical_url', true);
+        if ($custom !== '') {
+            return $custom;
+        }
+$link = get_permalink($post_id);
         return $link ?: null;
     }
 }
@@ -164,7 +192,13 @@ if (!function_exists('tmw_canonical_get_video_link')) {
             return null;
         }
 
-        $link = get_permalink($post_id);
+        
+
+        $custom = (string) get_post_meta($post_id, 'rank_math_canonical_url', true);
+        if ($custom !== '') {
+            return $custom;
+        }
+$link = get_permalink($post_id);
         return $link ?: null;
     }
 }
@@ -252,7 +286,7 @@ add_filter('rank_math/frontend/canonical', function ($canonical) {
     }
 
     return $resolved;
-}, 20);
+}, 30);
 
 add_filter('wpseo_canonical', function ($canonical) {
     $resolved = tmw_resolve_canonical_url();

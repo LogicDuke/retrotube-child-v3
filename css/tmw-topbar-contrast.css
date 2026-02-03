@@ -141,3 +141,75 @@
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
+
+/* ============================================================
+   [TMW-FIX] Top bar social icons rendering as "squares" (tofu)
+
+   Why this happens:
+   - The RetroTube parent theme uses Font Awesome 4 for the top-bar icons
+     (<i class="fa fa-facebook"> etc.).
+   - Some plugins (or optimization stacks) can load a newer Font Awesome
+     (5/6) on the homepage and override the global `.fa` base rule.
+   - When that happens, *solid* icons (user/upload/etc.) can still render,
+     but *brand* icons (facebook/twitter/instagram/youtube) can turn into
+     empty squares.
+
+   Fix strategy:
+   - Scope the fix ONLY to the top-bar social profile icons so other icons
+     across the site are not affected.
+   - Force the icon font family back to the theme's FA4 font face.
+   - Re-assert FA4 codepoints for the specific social icons (guard against
+     FA v4 shims or other overrides).
+   ============================================================ */
+
+#masthead .top-bar .social-share i.fa,
+.site-header .top-bar .social-share i.fa,
+.top-bar .social-share i.fa {
+  font-family: "FontAwesome" !important;
+  font-weight: normal !important;
+  font-style: normal !important;
+  speak: none;
+}
+
+/* FA4 brand glyph guards (scoped to top-bar only) */
+#masthead .top-bar .social-share i.fa-facebook:before,
+.site-header .top-bar .social-share i.fa-facebook:before,
+.top-bar .social-share i.fa-facebook:before {
+  content: "\f09a" !important;
+}
+
+#masthead .top-bar .social-share i.fa-twitter:before,
+.site-header .top-bar .social-share i.fa-twitter:before,
+.top-bar .social-share i.fa-twitter:before {
+  content: "\f099" !important;
+}
+
+#masthead .top-bar .social-share i.fa-instagram:before,
+.site-header .top-bar .social-share i.fa-instagram:before,
+.top-bar .social-share i.fa-instagram:before {
+  content: "\f16d" !important;
+}
+
+#masthead .top-bar .social-share i.fa-youtube:before,
+.site-header .top-bar .social-share i.fa-youtube:before,
+.top-bar .social-share i.fa-youtube:before {
+  content: "\f167" !important;
+}
+
+#masthead .top-bar .social-share i.fa-google-plus:before,
+.site-header .top-bar .social-share i.fa-google-plus:before,
+.top-bar .social-share i.fa-google-plus:before {
+  content: "\f0d5" !important;
+}
+
+#masthead .top-bar .social-share i.fa-reddit:before,
+.site-header .top-bar .social-share i.fa-reddit:before,
+.top-bar .social-share i.fa-reddit:before {
+  content: "\f1a1" !important;
+}
+
+#masthead .top-bar .social-share i.fa-tumblr:before,
+.site-header .top-bar .social-share i.fa-tumblr:before,
+.top-bar .social-share i.fa-tumblr:before {
+  content: "\f173" !important;
+}

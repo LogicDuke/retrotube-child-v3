@@ -28,7 +28,7 @@ if (!function_exists('tmw_model_schema_log_once')) {
 
         $logged[$message] = true;
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[TMW-MODEL-SCHEMA] ' . $message);
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-MODEL-SCHEMA] ' . $message); }
         }
     }
 }

@@ -4,7 +4,6 @@ if (!defined('ABSPATH')) {
   exit;
 }
 
-require_once get_stylesheet_directory() . '/assets/php/tmw-hybrid-model-scan.php';
 
 require_once __DIR__ . '/models/tmw-model-tags.php';
 require_once __DIR__ . '/models/tmw-model-banner.php';

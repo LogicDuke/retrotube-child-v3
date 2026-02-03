@@ -8,7 +8,7 @@ if (!function_exists('tmw_rm_sanity_log')) {
     function tmw_rm_sanity_log(string $message): void
     {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log($message);
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log($message); }
         }
     }
 }

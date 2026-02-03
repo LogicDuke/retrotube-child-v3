@@ -67,7 +67,7 @@ add_filter('rank_math/frontend/breadcrumb/items', function ($crumbs) {
     ['link' => '', 'name' => get_the_title($post_id)],
   ];
 
-  error_log(sprintf('[TMW-BREAD-VIDEO] Single video breadcrumb normalized (no category) ID %d', (int) $post_id));
+  if (defined('WP_DEBUG') && WP_DEBUG) { error_log(sprintf('[TMW-BREAD-VIDEO] Single video breadcrumb normalized (no category) ID %d', (int) $post_id)); }
 
   return $crumbs;
 });
@@ -535,7 +535,7 @@ function tmw_models_flipboxes_cb($atts){
   }
 
   if ($should_audit) {
-    error_log(sprintf('[TMW-MODEL-PAG-AUDIT] TERMS total=%s per_page=%s paged=%s total_pages=%s', $total, $per_page, $paged, $total_p));
+    if (defined('WP_DEBUG') && WP_DEBUG) { error_log(sprintf('[TMW-MODEL-PAG-AUDIT] TERMS total=%s per_page=%s paged=%s total_pages=%s', $total, $per_page, $paged, $total_p)); }
   }
 
   ob_start();
@@ -663,6 +663,7 @@ function tmw_models_flipboxes_cb($atts){
         'next_text' => 'Next »',
       ];
       if ($should_audit) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log(sprintf(
           '[TMW-MODEL-PAG-AUDIT] PAGINATE_LINKS total=%s current=%s base=%s format=%s',
           $paginate_args['total'],
@@ -670,6 +671,7 @@ function tmw_models_flipboxes_cb($atts){
           $paginate_args['base'],
           $paginate_args['format']
         ));
+        }
       }
       $links = paginate_links($paginate_args);
       if (!empty($links)) {

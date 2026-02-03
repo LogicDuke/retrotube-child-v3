@@ -108,6 +108,7 @@ class TMW_Model_Archive_Pagination_Fix {
         $per_page = 16;
         $paged = max(1, (int) get_query_var('paged'));
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log(sprintf(
             '[TMW-PAG-FIX-V3] paged=%d | WP: found=%d max_pages=%d is_404=%s | Terms: correct=%d wrong=%d | Should_be_pages=%d',
             $paged,
@@ -118,6 +119,7 @@ class TMW_Model_Archive_Pagination_Fix {
             $term_count_wrong,
             max(1, (int) ceil($term_count_correct / $per_page))
         ));
+        }
     }
 }
 

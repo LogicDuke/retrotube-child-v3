@@ -117,10 +117,10 @@ add_action('template_redirect', function () {
         $priorities = array_keys($callbacks);
         sort($priorities);
         $priority_label = !empty($priorities) ? implode(',', $priorities) : 'none';
-        error_log(sprintf('[TMW-RM-HOOK-AUDIT] hook=%s priorities=%s', $hook, $priority_label));
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log(sprintf('[TMW-RM-HOOK-AUDIT] hook=%s priorities=%s', $hook, $priority_label)); }
 
         if (empty($callbacks)) {
-            error_log(sprintf('[TMW-RM-HOOK-AUDIT] hook=%s callbacks=none', $hook));
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log(sprintf('[TMW-RM-HOOK-AUDIT] hook=%s callbacks=none', $hook)); }
             continue;
         }
 
@@ -130,6 +130,7 @@ add_action('template_redirect', function () {
                     continue;
                 }
                 $description = tmw_rankmath_hook_audit_describe_callback($callback_entry['function']);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log(sprintf(
                     '[TMW-RM-HOOK-AUDIT] hook=%s priority=%s type=%s callback=%s location=%s',
                     $hook,
@@ -138,6 +139,7 @@ add_action('template_redirect', function () {
                     $description['name'],
                     $description['location']
                 ));
+                }
             }
         }
     }

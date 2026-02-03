@@ -7,14 +7,14 @@ if (!function_exists('tmw_cat_hub_log_once')) {
     static $seen = [];
     if (isset($seen[$key])) { return; }
     $seen[$key] = true;
-    error_log('[TMW-CAT-HUB] ' . $message);
+    if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-HUB] ' . $message); }
   }
 }
 
 if (!function_exists('tmw_cat_hub_audit_log')) {
   function tmw_cat_hub_audit_log(string $message): void {
     if (!defined('WP_DEBUG') || !WP_DEBUG) { return; }
-    error_log('[TMW-CAT-HUB-PAG-AUDIT] ' . $message);
+    if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-HUB-PAG-AUDIT] ' . $message); }
   }
 }
 

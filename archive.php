@@ -21,7 +21,7 @@ tmw_render_sidebar_layout('generic-archive', function () {
           if (is_category()) {
             static $tmw_cat_desc_template_logged = false;
             if (!$tmw_cat_desc_template_logged) {
-              error_log('[TMW-CAT-ACC-AUDIT] source=template_echo_archive_description file=archive.php');
+              if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-ACC-AUDIT] source=template_echo_archive_description file=archive.php'); }
               $tmw_cat_desc_template_logged = true;
             }
           }

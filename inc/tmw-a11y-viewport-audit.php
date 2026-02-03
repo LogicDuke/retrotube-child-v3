@@ -14,7 +14,7 @@ if (!function_exists('tmw_a11y_viewport_audit_is_enabled')) {
 
 if (!function_exists('tmw_a11y_viewport_audit_log')) {
     function tmw_a11y_viewport_audit_log($message) {
-        error_log('[TMW-A11Y-VIEWPORT] ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-A11Y-VIEWPORT] ' . $message); }
     }
 }
 

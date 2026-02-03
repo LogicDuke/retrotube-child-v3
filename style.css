@@ -4,7 +4,7 @@ Theme URI: https://yourdomain.tld/
 Description: RetroTube Child Theme v3 – Flipbox Edition
 Author: Your Name
 Template: retrotube
-Version: 4.2.0
+Version: 4.2.4
 Text Domain: retrotube-child-v3
 */
 
@@ -27,6 +27,20 @@ Text Domain: retrotube-child-v3
   margin-right: .5em;
   color: #fff;
   line-height: 1;
+}
+
+/* ============================================================
+   [TMW-FIX] Top bar social icons (Home) show as squares
+   - Scoped to the social icons only (won't affect other icons).
+   - Forces the RetroTube FA4 font face for brand glyphs.
+   ============================================================ */
+
+#masthead .top-bar .social-share i.fa,
+.site-header .top-bar .social-share i.fa,
+.top-bar .social-share i.fa {
+  font-family: "FontAwesome" !important;
+  font-weight: normal !important;
+  font-style: normal !important;
 }
 
 /* =========================

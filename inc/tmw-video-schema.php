@@ -30,7 +30,7 @@ if (!function_exists('tmw_video_schema_log_once')) {
 
         $logged[$message] = true;
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[TMW-VIDEO-SCHEMA] ' . $message);
+            if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-VIDEO-SCHEMA] ' . $message); }
         }
     }
 }

@@ -9,7 +9,7 @@ if (!function_exists('tmw_cat_mirror_log_once')) {
         static $seen = [];
         if (isset($seen[$key])) { return; }
         $seen[$key] = true;
-        error_log('[TMW-CAT-MIRROR] ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-CAT-MIRROR] ' . $message); }
     }
 }
 

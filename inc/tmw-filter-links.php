@@ -18,7 +18,7 @@ if (!function_exists('tmw_link_normalize_log_once')) {
         }
 
         $logged[$message] = true;
-        error_log('[TMW-LINK-NORMALIZE] ' . $message);
+        if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-LINK-NORMALIZE] ' . $message); }
     }
 }
 

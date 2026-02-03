@@ -40,9 +40,9 @@ add_filter('rank_math/excluded_post_types', function ($excluded) {
         ) {
             if (is_array($excluded)) {
                 $list = implode(',', $excluded);
-                error_log('[TMW-RM-EXCL-AUDIT] stage=post_theme priority=10001 list=' . $list . ' uri=' . $uri);
+                if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-RM-EXCL-AUDIT] stage=post_theme priority=10001 list=' . $list . ' uri=' . $uri); }
             } else {
-                error_log('[TMW-RM-EXCL-AUDIT] stage=post_theme priority=10001 type=' . gettype($excluded) . ' uri=' . $uri);
+                if (defined('WP_DEBUG') && WP_DEBUG) { error_log('[TMW-RM-EXCL-AUDIT] stage=post_theme priority=10001 type=' . gettype($excluded) . ' uri=' . $uri); }
             }
         }
     }
