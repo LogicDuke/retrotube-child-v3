@@ -49,16 +49,13 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
             $content_html = wpautop($content_html);
         }
 
-        $has_heading = (bool) preg_match('/<h[2-6][^>]*>/i', $content_html);
+        $has_heading = (bool) preg_match('/<h[1-6][^>]*>/i', $content_html);
         if (!$has_heading) {
             $auto_level = 'h2';
-            if (stripos($title, 'models') !== false && !tmw_page_has_h1()) {
-                $auto_level = 'h1';
-            }
 
             $auto_heading_text = $title . ' Webcam Directory';
             $auto_heading_html = sprintf(
-                '<%1$s class="tmw-accordion-auto-%1$s">%2$s</%1$s>',
+                '<%1$s class="tmw-accordion-auto-h1 tmw-accordion-auto-h2">%2$s</%1$s>',
                 esc_attr($auto_level),
                 esc_html($auto_heading_text)
             );
@@ -93,9 +90,14 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
             return '';
         }
 
-        $heading_level = (is_front_page() || (is_home() && get_option('show_on_front') === 'posts'))
-            ? 'h1'
-            : 'h2';
+        static $home_accordion_count = 0;
+        $is_home_context = (is_front_page() || (is_home() && get_option('show_on_front') === 'posts'));
+        if ($is_home_context) {
+            $home_accordion_count++;
+            $heading_level = ($home_accordion_count === 1) ? 'h1' : 'h2';
+        } else {
+            $heading_level = 'h2';
+        }
 
         return sprintf(
             '<%1$s class="widget-title">%2$s</%1$s>%3$s',
