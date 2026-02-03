@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "tmw/home-accordion",
+  "title": "TMW Home Accordion",
+  "category": "widgets",
+  "icon": "menu",
+  "description": "Accordion frame for the homepage with real block content.",
+  "textdomain": "retrotube-child",
+  "attributes": {
+    "title": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false
+  }
+}
