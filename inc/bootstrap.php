@@ -47,6 +47,7 @@ require_once __DIR__ . '/frontend/tmw-category-mirror-tag-inventory.php';
 require_once __DIR__ . '/frontend/tmw-hub-tag-redirect.php';
 require_once __DIR__ . '/frontend/tmw-hub-tag-link-rewrite.php';
 require_once __DIR__ . '/blocks/home-accordion/register.php';
+require_once __DIR__ . '/blocks/home-accordion-frame/index.php';
 $tmw_injector = __DIR__ . '/frontend/tmw-featured-models-inject.php';
 if (file_exists($tmw_injector)) {
     require_once $tmw_injector;
