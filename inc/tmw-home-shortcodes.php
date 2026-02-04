@@ -26,27 +26,11 @@ if (!function_exists('tmw_page_has_h1')) {
  * [tmw_home_accordion title="..."]content[/tmw_home_accordion]
  * ---------------------------------------------------------
  */
-if (!function_exists('tmw_home_accordion_shortcode')) {
-
-    function tmw_home_accordion_shortcode($atts, $content = null): string {
-
-        $atts = shortcode_atts(
-            [
-                'title' => '',
-            ],
-            $atts,
-            'tmw_home_accordion'
-        );
-
-        $title = trim((string) $atts['title']);
+if (!function_exists('tmw_render_home_accordion_frame')) {
+    function tmw_render_home_accordion_frame(string $title, string $content_html, bool $open_by_default = false): string {
+        $title = trim($title);
         if ($title === '') {
             return '';
-        }
-
-        $content_html = '';
-        if ($content !== null) {
-            $content_html = do_shortcode($content);
-            $content_html = wpautop($content_html);
         }
 
         $has_heading = (bool) preg_match('/<h[1-6][^>]*>/i', $content_html);
@@ -82,7 +66,7 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
         $accordion_html = tmw_render_accordion([
             'content_html' => $content_html,
             'lines'        => 1,
-            'collapsed'    => true,
+            'collapsed'    => !$open_by_default,
             'id_base'      => 'tmw-home-accordion-',
         ]);
 
@@ -105,6 +89,29 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
             esc_html($title),
             $accordion_html
         );
+    }
+}
+
+if (!function_exists('tmw_home_accordion_shortcode')) {
+    function tmw_home_accordion_shortcode($atts, $content = null): string {
+
+        $atts = shortcode_atts(
+            [
+                'title' => '',
+            ],
+            $atts,
+            'tmw_home_accordion'
+        );
+
+        $title = (string) $atts['title'];
+
+        $content_html = '';
+        if ($content !== null) {
+            $content_html = do_shortcode($content);
+            $content_html = wpautop($content_html);
+        }
+
+        return tmw_render_home_accordion_frame($title, $content_html);
     }
 }
 
