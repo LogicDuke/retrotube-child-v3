@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!function_exists('tmw_render_home_accordion_frame_block')) {
-    function tmw_render_home_accordion_frame_block(array $attributes, string $content): string {
+    function tmw_render_home_accordion_frame_block(array $attributes, string $content, $block = null): string {
         if (!function_exists('tmw_render_home_accordion_frame')) {
             return '';
         }
@@ -14,9 +14,14 @@ if (!function_exists('tmw_render_home_accordion_frame_block')) {
             ? (bool) $attributes['openByDefault']
             : false;
 
-        $content_html = $content;
+        $inner_html = (string) $content;
+        if (strpos($inner_html, '<!-- wp:') !== false) {
+            $inner_html = do_blocks($inner_html);
+        }
+        $inner_html = do_shortcode($inner_html);
+        $inner_html = trim($inner_html);
 
-        return tmw_render_home_accordion_frame($title, $content_html, $open_by_default);
+        return tmw_render_home_accordion_frame($title, $inner_html, $open_by_default);
     }
 }
 
