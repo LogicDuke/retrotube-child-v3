@@ -33,8 +33,9 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             return '';
         }
 
+        $content_html = trim($content_html);
         $has_heading = (bool) preg_match('/<h[1-6][^>]*>/i', $content_html);
-        if (!$has_heading) {
+        if ($content_html === '' && !$has_heading) {
             $auto_level = 'h2';
 
             $auto_heading_text = $title . ' Webcam Directory';
