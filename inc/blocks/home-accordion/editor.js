@@ -32,6 +32,6 @@
         } )
       );
     },
-    save: () => null
+    save: () => wp.element.createElement( InnerBlocks.Content )
   } );
 } )( window.wp );

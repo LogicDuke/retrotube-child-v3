@@ -39,6 +39,12 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             }
         }
 
+        $is_home_context = (is_front_page() || (is_home() && get_option('show_on_front') === 'posts'));
+        if ($is_home_context) {
+            $content_html = preg_replace('/<h1(\b[^>]*)>/i', '<h2$1>', $content_html);
+            $content_html = preg_replace('/<\/h1>/i', '</h2>', $content_html);
+        }
+
         if (function_exists('tmw_sanitize_accordion_html')) {
             $content_html = tmw_sanitize_accordion_html($content_html);
         }
