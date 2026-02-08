@@ -34,8 +34,8 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
         }
 
         $content_html = trim($content_html);
-        $has_heading = (bool) preg_match('/<h[1-6][^>]*>/i', $content_html);
-        if ($content_html === '' && !$has_heading) {
+        $has_h2_to_h6 = (bool) preg_match('/<h[2-6][^>]*>/i', $content_html);
+        if (!$has_h2_to_h6) {
             $auto_level = 'h2';
 
             $auto_heading_text = $title . ' Webcam Directory';
@@ -75,14 +75,7 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             return '';
         }
 
-        static $home_accordion_count = 0;
-        $is_home_context = (is_front_page() || (is_home() && get_option('show_on_front') === 'posts'));
-        if ($is_home_context) {
-            $home_accordion_count++;
-            $heading_level = ($home_accordion_count === 1) ? 'h1' : 'h2';
-        } else {
-            $heading_level = 'h2';
-        }
+        $heading_level = tmw_home_accordion_heading_level();
 
         return sprintf(
             '<%1$s class="widget-title">%2$s</%1$s>%3$s',
@@ -90,6 +83,20 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             esc_html($title),
             $accordion_html
         );
+    }
+}
+
+if (!function_exists('tmw_home_accordion_heading_level')) {
+    function tmw_home_accordion_heading_level(): string {
+        static $home_accordion_count = 0;
+
+        $is_home_context = (is_front_page() || (is_home() && get_option('show_on_front') === 'posts'));
+        if (!$is_home_context) {
+            return 'h2';
+        }
+
+        $home_accordion_count++;
+        return ($home_accordion_count === 1) ? 'h1' : 'h2';
     }
 }
 
