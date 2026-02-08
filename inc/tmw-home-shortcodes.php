@@ -3,23 +3,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-if (!function_exists('tmw_page_has_h1')) {
-    function tmw_page_has_h1(): bool {
-        static $has_h1 = null;
-
-        if ($has_h1 !== null) {
-            return $has_h1;
-        }
-
-        ob_start();
-        do_action('wp_head');
-        $head = ob_get_clean();
-
-        $has_h1 = (bool) preg_match('/<h1\b/i', (string) $head);
-        return $has_h1;
-    }
-}
-
 /**
  * ---------------------------------------------------------
  * HOME ACCORDION SHORTCODE
@@ -27,7 +10,7 @@ if (!function_exists('tmw_page_has_h1')) {
  * ---------------------------------------------------------
  */
 if (!function_exists('tmw_render_home_accordion_frame')) {
-    function tmw_render_home_accordion_frame(string $title, string $content_html, bool $open_by_default = false): string {
+    function tmw_render_home_accordion_frame(string $title, string $content_html, bool $open_by_default = false, string $heading_level = 'h2', int $lines = 1): string {
         $title = trim($title);
         if ($title === '') {
             return '';
@@ -40,7 +23,7 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
 
             $auto_heading_text = $title . ' Webcam Directory';
             $auto_heading_html = sprintf(
-                '<%1$s class="tmw-accordion-auto-h1 tmw-accordion-auto-h2">%2$s</%1$s>',
+                '<%1$s class="tmw-accordion-auto-h2">%2$s</%1$s>',
                 esc_attr($auto_level),
                 esc_html($auto_heading_text)
             );
@@ -66,7 +49,7 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
 
         $accordion_html = tmw_render_accordion([
             'content_html' => $content_html,
-            'lines'        => 1,
+            'lines'        => max(1, $lines),
             'collapsed'    => !$open_by_default,
             'id_base'      => 'tmw-home-accordion-',
         ]);
@@ -75,7 +58,7 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             return '';
         }
 
-        $heading_level = tmw_home_accordion_heading_level();
+        $heading_level = strtolower($heading_level) === 'h1' ? 'h1' : 'h2';
 
         return sprintf(
             '<%1$s class="widget-title">%2$s</%1$s>%3$s',
@@ -86,22 +69,9 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
     }
 }
 
-if (!function_exists('tmw_home_accordion_heading_level')) {
-    function tmw_home_accordion_heading_level(): string {
-        static $home_accordion_count = 0;
-
-        $is_home_context = (is_front_page() || (is_home() && get_option('show_on_front') === 'posts'));
-        if (!$is_home_context) {
-            return 'h2';
-        }
-
-        $home_accordion_count++;
-        return ($home_accordion_count === 1) ? 'h1' : 'h2';
-    }
-}
-
 if (!function_exists('tmw_home_accordion_shortcode')) {
     function tmw_home_accordion_shortcode($atts, $content = null): string {
+        static $home_h1_used = false;
 
         $atts = shortcode_atts(
             [
@@ -119,7 +89,17 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
             $content_html = wpautop($content_html);
         }
 
-        return tmw_render_home_accordion_frame($title, $content_html);
+        if (function_exists('tmw_home_accordion_resolve_heading_level')) {
+            $heading_level = tmw_home_accordion_resolve_heading_level('auto');
+        } else {
+            $heading_level = 'h2';
+            if (is_front_page() && !$home_h1_used) {
+                $heading_level = 'h1';
+                $home_h1_used = true;
+            }
+        }
+
+        return tmw_render_home_accordion_frame($title, $content_html, false, $heading_level);
     }
 }
 
