@@ -10,9 +10,15 @@ if (!function_exists('tmw_render_home_accordion_frame_block')) {
         }
 
         $title = isset($attributes['title']) ? (string) $attributes['title'] : '';
-        $open_by_default = isset($attributes['openByDefault'])
-            ? (bool) $attributes['openByDefault']
-            : false;
+        $collapsed = isset($attributes['collapsed'])
+            ? (bool) $attributes['collapsed']
+            : true;
+
+        if (isset($attributes['openByDefault']) && !isset($attributes['collapsed'])) {
+            $collapsed = !(bool) $attributes['openByDefault'];
+        }
+
+        $open_by_default = !$collapsed;
 
         $inner_html = (string) $content;
         if (strpos($inner_html, '<!-- wp:') !== false) {

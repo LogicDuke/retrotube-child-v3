@@ -12,6 +12,10 @@
       "type": "string",
       "default": ""
     },
+    "collapsed": {
+      "type": "boolean",
+      "default": true
+    },
     "openByDefault": {
       "type": "boolean",
       "default": false
