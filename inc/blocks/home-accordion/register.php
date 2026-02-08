@@ -10,7 +10,11 @@ if (!function_exists('tmw_render_home_accordion_block')) {
             return '';
         }
 
-        $content_html = $content !== '' ? do_shortcode($content) : '';
+        $content_html = (string) $content;
+        if (strpos($content_html, '<!-- wp:') !== false) {
+            $content_html = do_blocks($content_html);
+        }
+        $content_html = $content_html !== '' ? do_shortcode($content_html) : '';
 
         $has_heading = (bool) preg_match('/<h[1-6][^>]*>/i', $content_html);
         if (!$has_heading) {
