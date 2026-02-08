@@ -21,13 +21,21 @@ if (!function_exists('tmw_render_home_accordion_frame_block')) {
         $open_by_default = !$collapsed;
 
         $inner_html = (string) $content;
+        if (trim($inner_html) === '' && $block instanceof WP_Block && !empty($block->inner_blocks)) {
+            $rendered_inner_html = '';
+            foreach ($block->inner_blocks as $inner_block) {
+                $rendered_inner_html .= $inner_block->render();
+            }
+            $inner_html = $rendered_inner_html;
+        }
+
         if (strpos($inner_html, '<!-- wp:') !== false) {
             $inner_html = do_blocks($inner_html);
         }
         $inner_html = do_shortcode($inner_html);
         $inner_html = trim($inner_html);
 
-        return tmw_render_home_accordion_frame($title, $inner_html, $open_by_default);
+        return tmw_render_home_accordion_frame($title, $inner_html, $open_by_default, 'auto');
     }
 }
 

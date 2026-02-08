@@ -17,8 +17,9 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
         }
 
         $content_html = trim($content_html);
+        $plain = trim(wp_strip_all_tags($content_html));
         $has_h2_to_h6 = (bool) preg_match('/<h[2-6][^>]*>/i', $content_html);
-        if (!$has_h2_to_h6) {
+        if ($plain !== '' && !$has_h2_to_h6) {
             $auto_level = 'h2';
 
             $auto_heading_text = $title . ' Webcam Directory';
@@ -64,6 +65,19 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             return '';
         }
 
+        if (strtolower($heading_level) === 'auto') {
+            if (function_exists('tmw_home_accordion_resolve_heading_level')) {
+                $heading_level = tmw_home_accordion_resolve_heading_level('auto');
+            } else {
+                static $home_h1_used = false;
+                $heading_level = 'h2';
+                if (is_front_page() && !$home_h1_used) {
+                    $heading_level = 'h1';
+                    $home_h1_used = true;
+                }
+            }
+        }
+
         $heading_level = strtolower($heading_level) === 'h1' ? 'h1' : 'h2';
 
         return sprintf(
@@ -77,8 +91,6 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
 
 if (!function_exists('tmw_home_accordion_shortcode')) {
     function tmw_home_accordion_shortcode($atts, $content = null): string {
-        static $home_h1_used = false;
-
         $atts = shortcode_atts(
             [
                 'title' => '',
@@ -91,21 +103,20 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
 
         $content_html = '';
         if ($content !== null) {
-            $content_html = do_shortcode($content);
-            $content_html = wpautop($content_html);
-        }
+            $has_blocks = (strpos($content, '<!-- wp:') !== false);
+            if ($has_blocks && function_exists('do_blocks')) {
+                $content_html = do_blocks($content);
+            } else {
+                $content_html = $content;
+            }
 
-        if (function_exists('tmw_home_accordion_resolve_heading_level')) {
-            $heading_level = tmw_home_accordion_resolve_heading_level('auto');
-        } else {
-            $heading_level = 'h2';
-            if (is_front_page() && !$home_h1_used) {
-                $heading_level = 'h1';
-                $home_h1_used = true;
+            $content_html = do_shortcode($content_html);
+            if (!$has_blocks) {
+                $content_html = wpautop($content_html);
             }
         }
 
-        return tmw_render_home_accordion_frame($title, $content_html, false, $heading_level);
+        return tmw_render_home_accordion_frame($title, $content_html, false, 'auto');
     }
 }
 
