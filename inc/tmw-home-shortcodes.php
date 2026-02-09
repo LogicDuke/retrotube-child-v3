@@ -17,8 +17,20 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
         }
 
         $content_html = trim($content_html);
-        $plain = trim(wp_strip_all_tags($content_html));
-        $has_h2_to_h6 = (bool) preg_match('/<h[2-6][^>]*>/i', $content_html);
+
+        // Enforce only ONE H1 on the homepage: any H1 inside the accordion body
+        // is downgraded to H2.
+        if (function_exists('is_front_page') && is_front_page() && $content_html !== '') {
+            $content_html = preg_replace('/<\s*h1(\b[^>]*)>/i', '<h2$1>', $content_html);
+            $content_html = preg_replace('/<\s*\/\s*h1\s*>/i', '</h2>', $content_html);
+        }
+
+        $plain = $content_html !== '' ? trim(wp_strip_all_tags($content_html)) : '';
+        $has_h2_to_h6 = $content_html !== '' ? (bool) preg_match('/<h[2-6][^>]*>/i', $content_html) : false;
+
+        // Only inject the auto heading if we have meaningful text AND there are
+        // no existing H2..H6 headings. This prevents the "{Title} Webcam Directory"
+        // placeholder from showing when the body is empty due to a pipeline issue.
         if ($plain !== '' && !$has_h2_to_h6) {
             $auto_level = 'h2';
 
@@ -40,49 +52,53 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             }
         }
 
-        $is_home_context = (is_front_page() || (is_home() && get_option('show_on_front') === 'posts'));
-        if ($is_home_context) {
-            $content_html = preg_replace('/<h1(\b[^>]*)>/i', '<h2$1>', $content_html);
-            $content_html = preg_replace('/<\/h1>/i', '</h2>', $content_html);
-        }
-
         if (function_exists('tmw_sanitize_accordion_html')) {
             $content_html = tmw_sanitize_accordion_html($content_html);
         }
 
-        if (!function_exists('tmw_render_accordion')) {
-            return '';
+        // Build the accordion HTML if there is body content and the renderer
+        // is available.  When content is empty we still render the title so
+        // the heading (H1/H2) is never silently suppressed.
+        $accordion_html = '';
+        if ($content_html !== '' && function_exists('tmw_render_accordion')) {
+            $accordion_html = tmw_render_accordion([
+                'content_html' => $content_html,
+                'lines'        => max(1, $lines),
+                'collapsed'    => !$open_by_default,
+                'id_base'      => 'tmw-home-accordion-',
+            ]);
         }
 
-        $accordion_html = tmw_render_accordion([
-            'content_html' => $content_html,
-            'lines'        => max(1, $lines),
-            'collapsed'    => !$open_by_default,
-            'id_base'      => 'tmw-home-accordion-',
-        ]);
+        static $home_h1_used = false;
 
-        if ($accordion_html === '') {
-            return '';
-        }
+        $heading_level = strtolower(trim($heading_level));
 
-        if (strtolower($heading_level) === 'auto') {
-            if (function_exists('tmw_home_accordion_resolve_heading_level')) {
-                $heading_level = tmw_home_accordion_resolve_heading_level('auto');
-            } else {
-                static $home_h1_used = false;
-                $heading_level = 'h2';
-                if (is_front_page() && !$home_h1_used) {
-                    $heading_level = 'h1';
+        // Homepage SEO rule: exactly ONE H1 total, on the first accordion title.
+        // Subsequent accordion titles are always H2.
+        $heading_tag = 'h2';
+        if (is_front_page()) {
+            if ($heading_level === 'auto') {
+                if (!$home_h1_used) {
+                    $heading_tag = 'h1';
                     $home_h1_used = true;
                 }
+            } elseif ($heading_level === 'h1') {
+                if (!$home_h1_used) {
+                    $heading_tag = 'h1';
+                    $home_h1_used = true;
+                } else {
+                    $heading_tag = 'h2';
+                }
+            } else {
+                $heading_tag = 'h2';
             }
+        } else {
+            $heading_tag = $heading_level === 'h1' ? 'h1' : 'h2';
         }
-
-        $heading_level = strtolower($heading_level) === 'h1' ? 'h1' : 'h2';
 
         return sprintf(
             '<%1$s class="widget-title">%2$s</%1$s>%3$s',
-            $heading_level,
+            $heading_tag,
             esc_html($title),
             $accordion_html
         );
@@ -91,6 +107,8 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
 
 if (!function_exists('tmw_home_accordion_shortcode')) {
     function tmw_home_accordion_shortcode($atts, $content = null): string {
+        static $home_h1_used = false;
+
         $atts = shortcode_atts(
             [
                 'title' => '',
@@ -103,20 +121,34 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
 
         $content_html = '';
         if ($content !== null) {
-            $has_blocks = (strpos($content, '<!-- wp:') !== false);
-            if ($has_blocks && function_exists('do_blocks')) {
-                $content_html = do_blocks($content);
-            } else {
-                $content_html = $content;
+            $content_html = (string) $content;
+            $did_blocks = false;
+
+            // If the shortcode body contains blocks, render them before shortcodes.
+            if (strpos($content_html, '<!-- wp:') !== false) {
+                $content_html = do_blocks($content_html);
+                $did_blocks = true;
             }
 
             $content_html = do_shortcode($content_html);
-            if (!$has_blocks) {
+
+            // Avoid double-wrapping when do_blocks already output proper HTML.
+            if (!$did_blocks) {
                 $content_html = wpautop($content_html);
             }
         }
 
-        return tmw_render_home_accordion_frame($title, $content_html, false, 'auto');
+        if (function_exists('tmw_home_accordion_resolve_heading_level')) {
+            $heading_level = tmw_home_accordion_resolve_heading_level('auto');
+        } else {
+            $heading_level = 'h2';
+            if (is_front_page() && !$home_h1_used) {
+                $heading_level = 'h1';
+                $home_h1_used = true;
+            }
+        }
+
+        return tmw_render_home_accordion_frame($title, $content_html, false, $heading_level);
     }
 }
 
