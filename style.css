@@ -29,18 +29,35 @@ Text Domain: retrotube-child-v3
   line-height: 1;
 }
 
-.home .widget-title .tmw-home-title-icon {
+.home .tmw-home-title-icon {
   display: inline-block;
-  margin-right: 8px;
+  margin-right: 6px;
   vertical-align: middle;
+}
+
+/* ★ star inside homepage accordion titles — match .tmw-title .tmw-star */
+.home .widget-title .tmw-star.tmw-home-title-icon {
+  color: #fff;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+/* FA icons inside homepage accordion titles — inherit heading color/size */
+.home .widget-title i.fa.tmw-home-title-icon {
+  font-size: 1em;
+  line-height: 1;
+}
+
+/* Menu star — match the size of ★ on the Models page H1 */
+.main-navigation .tmw-menu-star {
+  font-size: 1.1em;
   line-height: 1;
 }
 
 .main-menu i.fa.fa-star,
 .main-navigation i.fa.fa-star {
-  font-size: 1.1em;
+  font-size: 1.25em;
   vertical-align: middle;
-  line-height: 1;
 }
 
 /* ============================================================
