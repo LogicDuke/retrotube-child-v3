@@ -29,16 +29,18 @@ Text Domain: retrotube-child-v3
   line-height: 1;
 }
 
-.home .tmw-home-title-icon {
+.home .widget-title .tmw-home-title-icon {
   display: inline-block;
   margin-right: 8px;
   vertical-align: middle;
+  line-height: 1;
 }
 
 .main-menu i.fa.fa-star,
 .main-navigation i.fa.fa-star {
-  font-size: 1.25em;
+  font-size: 1.1em;
   vertical-align: middle;
+  line-height: 1;
 }
 
 /* ============================================================

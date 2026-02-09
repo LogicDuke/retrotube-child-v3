@@ -3,31 +3,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-if (!function_exists('tmw_home_accordion_icon_html')) {
-    function tmw_home_accordion_icon_html(): string {
-        if (!function_exists('is_front_page') || !is_front_page()) {
-            return '';
-        }
-
-        static $accordion_icon_index = 0;
-        $accordion_icon_index++;
-
-        if ($accordion_icon_index === 1) {
-            return '<span class="tmw-home-title-icon" aria-hidden="true">★</span>';
-        }
-
-        if ($accordion_icon_index === 2) {
-            return '<i class="fa fa-folder-open tmw-home-title-icon" aria-hidden="true"></i>';
-        }
-
-        if ($accordion_icon_index === 3) {
-            return '<i class="fa fa-video-camera tmw-home-title-icon" aria-hidden="true"></i>';
-        }
-
-        return '';
-    }
-}
-
 /**
  * ---------------------------------------------------------
  * HOME ACCORDION SHORTCODE
@@ -121,9 +96,19 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             $heading_tag = $heading_level === 'h1' ? 'h1' : 'h2';
         }
 
-        $icon_html = function_exists('tmw_home_accordion_icon_html')
-            ? tmw_home_accordion_icon_html()
-            : '';
+        $icon_html = '';
+        if (function_exists('is_front_page') && is_front_page()) {
+            static $front_page_accordion_index = 0;
+            $front_page_accordion_index++;
+
+            if ($front_page_accordion_index === 1) {
+                $icon_html = '<i class="fa fa-star tmw-home-title-icon" aria-hidden="true"></i>';
+            } elseif ($front_page_accordion_index === 2) {
+                $icon_html = '<i class="fa fa-folder-open tmw-home-title-icon" aria-hidden="true"></i>';
+            } elseif ($front_page_accordion_index === 3) {
+                $icon_html = '<i class="fa fa-video-camera tmw-home-title-icon" aria-hidden="true"></i>';
+            }
+        }
 
         $title_html = wp_kses(
             $icon_html,
@@ -137,6 +122,16 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
                 ],
             ]
         ) . esc_html($title);
+
+        if (defined('WP_DEBUG') && WP_DEBUG && function_exists('is_front_page') && is_front_page()) {
+            error_log(
+                '[TMW-FIX] file=' . __FILE__
+                . ' function=' . __FUNCTION__
+                . ' front_page_title_render=1'
+                . ' title_escaped_with=esc_html'
+                . ' icon_rendered_outside_esc_html=' . ($icon_html !== '' ? '1' : '0')
+            );
+        }
 
         return sprintf(
             '<%1$s class="widget-title">%2$s</%1$s>%3$s',
@@ -193,8 +188,6 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
         return tmw_render_home_accordion_frame($title, $content_html, false, $heading_level);
     }
 }
-
-add_shortcode('tmw_home_accordion', 'tmw_home_accordion_shortcode');
 
 
 /**
