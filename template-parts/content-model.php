@@ -141,6 +141,10 @@ $is_rated_yet   = ( 0 === ( $likes_count + $dislikes_count ) ) ? ' not-rated-yet
                                         <div class="tags"><?php wpst_entry_footer(); ?></div>
                                 <?php endif; ?>
 						</div>
+
+				<?php if ( xbox_get_field_value( 'wpst-options', 'enable-video-share' ) == 'on' ) : ?>
+					<?php get_template_part( 'template-parts/content', 'share-buttons' ); ?>
+				<?php endif; ?>
 			</div><!-- END .tab-content -->
 			<?php
 			// === TMW SLOT BANNER ZONE ===
@@ -253,9 +257,6 @@ $is_rated_yet   = ( 0 === ( $likes_count + $dislikes_count ) ) ? ' not-rated-yet
 
                         <?php get_template_part( 'template-parts/model-videos' ); ?>
 
-						<?php if ( xbox_get_field_value( 'wpst-options', 'enable-video-share' ) == 'on' ) : ?>
-								<?php get_template_part( 'template-parts/content', 'share-buttons' ); ?>
-						<?php endif; ?>
         </div><!-- .entry-content -->
 
         <?php if ( xbox_get_field_value( 'wpst-options', 'display-related-videos' ) == 'on' ) : ?>
