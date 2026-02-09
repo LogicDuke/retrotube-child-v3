@@ -412,7 +412,12 @@ if (!function_exists('tmw_featured_models_shortcode')) {
     ob_start();
     echo '<div class="tmwfm-wrap">';
     if (!empty($atts['title'])) {
-      echo '<h2 class="tmwfm-heading">'.esc_html($atts['title']).'</h2>';
+      $title = trim((string)$atts['title']);
+      echo '<h2 class="tmwfm-heading">';
+      if ($title !== '' && strcasecmp($title, 'FEATURED MODELS') === 0) {
+        echo '<i class="fa fa-random"></i> ';
+      }
+      echo esc_html($title) . '</h2>';
     }
     echo '<div class="tmwfm-grid">';
     foreach ($terms as $t) {
