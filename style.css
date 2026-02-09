@@ -48,16 +48,22 @@ Text Domain: retrotube-child-v3
   line-height: 1;
 }
 
-/* Menu star — match the size of ★ on the Models page H1 */
+/* Menu ★ star — sized to stand out in the nav bar.
+   Uses same #site-navigation pattern as parent theme for specificity. */
+#site-navigation .menu > li > a > .tmw-menu-star,
+#site-navigation .tmw-menu-star,
+.main-navigation .menu > li > a > .tmw-menu-star,
 .main-navigation .tmw-menu-star {
-  font-size: 1.4em;
+  font-size: 1.5em !important;
   line-height: 1;
   vertical-align: middle;
+  display: inline-block;
 }
 
 .main-menu i.fa.fa-star,
-.main-navigation i.fa.fa-star {
-  font-size: 1.25em;
+.main-navigation i.fa.fa-star,
+.main-navigation i.fa.fa-star.tmw-menu-star {
+  font-size: 1.5em !important;
   vertical-align: middle;
 }
 
