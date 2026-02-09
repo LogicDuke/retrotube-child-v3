@@ -87,8 +87,20 @@ add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $a
     }
 
     if (stripos($item_output, 'fa-star') !== false
-        || stripos($item_output, 'tmw-star') !== false
-        || strpos($item_output, '★') !== false) {
+        || stripos($item_output, 'tmw-star') !== false) {
+        return $item_output;
+    }
+
+    // If ★ is already present as plain text (typed into the menu label),
+    // wrap it in a span so CSS can size it to match the Models page H1.
+    if (strpos($item_output, '★') !== false) {
+        if (stripos($item_output, 'tmw-menu-star') === false) {
+            $item_output = str_replace(
+                '★',
+                '<span class="tmw-menu-star" aria-hidden="true">★</span>',
+                $item_output
+            );
+        }
         return $item_output;
     }
 
