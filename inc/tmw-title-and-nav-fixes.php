@@ -87,20 +87,27 @@ add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $a
     }
 
     if (stripos($item_output, 'fa-star') !== false
-        || stripos($item_output, 'tmw-star') !== false) {
+        || stripos($item_output, 'tmw-menu-star') !== false) {
         return $item_output;
     }
 
-    // If ★ is already present as plain text (typed into the menu label),
-    // wrap it in a span so CSS can size it to match the Models page H1.
-    if (strpos($item_output, '★') !== false) {
-        if (stripos($item_output, 'tmw-menu-star') === false) {
-            $item_output = str_replace(
-                '★',
-                '<span class="tmw-menu-star" aria-hidden="true">★</span>',
-                $item_output
-            );
+    // Detect ★ in any encoding form WordPress might use:
+    // UTF-8 literal, decimal entity, hex entity.
+    $star_patterns = ['★', '&#9733;', '&#x2605;', '&starf;'];
+    $found_star = false;
+    foreach ($star_patterns as $pattern) {
+        if (stripos($item_output, $pattern) !== false) {
+            $found_star = $pattern;
+            break;
         }
+    }
+
+    if ($found_star !== false) {
+        $item_output = str_replace(
+            $found_star,
+            '<span class="tmw-menu-star" aria-hidden="true">★</span>',
+            $item_output
+        );
         return $item_output;
     }
 
@@ -110,8 +117,8 @@ add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $a
             || wp_style_is('fa', 'enqueued'));
 
     $icon_markup = $use_fa
-        ? '<i class="fa fa-star" aria-hidden="true"></i>'
-        : '<span class="tmw-star" aria-hidden="true">★</span>';
+        ? '<i class="fa fa-star tmw-menu-star" aria-hidden="true"></i>'
+        : '<span class="tmw-menu-star" aria-hidden="true">★</span>';
 
     $anchor_pos = strpos($item_output, '<a');
     if ($anchor_pos === false) {
