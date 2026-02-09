@@ -36,7 +36,7 @@ $original_post = $post;
 ?>
 <section class="tmw-model-videos videos-featuring widget widget_videos_block">
   <h3 class="tmw-section-header widget-title"><?php esc_html_e('Videos Featuring', 'retrotube'); ?> <?php echo esc_html($model_name); ?></h3>
-  <div class="videos-list tmw-model-video-grid">
+  <div class="videos-list">
     <?php
     foreach ($videos as $video_post) :
       if (!$video_post instanceof WP_Post) {
