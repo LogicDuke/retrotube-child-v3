@@ -3,6 +3,31 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (!function_exists('tmw_home_accordion_icon_html')) {
+    function tmw_home_accordion_icon_html(): string {
+        if (!function_exists('is_front_page') || !is_front_page()) {
+            return '';
+        }
+
+        static $accordion_icon_index = 0;
+        $accordion_icon_index++;
+
+        if ($accordion_icon_index === 1) {
+            return '<span class="tmw-home-title-icon" aria-hidden="true">★</span>';
+        }
+
+        if ($accordion_icon_index === 2) {
+            return '<i class="fa fa-folder-open tmw-home-title-icon" aria-hidden="true"></i>';
+        }
+
+        if ($accordion_icon_index === 3) {
+            return '<i class="fa fa-video-camera tmw-home-title-icon" aria-hidden="true"></i>';
+        }
+
+        return '';
+    }
+}
+
 /**
  * ---------------------------------------------------------
  * HOME ACCORDION SHORTCODE
@@ -96,10 +121,27 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             $heading_tag = $heading_level === 'h1' ? 'h1' : 'h2';
         }
 
+        $icon_html = function_exists('tmw_home_accordion_icon_html')
+            ? tmw_home_accordion_icon_html()
+            : '';
+
+        $title_html = wp_kses(
+            $icon_html,
+            [
+                'span' => [
+                    'class' => true,
+                ],
+                'i' => [
+                    'class' => true,
+                    'aria-hidden' => true,
+                ],
+            ]
+        ) . esc_html($title);
+
         return sprintf(
             '<%1$s class="widget-title">%2$s</%1$s>%3$s',
             $heading_tag,
-            esc_html($title),
+            $title_html,
             $accordion_html
         );
     }

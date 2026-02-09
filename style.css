@@ -29,6 +29,18 @@ Text Domain: retrotube-child-v3
   line-height: 1;
 }
 
+.home .tmw-home-title-icon {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.main-menu i.fa.fa-star,
+.main-navigation i.fa.fa-star {
+  font-size: 1.25em;
+  vertical-align: middle;
+}
+
 /* ============================================================
    [TMW-FIX] Top bar social icons (Home) show as squares
    - Scoped to the social icons only (won't affect other icons).
