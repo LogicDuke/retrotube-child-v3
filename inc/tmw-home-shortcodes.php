@@ -4,6 +4,44 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Return the correct icon HTML for a homepage accordion frame title.
+ *
+ * Icons are determined by keywords in the title so they stay correct
+ * even if the user reorders the blocks.
+ *
+ * Matches the *actual* icon used on each page's H1:
+ *  - Models  page  → ★  (<span class="tmw-star">)
+ *  - Categories page → ★  (tmw_render_title_bar)
+ *  - Videos  page  → <i class="fa fa-video-camera">
+ */
+if (!function_exists('tmw_home_accordion_icon_for_title')) {
+    function tmw_home_accordion_icon_for_title(string $title): string {
+        if (!function_exists('is_front_page') || !is_front_page()) {
+            return '';
+        }
+
+        $lower = strtolower($title);
+
+        // Models / Webcam / Cam → ★ star (identical to page-models-grid.php)
+        if (strpos($lower, 'model') !== false || strpos($lower, 'webcam') !== false || strpos($lower, 'cam ') !== false) {
+            return '<span class="tmw-star tmw-home-title-icon" aria-hidden="true">★</span> ';
+        }
+
+        // Categories → ★ star (identical to page-categories.php / tmw_render_title_bar)
+        if (strpos($lower, 'categor') !== false) {
+            return '<span class="tmw-star tmw-home-title-icon" aria-hidden="true">★</span> ';
+        }
+
+        // Videos → FA video-camera (identical to page-videos.php)
+        if (strpos($lower, 'video') !== false) {
+            return '<i class="fa fa-video-camera tmw-home-title-icon" aria-hidden="true"></i> ';
+        }
+
+        return '';
+    }
+}
+
+/**
  * ---------------------------------------------------------
  * HOME ACCORDION SHORTCODE
  * [tmw_home_accordion title="..."]content[/tmw_home_accordion]
@@ -96,42 +134,23 @@ if (!function_exists('tmw_render_home_accordion_frame')) {
             $heading_tag = $heading_level === 'h1' ? 'h1' : 'h2';
         }
 
-        $icon_html = '';
-        if (function_exists('is_front_page') && is_front_page()) {
-            static $front_page_accordion_index = 0;
-            $front_page_accordion_index++;
-
-            if ($front_page_accordion_index === 1) {
-                $icon_html = '<i class="fa fa-star tmw-home-title-icon" aria-hidden="true"></i>';
-            } elseif ($front_page_accordion_index === 2) {
-                $icon_html = '<i class="fa fa-folder-open tmw-home-title-icon" aria-hidden="true"></i>';
-            } elseif ($front_page_accordion_index === 3) {
-                $icon_html = '<i class="fa fa-video-camera tmw-home-title-icon" aria-hidden="true"></i>';
-            }
-        }
+        $icon_html = function_exists('tmw_home_accordion_icon_for_title')
+            ? tmw_home_accordion_icon_for_title($title)
+            : '';
 
         $title_html = wp_kses(
             $icon_html,
             [
                 'span' => [
-                    'class' => true,
+                    'class'       => true,
+                    'aria-hidden' => true,
                 ],
                 'i' => [
-                    'class' => true,
+                    'class'       => true,
                     'aria-hidden' => true,
                 ],
             ]
         ) . esc_html($title);
-
-        if (defined('WP_DEBUG') && WP_DEBUG && function_exists('is_front_page') && is_front_page()) {
-            error_log(
-                '[TMW-FIX] file=' . __FILE__
-                . ' function=' . __FUNCTION__
-                . ' front_page_title_render=1'
-                . ' title_escaped_with=esc_html'
-                . ' icon_rendered_outside_esc_html=' . ($icon_html !== '' ? '1' : '0')
-            );
-        }
 
         return sprintf(
             '<%1$s class="widget-title">%2$s</%1$s>%3$s',
@@ -188,6 +207,8 @@ if (!function_exists('tmw_home_accordion_shortcode')) {
         return tmw_render_home_accordion_frame($title, $content_html, false, $heading_level);
     }
 }
+
+add_shortcode('tmw_home_accordion', 'tmw_home_accordion_shortcode');
 
 
 /**
