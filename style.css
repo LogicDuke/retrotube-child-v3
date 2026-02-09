@@ -50,8 +50,9 @@ Text Domain: retrotube-child-v3
 
 /* Menu star — match the size of ★ on the Models page H1 */
 .main-navigation .tmw-menu-star {
-  font-size: 1.1em;
+  font-size: 1.4em;
   line-height: 1;
+  vertical-align: middle;
 }
 
 .main-menu i.fa.fa-star,
