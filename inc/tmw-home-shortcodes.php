@@ -27,9 +27,9 @@ if (!function_exists('tmw_home_accordion_icon_for_title')) {
             return '<span class="tmw-star tmw-home-title-icon" aria-hidden="true">★</span> ';
         }
 
-        // Categories → ★ star (identical to page-categories.php / tmw_render_title_bar)
+        // Categories → folder-open (identical to /categories/ page H1 and menu bar)
         if (strpos($lower, 'categor') !== false) {
-            return '<span class="tmw-star tmw-home-title-icon" aria-hidden="true">★</span> ';
+            return '<i class="fa fa-folder-open tmw-home-title-icon" aria-hidden="true"></i> ';
         }
 
         // Videos → FA video-camera (identical to page-videos.php)
