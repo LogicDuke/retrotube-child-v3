@@ -42,19 +42,16 @@ if (!function_exists('tmw_render_home_accordion_block_v2')) {
             $content_html = tmw_sanitize_accordion_html((string) $content_html);
         }
 
-        if (!function_exists('tmw_render_accordion')) {
-            return '';
-        }
-
-        $accordion_html = tmw_render_accordion([
-            'content_html' => (string) $content_html,
-            'lines'        => $lines,
-            'collapsed'    => true,
-            'id_base'      => 'tmw-home-accordion-',
-        ]);
-
-        if ($accordion_html === '') {
-            return '';
+        // Build accordion HTML only when there is body content.
+        // The title heading is always rendered so the H1/H2 is never suppressed.
+        $accordion_html = '';
+        if (trim((string) $content_html) !== '' && function_exists('tmw_render_accordion')) {
+            $accordion_html = tmw_render_accordion([
+                'content_html' => (string) $content_html,
+                'lines'        => $lines,
+                'collapsed'    => true,
+                'id_base'      => 'tmw-home-accordion-',
+            ]);
         }
 
         return sprintf(
