@@ -54,10 +54,22 @@ if (!function_exists('tmw_render_home_accordion_block_v2')) {
             ]);
         }
 
+        $icon_html = function_exists('tmw_home_accordion_icon_for_title')
+            ? tmw_home_accordion_icon_for_title($title)
+            : '';
+
+        $title_html = wp_kses(
+            $icon_html,
+            [
+                'span' => ['class' => true, 'aria-hidden' => true],
+                'i'    => ['class' => true, 'aria-hidden' => true],
+            ]
+        ) . esc_html($title);
+
         return sprintf(
             '<%1$s class="widget-title">%2$s</%1$s>%3$s',
             $heading_level,
-            esc_html($title),
+            $title_html,
             $accordion_html
         );
     }
