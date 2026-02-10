@@ -744,77 +744,69 @@ article[id^="post-"]::before {
     position: relative;
 }
 
-.single-model .videos-featuring .videos-list .rating-col {
-    display: block !important;
-    float: none !important;
-    clear: both;
-    width: 100% !important;
-    max-width: none !important;
-    box-sizing: border-box;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 2;
-    margin: 0;
-}
-
-.single-model .videos-featuring .videos-list .rating-bar {
-    display: block !important;
-    float: none !important;
-    width: 100% !important;
-    max-width: none !important;
+/* Rating bar: in normal flow between thumbnail and title inside .thumb-block */
+.single-model .videos-featuring .videos-list .tmw-vid-rating {
+    display: block;
+    width: 100%;
     box-sizing: border-box;
     position: relative;
     overflow: hidden;
-    height: 1.5em;
-}
-
-.single-model .videos-featuring .videos-list .rating-bar-meter {
-    display: block;
-    max-width: none;
-    box-sizing: border-box;
-    transform: scaleX(0);
-    transform-origin: left center;
-    opacity: 0;
-    transition: transform 0.25s ease, opacity 0.25s ease;
-}
-
-.single-model .videos-featuring .videos-list .thumb-block:hover .rating-bar-meter {
-    transform: scaleX(1);
-    opacity: 1;
-}
-
-.single-model .videos-featuring .videos-list .rating-result {
     margin: 0;
+    padding: 0;
+    line-height: 0;
 }
 
-.single-model .videos-featuring .videos-list .rating-result .percentage {
+.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-bar {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    height: 1.4em;
+    background-color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-bar-meter {
+    display: block;
+    height: 100%;
+    background-color: #c00;
+    box-sizing: border-box;
+    transition: width 0.3s ease-in-out;
+}
+
+.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-result {
     position: absolute;
     top: 0;
+    left: 0;
     right: 0;
     bottom: 0;
-    left: 0;
+    margin: 0;
+    pointer-events: none;
+}
+
+.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-result .percentage {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 0.8em;
     font-weight: 600;
-    line-height: 1;
+    line-height: 1.4em;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     z-index: 3;
     pointer-events: none;
 }
 
-/* [TMW-FIX] Restore % label visibility for Videos Featuring cards only. */
 .single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage,
 .single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage span,
 .single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage i {
     display: inline-flex !important;
     visibility: visible !important;
     opacity: 1 !important;
-}
-
-.single-model .videos-featuring .videos-list .rating-result .likes {
-    display: none;
 }
 
 .single-model .thumb-block .entry-header {
