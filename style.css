@@ -740,11 +740,11 @@ article[id^="post-"]::before {
 }
 
 /* [TMW-FIX] Videos Featuring rating UX parity with /videos/, strictly scoped to model page section */
-.single-model .videos-featuring .videos-list .thumb-block {
+.single-model .videos-featuring .videos-list .tmw-model-video-item {
     position: relative;
 }
 
-/* Rating bar: in normal flow between thumbnail and title inside .thumb-block */
+/* Rating bar: in normal flow between thumbnail and title */
 .single-model .videos-featuring .videos-list .tmw-vid-rating {
     display: block;
     width: 100%;
