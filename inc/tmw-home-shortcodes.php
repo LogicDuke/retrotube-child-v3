@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
  * even if the user reorders the blocks.
  *
  * Matches the *actual* icon used on each page's H1:
- *  - Models  page  → ★  (<span class="tmw-star">)
+ *  - Models  page  → <i class="fa fa-star">
  *  - Categories page → ★  (tmw_render_title_bar)
  *  - Videos  page  → <i class="fa fa-video-camera">
  */
@@ -22,9 +22,9 @@ if (!function_exists('tmw_home_accordion_icon_for_title')) {
 
         $lower = strtolower($title);
 
-        // Models / Webcam / Cam → ★ star (identical to page-models-grid.php)
+        // Models / Webcam / Cam → FA star icon (matches nav icon system)
         if (strpos($lower, 'model') !== false || strpos($lower, 'webcam') !== false || strpos($lower, 'cam ') !== false) {
-            return '<span class="tmw-star tmw-home-title-icon" aria-hidden="true">★</span> ';
+            return '<i class="fa fa-star tmw-home-title-icon" aria-hidden="true"></i> ';
         }
 
         // Categories → folder-open (identical to /categories/ page H1 and menu bar)
