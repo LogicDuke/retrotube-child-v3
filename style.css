@@ -739,6 +739,20 @@ article[id^="post-"]::before {
     border-top: 3px solid #333;
 }
 
+/* [TMW-FIX] Model page "Videos Featuring" rating bar must match thumbnail/card width */
+.videos-featuring .videos-list #rating-col,
+.videos-featuring .videos-list .rating-bar {
+    display: block;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+.videos-featuring .videos-list .rating-bar-meter {
+    max-width: none;
+    box-sizing: border-box;
+}
+
 .single-model .thumb-block .entry-header {
     height: 3.5em;
     overflow: hidden;
