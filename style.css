@@ -768,12 +768,21 @@ article[id^="post-"]::before {
     padding: 0;
 }
 
+/* Red meter: hidden by default, reveals on hover */
 .single-model .videos-featuring .videos-list .tmw-vid-rating .rating-bar-meter {
     display: block;
     height: 100%;
     background-color: #c00;
     box-sizing: border-box;
-    transition: width 0.3s ease-in-out;
+    transform: scaleX(0);
+    transform-origin: left center;
+    opacity: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item:hover .rating-bar-meter {
+    transform: scaleX(1);
+    opacity: 1;
 }
 
 .single-model .videos-featuring .videos-list .tmw-vid-rating .rating-result {
@@ -809,13 +818,30 @@ article[id^="post-"]::before {
     opacity: 1 !important;
 }
 
-.single-model .thumb-block .entry-header {
+/* Title: match widget card style — small, light, no red */
+.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header {
     height: 3.5em;
     overflow: hidden;
     text-align: center;
-    font-size: 0.875em;
-    padding: 0.5em 0 0;
-    color: #ddd;
+    padding: 0.4em 0.3em 0;
+    margin: 0;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header .entry-title {
+    font-size: 0.8em;
+    font-weight: normal;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header .entry-title a {
+    color: #ddd !important;
+    text-decoration: none;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header .entry-title a:hover {
+    color: #fff !important;
 }
 
 /* identical margins & layout with .single-video */
