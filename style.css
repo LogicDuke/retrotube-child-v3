@@ -804,6 +804,15 @@ article[id^="post-"]::before {
     pointer-events: none;
 }
 
+/* [TMW-FIX] Restore % label visibility for Videos Featuring cards only. */
+.single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage,
+.single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage span,
+.single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage i {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
 .single-model .videos-featuring .videos-list .rating-result .likes {
     display: none;
 }
