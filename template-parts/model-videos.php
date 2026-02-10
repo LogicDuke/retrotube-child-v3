@@ -59,30 +59,46 @@ $original_post = $post;
       $vid_total      = $vid_likes + $vid_dislikes;
       $vid_percent    = ($vid_total > 0) ? round(($vid_likes / $vid_total) * 100, 0) : 0;
 
-      // Wrap in .tmw-model-video-item so child-theme CSS can target it.
-      echo '<div class="tmw-model-video-item">';
+      // Build the rating-bar HTML for this video.
+      $rating_html  = '<div class="tmw-vid-rating">';
+      $rating_html .= '<div class="rating-bar"><div class="rating-bar-meter" style="width: ' . esc_attr($vid_percent) . '%;"></div></div>';
+      $rating_html .= '<div class="rating-result"><div class="percentage">' . esc_html($vid_percent) . '%</div></div>';
+      $rating_html .= '</div>';
 
-      // Capture parent loop-video output so we can inject the rating bar inside .thumb-block.
+      // Capture the parent loop-video card output.
       ob_start();
       get_template_part('template-parts/loop', 'video');
       $card_html = ob_get_clean();
 
-      // Inject rating-col HTML just before the closing </article> of the thumb-block card.
-      $rating_html  = '<div class="rating-col">';
-      $rating_html .= '<div class="rating-bar"><div class="rating-bar-meter" style="width: ' . esc_attr($vid_percent) . '%;"></div></div>';
-      $rating_html .= '<div class="rating-result">';
-      $rating_html .= '<div class="percentage">' . esc_html($vid_percent) . '%</div>';
-      $rating_html .= '</div>';
-      $rating_html .= '</div>';
+      // Inject the rating bar between the thumbnail and the entry-header title.
+      // The parent card structure is: <article class="thumb-block"> ... <a><img></a> ... <header class="entry-header"> ... </header> </article>
+      // We insert BEFORE <header to place the bar right under the thumbnail image.
+      $injected = false;
 
-      // Try to insert inside .thumb-block (before closing </article>), fall back to appending.
-      $insertion_pos = strrpos($card_html, '</article>');
-      if ($insertion_pos !== false) {
-          $card_html = substr_replace($card_html, $rating_html, $insertion_pos, 0);
-      } else {
+      // Strategy 1: inject before <header (most reliable — sits between image and title).
+      if (!$injected) {
+          $header_pos = stripos($card_html, '<header');
+          if ($header_pos !== false) {
+              $card_html = substr_replace($card_html, $rating_html, $header_pos, 0);
+              $injected  = true;
+          }
+      }
+
+      // Strategy 2: inject before </article> if no <header found.
+      if (!$injected) {
+          $article_pos = strrpos($card_html, '</article>');
+          if ($article_pos !== false) {
+              $card_html = substr_replace($card_html, $rating_html, $article_pos, 0);
+              $injected  = true;
+          }
+      }
+
+      // Strategy 3: append after card.
+      if (!$injected) {
           $card_html .= $rating_html;
       }
 
+      echo '<div class="tmw-model-video-item">';
       echo $card_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
       echo '</div>';
     endforeach;
