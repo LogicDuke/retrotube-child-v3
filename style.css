@@ -740,15 +740,27 @@ article[id^="post-"]::before {
 }
 
 /* [TMW-FIX] Model page "Videos Featuring" rating bar must match thumbnail/card width */
-.videos-featuring .videos-list #rating-col,
-.videos-featuring .videos-list .rating-bar {
-    display: block;
-    width: 100%;
-    max-width: none;
+.single-model .videos-featuring .videos-list #rating-col {
+    display: block !important;
+    float: none !important;
+    clear: both;
+    width: 100% !important;
+    max-width: none !important;
     box-sizing: border-box;
 }
 
-.videos-featuring .videos-list .rating-bar-meter {
+.single-model .videos-featuring .videos-list .rating-bar {
+    display: block !important;
+    float: none !important;
+    flex: 0 0 100%;
+    align-self: stretch;
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box;
+}
+
+.single-model .videos-featuring .videos-list .rating-bar-meter {
+    display: block;
     max-width: none;
     box-sizing: border-box;
 }
