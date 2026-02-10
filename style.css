@@ -744,7 +744,7 @@ article[id^="post-"]::before {
     position: relative;
 }
 
-.single-model .videos-featuring .videos-list #rating-col {
+.single-model .videos-featuring .videos-list .rating-col {
     display: block !important;
     float: none !important;
     clear: both;
