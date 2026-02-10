@@ -744,6 +744,19 @@ article[id^="post-"]::before {
     position: relative;
 }
 
+/* Kill the inline baseline gap between thumbnail and rating bar */
+.single-model .videos-featuring .videos-list .tmw-model-video-item > a {
+    display: block;
+    line-height: 0;
+    font-size: 0;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
 /* Rating bar: in normal flow between thumbnail and title */
 .single-model .videos-featuring .videos-list .tmw-vid-rating {
     display: block;
