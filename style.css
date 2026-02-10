@@ -48,23 +48,21 @@ Text Domain: retrotube-child-v3
   line-height: 1;
 }
 
-/* Menu ★ star — sized to stand out in the nav bar.
-   Uses same #site-navigation pattern as parent theme for specificity. */
+/* Menu Models icon ★ — keep parity with other top-nav icons. */
 #site-navigation .menu > li > a > .tmw-menu-star,
-#site-navigation .tmw-menu-star,
-.main-navigation .menu > li > a > .tmw-menu-star,
-.main-navigation .tmw-menu-star {
-  font-size: 1.5em !important;
+.main-navigation .menu > li > a > .tmw-menu-star {
+  font-size: 1em;
   line-height: 1;
   vertical-align: middle;
-  display: inline-block;
+  margin-right: .5em;
 }
 
-.main-menu i.fa.fa-star,
-.main-navigation i.fa.fa-star,
-.main-navigation i.fa.fa-star.tmw-menu-star {
-  font-size: 1.5em !important;
+/* Home H1 Models icon ★ — prevent oversized glyph in the primary heading. */
+body.home h1.widget-title > i.fa.fa-star.tmw-home-title-icon {
+  font-size: .9em;
+  line-height: 1;
   vertical-align: middle;
+  margin-right: .5em;
 }
 
 /* ============================================================
