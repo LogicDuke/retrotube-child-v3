@@ -739,7 +739,11 @@ article[id^="post-"]::before {
     border-top: 3px solid #333;
 }
 
-/* [TMW-FIX] Model page "Videos Featuring" rating bar must match thumbnail/card width */
+/* [TMW-FIX] Videos Featuring rating UX parity with /videos/, strictly scoped to model page section */
+.single-model .videos-featuring .videos-list .thumb-block {
+    position: relative;
+}
+
 .single-model .videos-featuring .videos-list #rating-col {
     display: block !important;
     float: none !important;
@@ -747,22 +751,61 @@ article[id^="post-"]::before {
     width: 100% !important;
     max-width: none !important;
     box-sizing: border-box;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    margin: 0;
 }
 
 .single-model .videos-featuring .videos-list .rating-bar {
     display: block !important;
     float: none !important;
-    flex: 0 0 100%;
-    align-self: stretch;
     width: 100% !important;
     max-width: none !important;
     box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    height: 1.5em;
 }
 
 .single-model .videos-featuring .videos-list .rating-bar-meter {
     display: block;
     max-width: none;
     box-sizing: border-box;
+    transform: scaleX(0);
+    transform-origin: left center;
+    opacity: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.single-model .videos-featuring .videos-list .thumb-block:hover .rating-bar-meter {
+    transform: scaleX(1);
+    opacity: 1;
+}
+
+.single-model .videos-featuring .videos-list .rating-result {
+    margin: 0;
+}
+
+.single-model .videos-featuring .videos-list .rating-result .percentage {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    line-height: 1;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.single-model .videos-featuring .videos-list .rating-result .likes {
+    display: none;
 }
 
 .single-model .thumb-block .entry-header {
