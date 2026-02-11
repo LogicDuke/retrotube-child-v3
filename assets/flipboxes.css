@@ -133,13 +133,29 @@
   color:var(--tmw-accent);
 }
 
+/* Shared bottom label baseline (front + back) */
+.tmw-grid .tmw-flip .tmw-name,
+.tmwfm-grid .tmw-flip .tmw-name,
+.tmw-grid .tmw-flip .tmw-view,
+.tmwfm-grid .tmw-flip .tmw-view{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  min-height:34px;
+  padding:5px 12px;
+  line-height:1;
+  border-radius:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  max-width:none;
+  transform:none;
+}
+
 /* BACK: centered “View profile” in red */
 .tmw-view{
   position:absolute;
-  left:50%;
-  top:auto;
-  bottom:var(--tmw-flip-cta-bottom-desktop);
-  transform:translateX(-50%);
   padding:5px 10px; border-radius:8px;
   font-weight:800; font-size:.90rem;
   color:var(--tmw-accent); background:rgba(0,0,0,.55);
@@ -178,64 +194,35 @@
   .tmw-layout{ grid-template-columns:1fr; }
 }
 
-/* ===== Attention animations for back label ===== */
-/* Subtle pulse on the label */
-.tmw-flip-back .tmw-view{
-  /* keep your existing styles; add the animation below */
-  animation: tmw-pulse 1.6s ease-in-out infinite;
-  will-change: transform, opacity;
+@keyframes tmw_flipbox_flash{
+  0%{ color:#fff; }
+  50%{ color:#e00000; }
+  100%{ color:#fff; }
 }
 
-
-/* Pulse the chip (slight scale + soft red glow) */
-@keyframes tmw-pulse{
-  0%   { transform: translateX(-50%) scale(1);    opacity: 1;    }
-  35%  { transform: translateX(-50%) scale(1.06); opacity: 0.92; }
-  70%  { transform: translateX(-50%) scale(1);    opacity: 1;    }
-  100% { transform: translateX(-50%) scale(1);    opacity: 1;    }
-}
-
-/* Nudge the >>> a tiny bit */
-@keyframes tmw-caret{
-  0%,100% { transform: translateX(0);   opacity: 1;   }
-  50%     { transform: translateX(2px); opacity: .92; }
-}
-
-/* ===== Attention animations for FRONT label (actor name) ===== */
-.tmw-flip-front .tmw-name{
-  /* keep existing centering styles; add animation */
-  animation: tmw-pulse 1.6s ease-in-out infinite;
-  will-change: transform, opacity;
-}
-
-.tmw-flip-front .tmw-name::after{
-  /* we keep your existing '›››' or '>>>' content; just animate it */
-  animation: tmw-caret 1s ease-in-out infinite;
-  display: inline-block;
-}
-
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-name,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-name::after,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-view,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-name,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-name::after,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-view{
-  animation: none;
+.tmwfm-grid .tmw-flip .tmw-name,
+.tmwfm-grid .tmw-flip .tmw-name::after,
+.tmwfm-grid .tmw-flip .tmw-view,
+.tmw-grid .tmw-flip .tmw-name,
+.tmw-grid .tmw-flip .tmw-name::after,
+.tmw-grid .tmw-flip .tmw-view{
+  animation: tmw_flipbox_flash .85s linear infinite;
 }
 
 @media (prefers-reduced-motion:reduce){
-  .tmw-flip-back .tmw-view,
-  .tmw-flip-front .tmw-name,
-  .tmw-flip-front .tmw-name::after{
+  .tmwfm-grid .tmw-flip .tmw-name,
+  .tmwfm-grid .tmw-flip .tmw-name::after,
+  .tmwfm-grid .tmw-flip .tmw-view,
+  .tmw-grid .tmw-flip .tmw-name,
+  .tmw-grid .tmw-flip .tmw-name::after,
+  .tmw-grid .tmw-flip .tmw-view{
     animation:none;
   }
 }
 
 @media (max-width:768px), (pointer:coarse){
   .tmw-view{
-    bottom:var(--tmw-flip-cta-bottom-mobile);
+    bottom:0;
     font-size:1.80rem;
     line-height:1;
     padding:10px 16px;

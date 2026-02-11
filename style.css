@@ -339,6 +339,20 @@ body.home h1.widget-title > i.fa.fa-star.tmw-home-title-icon {
   transform: rotateY(180deg);
 }
 
+@keyframes tmw_flipbox_flash {
+  0% {
+    color: #fff;
+  }
+
+  50% {
+    color: #e00000;
+  }
+
+  100% {
+    color: #fff;
+  }
+}
+
 .model-flipbox {
   margin: 40px 0;
 }
@@ -1108,13 +1122,7 @@ a.tag-link {
 }
 
 .tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-name,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-name::after,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-view,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-name,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-name::after,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-view {
+.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse {
   animation: none;
 }
 
