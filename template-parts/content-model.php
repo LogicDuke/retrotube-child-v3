@@ -28,6 +28,9 @@ $rating_percent = function_exists( 'tmw_get_model_rating_percent' )
 	: ( ( $likes_count + $dislikes_count ) > 0
 		? round( ( $likes_count / ( $likes_count + $dislikes_count ) ) * 100, 1 )
 		: 0 );
+$rating_percent = is_numeric( $rating_percent ) ? (float) $rating_percent : 0.0;
+if ( $rating_percent < 0 ) { $rating_percent = 0.0; }
+if ( $rating_percent > 100 ) { $rating_percent = 100.0; }
 $is_rated_yet   = ( 0 === ( $likes_count + $dislikes_count ) ) ? ' not-rated-yet' : '';
 ?>
 
