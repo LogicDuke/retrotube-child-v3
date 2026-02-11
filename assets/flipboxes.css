@@ -144,6 +144,7 @@
   display:flex;
   align-items:center;
   justify-content:center;
+  text-align:center;
   text-decoration:none;
   white-space:nowrap;
   overflow:hidden;
@@ -157,6 +158,7 @@
   font-weight:800;
   font-size:.90rem;
   color:var(--tmw-accent);
+  width:100%;
   pointer-events:auto;
   z-index:10;
 }
@@ -188,9 +190,9 @@
 }
 
 @keyframes tmw_flipbox_flash{
-  0%{ color:#fff; }
-  50%{ color:#e00000; }
-  100%{ color:#fff; }
+  0%, 8%, 22%, 100%{ color:#fff; }
+  12%, 16%{ color:#e00000; }
+  26%, 30%{ color:#e00000; }
 }
 
 .tmwfm-grid .tmw-flip .tmw-name,
@@ -199,7 +201,7 @@
 .tmw-grid .tmw-flip .tmw-name,
 .tmw-grid .tmw-flip .tmw-name::after,
 .tmw-grid .tmw-flip .tmw-view{
-  animation: tmw_flipbox_flash .85s linear infinite;
+  animation: tmw_flipbox_flash 2.2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion:reduce){
