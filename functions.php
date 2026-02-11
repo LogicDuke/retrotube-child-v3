@@ -16,7 +16,6 @@ if (file_exists($__codex_link_guard)) {
 // [TMW-FILTER-LINKS] loader (v3.6.4)
 /*
 DELETE_BLOCK_START TMW-FILTER-CANONICAL v<=3.6.3
-// require_once __DIR__ . '/inc/tmw-filter-canonical.php';
 DELETE_BLOCK_END
 */
 $__tmw_filter_links = __DIR__ . '/inc/tmw-filter-links.php';
