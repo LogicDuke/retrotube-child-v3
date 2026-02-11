@@ -277,82 +277,6 @@ body.home h1.widget-title > i.fa.fa-star.tmw-home-title-icon {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
-.tmw-grid .tmw-flip,
-.tmwfm-grid .tmw-flip {
-  position: relative;
-  display: block;
-  perspective: 1000px;
-  text-decoration: none;
-  color: inherit;
-}
-
-.tmw-grid .tmw-flip::before,
-.tmwfm-grid .tmw-flip::before {
-  content: "";
-  display: block;
-  padding-top: 150%;
-}
-
-.tmw-grid .tmw-flip .tmw-flip-inner,
-.tmwfm-grid .tmw-flip .tmw-flip-inner,
-.tmw-grid .tmw-flip .tmw-flip-front,
-.tmwfm-grid .tmw-flip .tmw-flip-front,
-.tmw-grid .tmw-flip .tmw-flip-back,
-.tmwfm-grid .tmw-flip .tmw-flip-back {
-  position: absolute;
-  inset: 0;
-}
-
-.tmw-grid .tmw-flip-front,
-.tmwfm-grid .tmw-flip-front,
-.tmw-grid .tmw-flip-back,
-.tmwfm-grid .tmw-flip-back {
-  background-size: var(--tmw-bgsize, cover);
-  background-position: var(--tmw-bgpos, 50% 50%);
-  background-repeat: no-repeat;
-  border-radius: 12px;
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.tmw-grid .tmw-flip-inner,
-.tmwfm-grid .tmw-flip-inner {
-  transform-style: preserve-3d;
-  transition: transform 0.55s ease;
-}
-
-.tmw-grid .tmw-flip-front,
-.tmwfm-grid .tmw-flip-front {
-  transform: rotateY(0deg);
-}
-
-.tmw-grid .tmw-flip-back,
-.tmwfm-grid .tmw-flip-back {
-  transform: rotateY(180deg);
-}
-
-.tmw-grid .tmw-flip:hover .tmw-flip-inner,
-.tmw-grid .tmw-flip:focus .tmw-flip-inner,
-.tmwfm-grid .tmw-flip:hover .tmw-flip-inner,
-.tmwfm-grid .tmw-flip:focus .tmw-flip-inner {
-  transform: rotateY(180deg);
-}
-
-@keyframes tmw_flipbox_flash {
-  0% {
-    color: #fff;
-  }
-
-  50% {
-    color: #e00000;
-  }
-
-  100% {
-    color: #fff;
-  }
-}
-
 .model-flipbox {
   margin: 40px 0;
 }
@@ -946,43 +870,6 @@ a.tag-link {
   margin: 0 0 12px !important;
   /* do NOT set text-align on parent containers */
 }
-
-/* =========================
-   Flipbox: "View profile" CTA safe offset
-   v3.5.4 — keep the ribbon fully visible on back face
-   ========================= */
-:root {
-  /* Fine-tune if needed without touching selectors */
-  --tmw-flip-cta-top-desktop: 24px;
-  --tmw-flip-cta-top-mobile: 14px;
-}
-
-/* Ensure the back face is a positioning context */
-.tmw-flip .flip-back {
-  position: relative;
-}
-
-/* Nudge the CTA ribbon down a bit on the BACK side only */
-.tmw-flip .flip-back .view-profile {
-  position: absolute;
-  top: var(--tmw-flip-cta-top-desktop) !important; /* down from the very top */
-  left: 0;
-  right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  /* Safety: ignore any previous "center-on-edge" tricks */
-  bottom: auto !important;
-  transform: none !important;
-  /* Keep pill inside rounded edges */
-  max-width: calc(100% - 24px);
-}
-
-@media (max-width: 768px) {
-  .tmw-flip .flip-back .view-profile {
-    top: var(--tmw-flip-cta-top-mobile) !important;
-  }
-}
-
 
 /* v4.0.3-b — Mobile: center cards without vw overflow */
 @media (max-width: 840px) {
