@@ -5,7 +5,7 @@
  */
 get_header();
 ?>
-<div class="tmw-title"><span class="tmw-star">★</span>Models</div>
+<div class="tmw-title"><i class="fa fa-star tmw-star" aria-hidden="true"></i>Models</div>
 <div class="tmw-layout">
   <main id="primary" class="site-main" data-mobile-guard="true">
     <?php
