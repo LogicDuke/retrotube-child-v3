@@ -110,18 +110,12 @@
 
 /* ---------- OVERLAYS ---------- */
 /* Front & Back labels — smaller + single line */
-/* FRONT: actor name centered */
+/* FRONT: actor name label */
 .tmw-name{
-  position:absolute; left:50%; bottom:12px;
-  transform:translateX(-50%);
-  padding:5px 10px; border-radius:8px;
-  font-weight:800; font-size:.90rem;
-  color:#fff; background:rgba(0,0,0,.55); line-height:1;
+  font-weight:800;
+  font-size:.90rem;
+  color:#fff;
   text-decoration:none;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  max-width:88%;
 }
 /* Front arrows smaller too (still in red) */
 .tmw-name::after{
@@ -133,7 +127,7 @@
   color:var(--tmw-accent);
 }
 
-/* Shared bottom label baseline (front + back) */
+/* Shared bottom bar baseline (front + back) */
 .tmw-grid .tmw-flip .tmw-name,
 .tmwfm-grid .tmw-flip .tmw-name,
 .tmw-grid .tmw-flip .tmw-view,
@@ -146,24 +140,23 @@
   padding:5px 12px;
   line-height:1;
   border-radius:0;
+  background:rgba(0,0,0,.55);
   display:flex;
   align-items:center;
   justify-content:center;
+  text-decoration:none;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
   max-width:none;
   transform:none;
 }
 
-/* BACK: centered “View profile” in red */
+/* BACK: “View profile” label */
 .tmw-view{
-  position:absolute;
-  padding:5px 10px; border-radius:8px;
-  font-weight:800; font-size:.90rem;
-  color:var(--tmw-accent); background:rgba(0,0,0,.55);
-  text-decoration:none; line-height:1;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  max-width:calc(100% - 24px);
+  font-weight:800;
+  font-size:.90rem;
+  color:var(--tmw-accent);
   pointer-events:auto;
   z-index:10;
 }
@@ -217,31 +210,19 @@
   .tmw-grid .tmw-flip .tmw-name::after,
   .tmw-grid .tmw-flip .tmw-view{
     animation:none;
+    color:#fff;
   }
 }
 
 @media (max-width:768px), (pointer:coarse){
-  .tmw-view{
-    bottom:0;
+  .tmw-grid .tmw-flip .tmw-name,
+  .tmwfm-grid .tmw-flip .tmw-name,
+  .tmw-grid .tmw-flip .tmw-view,
+  .tmwfm-grid .tmw-flip .tmw-view{
     font-size:1.80rem;
     line-height:1;
     padding:10px 16px;
-    border-radius:12px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    max-width:92%;
-    cursor:pointer;
-  }
-  .tmw-name{
-    font-size:1.80rem;
-    line-height:1;
-    padding:10px 16px;
-    border-radius:12px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    max-width:92%;
+    min-height:44px;
   }
   .tmw-name::after{
     font-size:1.80rem;
