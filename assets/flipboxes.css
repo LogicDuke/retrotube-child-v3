@@ -1,17 +1,5 @@
-/* =========================================================
-   Flipboxes CSS — Retrotube Child (Flipbox Edition) v2
-   ========================================================= */
-
-/* Theme accent (red) */
 .tmw-grid{ --tmw-accent:#db001a; }
 
-/* v3.5.7 — Flipbox CTA bottom offsets */
-:root{
-  --tmw-flip-cta-bottom-desktop:5px;
-  --tmw-flip-cta-bottom-mobile:5px;
-}
-
-/* ---------- GRID ---------- */
 .tmw-grid{
   display:grid;
   gap:24px;
@@ -19,7 +7,6 @@
   content-visibility:auto;
   contain-intrinsic-size:1px 1600px;
 }
-/* columns helpers (you set tmw-cols-* in PHP) */
 .tmw-cols-2{ grid-template-columns:repeat(2,minmax(0,1fr)); }
 .tmw-cols-3{ grid-template-columns:repeat(3,minmax(0,1fr)); }
 .tmw-cols-4{ grid-template-columns:repeat(4,minmax(0,1fr)); }
@@ -35,7 +22,6 @@
   .tmw-cols-2,.tmw-cols-3,.tmw-cols-4,.tmw-cols-5{ grid-template-columns:1fr; }
 }
 
-/* ---------- CARD / LINK ---------- */
 .tmw-flip{
   position:relative;
   display:block;
@@ -48,7 +34,6 @@
   aspect-ratio:2/3;
   perspective:1000px;
 }
-/* fallback for browsers without aspect-ratio */
 .tmw-flip::before{ content:""; float:left; padding-bottom:150%; /* 3/2 = 1.5 */ }
 .tmw-flip::after{ content:""; display:block; clear:both; }
 
@@ -83,19 +68,16 @@
   z-index:3;
 }
 
-/* Flip the inner container */
 .tmw-flip.flipped .tmw-flip-inner{
   transform:rotateY(180deg);
 }
 
-/* After flip, disable front interactions so back buttons receive taps */
 .tmw-flip.flipped .tmw-face.front,
 .tmw-flip.flipped .tmw-front,
 .tmw-flip.flipped .tmw-flip-front{
   pointer-events:none !important;
 }
 
-/* If a theme wraps the entire card in an anchor, disable it only while flipped */
 .tmw-flip.flipped > a:first-child{
   pointer-events:none !important;
 }
@@ -108,16 +90,12 @@
   .tmw-flip-inner{ transition:none; }
 }
 
-/* ---------- OVERLAYS ---------- */
-/* Front & Back labels — smaller + single line */
-/* FRONT: actor name label */
 .tmw-name{
   font-weight:800;
   font-size:.90rem;
-  color:#fff;
+  color:var(--tmw-accent);
   text-decoration:none;
 }
-/* Front arrows smaller too (still in red) */
 .tmw-name::after{
   content:" >>>";
   margin-left:8px;
@@ -127,7 +105,6 @@
   color:var(--tmw-accent);
 }
 
-/* Shared bottom bar baseline (front + back) */
 .tmw-grid .tmw-flip .tmw-name,
 .tmwfm-grid .tmw-flip .tmw-name,
 .tmw-grid .tmw-flip .tmw-view,
@@ -150,10 +127,23 @@
   overflow:hidden;
   text-overflow:ellipsis;
   max-width:none;
+  width:100%;
+  margin:0 auto;
   transform:none;
 }
 
-/* BACK: “View profile” label */
+.tmw-grid .tmw-flip .tmw-flip-back .tmw-view,
+.tmwfm-grid .tmw-flip .tmw-flip-back .tmw-view{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  width:100%;
+  max-width:none;
+  margin:0 auto;
+  transform:none;
+}
+
 .tmw-view{
   font-weight:800;
   font-size:.90rem;
@@ -163,7 +153,6 @@
   z-index:10;
 }
 
-/* ---------- PAGINATION ---------- */
 .tmw-pagination{
   grid-column:1 / -1;
   display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
@@ -181,7 +170,6 @@
 }
 .tmw-pagination .page-numbers:hover{ filter:brightness(1.2); }
 
-/* ---------- LAYOUT WITH SIDEBAR ---------- */
 .tmw-layout{
   display:grid; grid-template-columns:1fr 320px; gap:24px;
 }
@@ -189,10 +177,19 @@
   .tmw-layout{ grid-template-columns:1fr; }
 }
 
-@keyframes tmw_flipbox_flash{
-  0%, 8%, 22%, 100%{ color:#fff; }
-  12%, 16%{ color:#e00000; }
-  26%, 30%{ color:#e00000; }
+@keyframes tmw_flipbox_heartbeat{
+  0%, 18%, 100%{
+    opacity:1;
+    text-shadow:0 0 0 rgba(219,0,26,0);
+  }
+  6%, 10%{
+    opacity:.92;
+    text-shadow:0 0 8px rgba(219,0,26,.65);
+  }
+  14%, 18%{
+    opacity:.86;
+    text-shadow:0 0 12px rgba(219,0,26,.85);
+  }
 }
 
 .tmwfm-grid .tmw-flip .tmw-name,
@@ -201,7 +198,7 @@
 .tmw-grid .tmw-flip .tmw-name,
 .tmw-grid .tmw-flip .tmw-name::after,
 .tmw-grid .tmw-flip .tmw-view{
-  animation: tmw_flipbox_flash 2.2s ease-in-out infinite;
+  animation: tmw_flipbox_heartbeat 1.8s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -212,7 +209,9 @@
   .tmw-grid .tmw-flip .tmw-name::after,
   .tmw-grid .tmw-flip .tmw-view{
     animation:none;
-    color:#fff;
+    color:var(--tmw-accent);
+    opacity:1;
+    text-shadow:none;
   }
 }
 
@@ -232,7 +231,6 @@
   }
 }
 
-/* Safety net: hide any leftover video embeds inside the post description */
 .entry-content iframe,
 .entry-content video,
 .entry-content .wp-block-embed,
