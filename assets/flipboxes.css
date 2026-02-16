@@ -199,6 +199,24 @@
   animation: tmw_flipbox_heartbeat 2.6s ease-in-out infinite;
 }
 
+@keyframes tmw_view_hover_flash{
+  0%, 100%{ color:#fff; }
+  50%{ color:var(--tmw-accent); }
+}
+
+.tmw-grid .tmw-flip:hover .tmw-view,
+.tmw-grid .tmw-view:hover,
+.tmw-grid .tmw-view:focus-visible,
+.tmwfm-grid .tmw-flip:hover .tmw-view,
+.tmwfm-grid .tmw-view:hover,
+.tmwfm-grid .tmw-view:focus-visible{
+  color:#fff;
+  animation:tmw_view_hover_flash 1s ease-in-out infinite;
+  opacity:1;
+  filter:none;
+  text-decoration:none;
+}
+
 @media (prefers-reduced-motion:reduce){
   .tmwfm-grid .tmw-flip .tmw-name,
   .tmwfm-grid .tmw-flip .tmw-name::after,
@@ -210,6 +228,16 @@
     color:#fff;
     opacity:1;
     text-shadow:0 0 8px rgba(0,0,0,.95);
+  }
+
+  .tmw-grid .tmw-flip:hover .tmw-view,
+  .tmw-grid .tmw-view:hover,
+  .tmw-grid .tmw-view:focus-visible,
+  .tmwfm-grid .tmw-flip:hover .tmw-view,
+  .tmwfm-grid .tmw-view:hover,
+  .tmwfm-grid .tmw-view:focus-visible{
+    animation:none;
+    color:#fff;
   }
 }
 
