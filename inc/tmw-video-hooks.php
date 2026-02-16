@@ -379,6 +379,10 @@ if (!function_exists('tmw_featured_models_shortcode')) {
       wp_enqueue_style('tmw-flip-a11y');
     }
 
+    if (wp_script_is('tmw-flip-guard', 'registered')) {
+      wp_enqueue_script('tmw-flip-guard');
+    }
+
     if (!wp_script_is('tmw-flip-a11y', 'registered')) {
       $a11y_script_path = get_stylesheet_directory() . '/js/tmw-flip-a11y.js';
       if (file_exists($a11y_script_path)) {

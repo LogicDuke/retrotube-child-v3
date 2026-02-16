@@ -1,52 +1,55 @@
 (function () {
   try {
-    var isTouch = function () {
+    var hasTouchPointer = function () {
       try {
-        return matchMedia('(hover: none)').matches || 'ontouchstart' in window;
+        return window.matchMedia('(hover: none), (pointer: coarse)').matches || 'ontouchstart' in window;
       } catch (_) {
         return 'ontouchstart' in window;
       }
     };
 
-    if (!isTouch()) {
+    if (!hasTouchPointer()) {
       return;
     }
 
-    var inBackFace = function (el) {
-      return !!(el && el.closest('.tmw-face.back, .tmw-back, .tmw-flip-back'));
+    var cardSelector = '.tmw-flip';
+    var containerSelector = '.tmw-grid, .tmwfm-grid';
+
+    var closeAllExcept = function (activeCard) {
+      var cards = document.querySelectorAll(cardSelector + '.flipped');
+      cards.forEach(function (card) {
+        if (card !== activeCard) {
+          card.classList.remove('flipped');
+        }
+      });
     };
 
-    var inCard = function (el) {
-      return el ? el.closest('.tmw-flip') : null;
-    };
+    document.addEventListener('pointerdown', function (e) {
+      var cta = e.target.closest('.tmw-view');
+      var tappedCard = e.target.closest(cardSelector);
+      var inFlipContext = e.target.closest(containerSelector);
 
-    var onPointer = function (e) {
-      var card = inCard(e.target);
-      if (!card) {
+      if (!tappedCard || !inFlipContext) {
+        closeAllExcept(null);
         return;
       }
 
-      var flipped = card.classList.contains('flipped');
-      var targetIsBack = inBackFace(e.target);
+      var isFlipped = tappedCard.classList.contains('flipped');
 
-      if (flipped || targetIsBack) {
+      if (cta && isFlipped) {
+        closeAllExcept(tappedCard);
         return;
       }
 
-      var anchor = e.target.closest('a');
+      e.preventDefault();
 
-      if (anchor) {
-        e.preventDefault();
-        e.stopPropagation();
+      closeAllExcept(tappedCard);
+
+      if (isFlipped) {
+        tappedCard.classList.remove('flipped');
+      } else {
+        tappedCard.classList.add('flipped');
       }
-
-      card.classList.add('flipped');
-      card.classList.add('tmw-flip-armed');
-      setTimeout(function () {
-        card.classList.remove('tmw-flip-armed');
-      }, 1500);
-    };
-
-    document.addEventListener('pointerdown', onPointer, { capture: true, passive: false });
+    }, { capture: true, passive: false });
   } catch (_) {}
 })();
