@@ -282,7 +282,7 @@ if (!function_exists('tmw_render_flipbox_card')) {
         </div>
         <div class="tmw-flip-back" style="<?php echo esc_attr($back_style); ?>">
           <?php if ($cta_link) : ?>
-            <a href="<?php echo esc_url($cta_link); ?>" data-href="<?php echo esc_url($cta_link); ?>" class="tmw-view" style="display:inline-block; text-decoration:none; color:inherit;"><?php echo $sr_label; ?>View profile &raquo;&raquo;&raquo;</a>
+            <a href="<?php echo esc_url($cta_link); ?>" data-href="<?php echo esc_url($cta_link); ?>" class="tmw-view"><?php echo $sr_label; ?>View profile &raquo;&raquo;&raquo;</a>
           <?php else : ?>
             <span class="tmw-view"><?php echo $sr_label; ?>View profile &raquo;&raquo;&raquo;</span>
           <?php endif; ?>
@@ -626,7 +626,7 @@ function tmw_models_flipboxes_cb($atts){
     echo     '</div>';
     echo     '<div class="tmw-flip-back"  style="' . esc_attr($back_style) . '">';
     if ($cta_link) {
-      echo '<a href="' . esc_url($cta_link) . '" data-href="' . esc_url($cta_link) . '" class="tmw-view" style="display:inline-block; text-decoration:none; color:inherit;">' . $sr_label . 'View profile &raquo;&raquo;&raquo;</a>';
+      echo '<a href="' . esc_url($cta_link) . '" data-href="' . esc_url($cta_link) . '" class="tmw-view">' . $sr_label . 'View profile &raquo;&raquo;&raquo;</a>';
     } else {
       echo '<span class="tmw-view">' . $sr_label . 'View profile &raquo;&raquo;&raquo;</span>';
     }
