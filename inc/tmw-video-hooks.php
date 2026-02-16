@@ -282,9 +282,9 @@ if (!function_exists('tmw_render_flipbox_card')) {
         </div>
         <div class="tmw-flip-back" style="<?php echo esc_attr($back_style); ?>">
           <?php if ($cta_link) : ?>
-            <a href="<?php echo esc_url($cta_link); ?>" data-href="<?php echo esc_url($cta_link); ?>" class="tmw-view"><?php echo $sr_label; ?>View profile &raquo;&raquo;&raquo;</a>
+            <a href="<?php echo esc_url($cta_link); ?>" data-href="<?php echo esc_url($cta_link); ?>" class="tmw-view"><?php echo $sr_label; ?>View profile</a>
           <?php else : ?>
-            <span class="tmw-view"><?php echo $sr_label; ?>View profile &raquo;&raquo;&raquo;</span>
+            <span class="tmw-view"><?php echo $sr_label; ?>View profile</span>
           <?php endif; ?>
         </div>
       </div>
@@ -307,7 +307,7 @@ if (!function_exists('tmw_featured_settings')) {
       'pool'      => isset($s['curated_pool']) ? (array)$s['curated_pool'] : (isset($s['pool']) ? (array)$s['pool'] : []),
       'show_name' => isset($s['show_names']) ? (bool)$s['show_names'] : true,
       'show_cta'  => isset($s['show_cta'])   ? (bool)$s['show_cta']   : true,
-      'cta_text'  => isset($s['cta_text'])   ? (string)$s['cta_text'] : 'View profile »»»',
+      'cta_text'  => isset($s['cta_text'])   ? (string)$s['cta_text'] : 'View profile',
       'target'    => isset($s['target'])     ? (string)$s['target']    : '_self',
     ];
   }
@@ -626,9 +626,9 @@ function tmw_models_flipboxes_cb($atts){
     echo     '</div>';
     echo     '<div class="tmw-flip-back"  style="' . esc_attr($back_style) . '">';
     if ($cta_link) {
-      echo '<a href="' . esc_url($cta_link) . '" data-href="' . esc_url($cta_link) . '" class="tmw-view">' . $sr_label . 'View profile &raquo;&raquo;&raquo;</a>';
+      echo '<a href="' . esc_url($cta_link) . '" data-href="' . esc_url($cta_link) . '" class="tmw-view">' . $sr_label . 'View profile</a>';
     } else {
-      echo '<span class="tmw-view">' . $sr_label . 'View profile &raquo;&raquo;&raquo;</span>';
+      echo '<span class="tmw-view">' . $sr_label . 'View profile</span>';
     }
     echo     '</div>';
     echo   '</div>';
