@@ -544,7 +544,7 @@ function tmw_models_flipboxes_cb($atts){
   }
 
   ob_start();
-  printf('<div class="tmw-grid tmw-cols-%d">', (int)$a['cols']);
+  printf('<div class="tmw-grid tmwfm-grid tmw-cols-%d">', (int)$a['cols']);
 
 
   $schema_items = [];
