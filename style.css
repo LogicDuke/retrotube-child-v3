@@ -734,6 +734,21 @@ article[id^="post-"]::before {
     opacity: 1;
 }
 
+/* Home videos widget: keep rating bar aligned to full thumbnail width */
+.home .widget_videos_block .videos-list .thumb-block .rating-bar {
+    display: block;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+.home .widget_videos_block .videos-list .thumb-block .rating-bar-meter {
+    display: block;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
 .single-model .videos-featuring .videos-list .tmw-vid-rating .rating-result {
     position: absolute;
     top: 0;
