@@ -12,11 +12,24 @@
 
     var cardSelector = '.tmw-flip';
     var containerSelector = '.tmw-grid, .tmwfm-grid';
+    var tapPulseTimers = new WeakMap();
 
     var closeAllExcept = function (activeCard) {
       document.querySelectorAll(cardSelector + '.flipped').forEach(function (card) {
         if (card !== activeCard) card.classList.remove('flipped');
       });
+    };
+
+    var pulseTapFeedback = function (card) {
+      var existingTimer = tapPulseTimers.get(card);
+      if (existingTimer) clearTimeout(existingTimer);
+
+      card.classList.add('tmw-tap');
+      var timeoutId = setTimeout(function () {
+        card.classList.remove('tmw-tap');
+        tapPulseTimers.delete(card);
+      }, 140);
+      tapPulseTimers.set(card, timeoutId);
     };
 
     document.addEventListener(
@@ -49,6 +62,7 @@
         // Otherwise: prevent navigation (e.g., wrapper link) and toggle flip
         e.preventDefault();
         closeAllExcept(tappedCard);
+        pulseTapFeedback(tappedCard);
         tappedCard.classList.toggle('flipped');
       },
       true
