@@ -680,21 +680,17 @@ article[id^="post-"]::before {
     position: relative;
 }
 
-.home .widget_videos_block .videos-list .thumb-block {
+.widget_videos_block .videos-list .thumb-block:not(.tmw-model-video-item) {
     position: relative;
 }
 
-/* Kill the inline baseline gap between thumbnail and rating bar */
+/* Kill thumbnail baseline gap without collapsing text inside rating UI */
 .single-model .videos-featuring .videos-list .tmw-model-video-item > a {
     display: block;
-    line-height: 0;
-    font-size: 0;
 }
 
-.home .widget_videos_block .videos-list .thumb-block > a {
+.widget_videos_block .videos-list .thumb-block:not(.tmw-model-video-item) > a {
     display: block;
-    line-height: 0;
-    font-size: 0;
 }
 
 .single-model .videos-featuring .videos-list .tmw-model-video-item img {
@@ -703,7 +699,7 @@ article[id^="post-"]::before {
     height: auto;
 }
 
-.home .widget_videos_block .videos-list .thumb-block img {
+.widget_videos_block .videos-list .thumb-block:not(.tmw-model-video-item) img {
     display: block;
     width: 100%;
     height: auto;
@@ -721,11 +717,19 @@ article[id^="post-"]::before {
     line-height: 0;
 }
 
-.home .widget_videos_block .videos-list .thumb-block .tmw-vid-rating,
-.home .widget_videos_block .videos-list .thumb-block .rating-bar {
+.widget_videos_block .videos-list .thumb-block:not(.tmw-model-video-item) .tmw-vid-rating,
+.widget_videos_block .videos-list .thumb-block:not(.tmw-model-video-item) .rating-bar,
+.widget_videos_block .videos-list .thumb-block:not(.tmw-model-video-item) .rating-result {
     display: block;
     width: 100%;
     box-sizing: border-box;
+}
+
+.widget_videos_block .videos-list .thumb-block:not(.tmw-model-video-item) .tmw-vid-rating,
+.widget_videos_block .videos-list .thumb-block:not(.tmw-model-video-item) .rating-result,
+.widget_videos_block .videos-list .thumb-block:not(.tmw-model-video-item) .rating-result .percentage {
+    font-size: inherit;
+    line-height: normal;
 }
 
 .single-model .videos-featuring .videos-list .tmw-vid-rating .rating-bar {
