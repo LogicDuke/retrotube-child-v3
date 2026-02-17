@@ -1,55 +1,57 @@
 (function () {
   try {
-    var hasTouchPointer = function () {
+    var isTouchOnly = function () {
       try {
-        return window.matchMedia('(hover: none), (pointer: coarse)').matches || 'ontouchstart' in window;
+        return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
       } catch (_) {
-        return 'ontouchstart' in window;
+        return false;
       }
     };
 
-    if (!hasTouchPointer()) {
-      return;
-    }
+    if (!isTouchOnly()) return;
 
     var cardSelector = '.tmw-flip';
     var containerSelector = '.tmw-grid, .tmwfm-grid';
 
     var closeAllExcept = function (activeCard) {
-      var cards = document.querySelectorAll(cardSelector + '.flipped');
-      cards.forEach(function (card) {
-        if (card !== activeCard) {
-          card.classList.remove('flipped');
-        }
+      document.querySelectorAll(cardSelector + '.flipped').forEach(function (card) {
+        if (card !== activeCard) card.classList.remove('flipped');
       });
     };
 
-    document.addEventListener('pointerdown', function (e) {
-      var cta = e.target.closest('.tmw-view');
-      var tappedCard = e.target.closest(cardSelector);
-      var inFlipContext = e.target.closest(containerSelector);
+    document.addEventListener(
+      'click',
+      function (e) {
+        var inFlipContext = e.target.closest(containerSelector);
+        var tappedCard = e.target.closest(cardSelector);
+        var cta = e.target.closest('.tmw-view');
 
-      if (!tappedCard || !inFlipContext) {
-        closeAllExcept(null);
-        return;
-      }
+        // Tap outside any flip context -> close all
+        if (!inFlipContext) {
+          closeAllExcept(null);
+          return;
+        }
 
-      var isFlipped = tappedCard.classList.contains('flipped');
+        // Tap inside context but not on a card -> close all
+        if (!tappedCard) {
+          closeAllExcept(null);
+          return;
+        }
 
-      if (cta && isFlipped) {
+        var isFlipped = tappedCard.classList.contains('flipped');
+
+        // If user taps CTA while already flipped -> allow navigation
+        if (cta && isFlipped) {
+          closeAllExcept(tappedCard);
+          return;
+        }
+
+        // Otherwise: prevent navigation (e.g., wrapper link) and toggle flip
+        e.preventDefault();
         closeAllExcept(tappedCard);
-        return;
-      }
-
-      e.preventDefault();
-
-      closeAllExcept(tappedCard);
-
-      if (isFlipped) {
-        tappedCard.classList.remove('flipped');
-      } else {
-        tappedCard.classList.add('flipped');
-      }
-    }, { capture: true, passive: false });
+        tappedCard.classList.toggle('flipped');
+      },
+      true
+    );
   } catch (_) {}
 })();
