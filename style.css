@@ -1295,8 +1295,13 @@ a.tag-link {
 .widget.widget_videos_block .thumb-block > a,
 .widget.widget_videos_block .thumb-block .post-thumbnail {
     display: block;
-    line-height: 0;
-    font-size: 0;
+}
+
+/* Restore font-size for rating bar — em-based heights collapse to zero if inherited from font-size:0 */
+.widget.widget_videos_block .thumb-block .rating-bar,
+.widget.widget_videos_block .thumb-block .tmw-vid-rating {
+    font-size: 1rem;
+    line-height: normal;
 }
 
 /* Thumbnail image: fill the block completely. */
