@@ -680,6 +680,10 @@ article[id^="post-"]::before {
     position: relative;
 }
 
+.home .widget_videos_block .videos-list .thumb-block {
+    position: relative;
+}
+
 /* Kill the inline baseline gap between thumbnail and rating bar */
 .single-model .videos-featuring .videos-list .tmw-model-video-item > a {
     display: block;
@@ -687,7 +691,19 @@ article[id^="post-"]::before {
     font-size: 0;
 }
 
+.home .widget_videos_block .videos-list .thumb-block > a {
+    display: block;
+    line-height: 0;
+    font-size: 0;
+}
+
 .single-model .videos-featuring .videos-list .tmw-model-video-item img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.home .widget_videos_block .videos-list .thumb-block img {
     display: block;
     width: 100%;
     height: auto;
@@ -703,6 +719,13 @@ article[id^="post-"]::before {
     margin: 0;
     padding: 0;
     line-height: 0;
+}
+
+.home .widget_videos_block .videos-list .thumb-block .tmw-vid-rating,
+.home .widget_videos_block .videos-list .thumb-block .rating-bar {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .single-model .videos-featuring .videos-list .tmw-vid-rating .rating-bar {
