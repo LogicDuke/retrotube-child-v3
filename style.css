@@ -1280,6 +1280,42 @@ a.tag-link {
   border: 0;
 }
 
+/* [TMW-FIX] Votebar (rating-bar) must be exactly as wide as the video thumbnail
+   in the [tmw_home_videos] shortcode output (.widget_videos_block).
+   Root cause: the parent theme leaves the <a> wrapping the thumbnail as
+   inline/inline-block, so .rating-bar (a block element) inherits a different
+   width than the <img>.  We make the chain explicitly block + 100 %. */
+
+.widget.widget_videos_block .thumb-block {
+    position: relative;
+}
+
+/* The anchor that wraps thumbnail + rating bar must be a block so its
+   children share the same 100 % width reference. */
+.widget.widget_videos_block .thumb-block > a,
+.widget.widget_videos_block .thumb-block .post-thumbnail {
+    display: block;
+    line-height: 0;
+    font-size: 0;
+}
+
+/* Thumbnail image: fill the block completely. */
+.widget.widget_videos_block .thumb-block img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Rating bar + its wrapper: same width as the image above it. */
+.widget.widget_videos_block .thumb-block .tmw-vid-rating,
+.widget.widget_videos_block .thumb-block .rating-bar {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 /* [TMW-A11Y-FOOTER-HOVER] Legal footer links: red on hover/focus (scope to 4 known URLs only) */
 footer#colophon.site-footer a[href*="/terms-of-use-of-top-models-webcam-directory/"]:hover,
 footer#colophon.site-footer a[href*="/terms-of-use-of-top-models-webcam-directory/"]:focus,
