@@ -289,14 +289,6 @@
   animation: tmw_flipbox_heartbeat 2.6s ease-in-out infinite;
 }
 
-/* Arrow pulses red on heartbeat — handled via text-shadow above */
-.tmwfm-grid .tmw-flip .tmw-name::after,
-.tmwfm-grid .tmw-flip .tmw-view::after,
-.tmw-grid .tmw-flip .tmw-name::after,
-.tmw-grid .tmw-flip .tmw-view::after{
-  animation: tmw_flipbox_heartbeat 2.6s ease-in-out infinite;
-}
-
 /* ============================================
    HOVER FLASH — back card CTA
    ============================================ */
