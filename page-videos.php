@@ -145,7 +145,7 @@ tmw_render_sidebar_layout('', function () use ( $filter, $instance, $tmw_video_w
             array(
                 'title'          => 'Latest videos',
                 'video_type'     => 'latest',
-                'video_number'   => 6,
+                'video_number'   => 8,
                 'video_category' => 0,
             ),
             array(
@@ -161,7 +161,7 @@ tmw_render_sidebar_layout('', function () use ( $filter, $instance, $tmw_video_w
             array(
                 'title'          => 'Longest videos',
                 'video_type'     => 'longest',
-                'video_number'   => 12,
+                'video_number'   => 8,
                 'video_category' => 0,
             ),
             array(
