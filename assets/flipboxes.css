@@ -133,8 +133,8 @@
   right:0;
   bottom:0;
   /* tall gradient bleed — cinematic burn effect */
-  min-height:72px;
-  padding:18px 14px 12px;
+  min-height:48px;
+  padding:12px 14px 10px;
   line-height:1.3;
   border-radius:0;
   /* deep crimson gradient rising from bottom */
