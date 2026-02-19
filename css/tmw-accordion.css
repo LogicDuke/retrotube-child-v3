@@ -95,8 +95,6 @@
 .tmw-accordion-readmore:focus,
 .tmw-accordion-readmore:active,
 .tmw-accordion-readmore:focus-visible {
-    background: transparent !important;
-    background-color: transparent !important;
     box-shadow: none !important;
     outline: none !important;
     -webkit-tap-highlight-color: transparent;
@@ -115,42 +113,36 @@
     color: #e74c3c;
     text-decoration: none;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     cursor: pointer;
-    padding: 0 15px;
+    padding: 5px 18px;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: color 0.2s ease;
+    border: 1px solid rgba(231, 76, 60, 0.45);
+    background: rgba(20, 0, 0, 0.55) !important;
+    border-radius: 3px;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.tmw-accordion-toggle:hover {
-    color: #ff6b5b;
+.tmw-accordion-toggle:hover,
+.tmw-accordion-toggle:focus {
+    color: #fff !important;
+    border-color: #e74c3c !important;
+    background: rgba(180, 20, 10, 0.75) !important;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.35), inset 0 0 6px rgba(0,0,0,0.4) !important;
+    text-decoration: none !important;
 }
 
-.tmw-accordion-toggle-wrap:hover .tmw-accordion-toggle .tmw-accordion-text::after {
-    background-color: #ff6b5b;
-}
-
-/* Text with dark underline */
+/* No underline on text */
 .tmw-accordion-toggle .tmw-accordion-text {
     position: relative;
 }
 
 .tmw-accordion-toggle .tmw-accordion-text::after {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background-color: #333;
-    transition: background-color 0.2s ease;
-}
-
-.tmw-accordion-toggle:hover .tmw-accordion-text::after {
-    background-color: #e74c3c;
+    display: none;
 }
 
 /* Icon */
@@ -158,6 +150,12 @@
 .tmw-accordion-toggle .fa {
     font-size: 12px;
     line-height: 1;
+    transition: transform 0.2s ease;
+}
+
+.tmw-accordion-toggle:hover i,
+.tmw-accordion-toggle:hover .fa {
+    transform: translateY(1px);
 }
 
 
