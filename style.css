@@ -1280,45 +1280,56 @@ a.tag-link {
   border: 0;
 }
 
-/* [TMW-FIX] Votebar (rating-bar) must be exactly as wide as the video thumbnail
-   in the [tmw_home_videos] shortcode output (.widget_videos_block).
-   Root cause: the parent theme leaves the <a> wrapping the thumbnail as
-   inline/inline-block, so .rating-bar (a block element) inherits a different
-   width than the <img>.  We make the chain explicitly block + 100 %. */
+/* [TMW-FIX] Votebar: match thumbnail width + fix text size & centering
+   for [tmw_home_videos] / .widget_videos_block */
 
 .widget.widget_videos_block .thumb-block {
     position: relative;
 }
 
-/* The anchor that wraps thumbnail + rating bar must be a block so its
-   children share the same 100 % width reference. */
 .widget.widget_videos_block .thumb-block > a,
 .widget.widget_videos_block .thumb-block .post-thumbnail {
     display: block;
 }
 
-/* Restore font-size for rating bar — em-based heights collapse to zero if inherited from font-size:0 */
-.widget.widget_videos_block .thumb-block .rating-bar,
-.widget.widget_videos_block .thumb-block .tmw-vid-rating {
-    font-size: 1rem;
-    line-height: normal;
-}
-
-/* Thumbnail image: fill the block completely. */
 .widget.widget_videos_block .thumb-block img {
     display: block;
     width: 100%;
     height: auto;
 }
 
-/* Rating bar + its wrapper: same width as the image above it. */
-.widget.widget_videos_block .thumb-block .tmw-vid-rating,
-.widget.widget_videos_block .thumb-block .rating-bar {
+.widget.widget_videos_block .thumb-block .tmw-vid-rating {
     display: block;
-    width: 100%;
+    width: 100% !important;
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+/* Single consolidated rule for the bar — flex for centering, !important to beat parent theme */
+.widget.widget_videos_block .thumb-block .rating-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11px !important;
+    line-height: 1 !important;
+    overflow: hidden;
+}
+
+.widget.widget_videos_block .thumb-block .rating-bar-meter {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+}
+
+.widget.widget_videos_block .thumb-block .rating-bar > *:not(.rating-bar-meter) {
+    position: relative;
+    z-index: 1;
 }
 
 /* [TMW-A11Y-FOOTER-HOVER] Legal footer links: red on hover/focus (scope to 4 known URLs only) */
