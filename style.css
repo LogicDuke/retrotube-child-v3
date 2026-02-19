@@ -1311,13 +1311,14 @@ a.tag-link {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    position: relative !important;
+    overflow: hidden !important;
     width: 100% !important;
     box-sizing: border-box !important;
     margin: 0 !important;
     padding: 0 !important;
     font-size: 11px !important;
     line-height: 1 !important;
-    overflow: hidden;
 }
 
 .widget.widget_videos_block .thumb-block .rating-bar-meter {
@@ -1325,6 +1326,7 @@ a.tag-link {
     top: 0;
     left: 0;
     height: 100%;
+    max-width: 100%;
 }
 
 .widget.widget_videos_block .thumb-block .rating-bar > *:not(.rating-bar-meter) {
