@@ -373,7 +373,7 @@
     font-size:1.80rem;
     line-height:1.2;
     padding:24px 16px 14px;
-    min-height:35px;
+    min-height:30px;
   }
   .tmw-name::after,
   .tmw-grid .tmw-flip .tmw-view::after,
