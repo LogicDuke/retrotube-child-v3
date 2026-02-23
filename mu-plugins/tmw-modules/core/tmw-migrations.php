@@ -15,6 +15,13 @@ return static function (): void {
     $registered = true;
 
     add_action('init', static function (): void {
+        static $did_run = false;
+
+        if ($did_run) {
+            return;
+        }
+        $did_run = true;
+
         $target_version = '2026.02.0';
         $version_option = 'tmw_mu_migrations_version';
 
