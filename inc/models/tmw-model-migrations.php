@@ -28,17 +28,17 @@ if (!function_exists('tmw_maybe_run_db_migration')) {
       return;
     }
 
-    if (get_option('tmw_db_version') === TMW_DB_VERSION) {
-      return;
+    if (get_option('tmw_db_version') !== TMW_DB_VERSION) {
+      global $wpdb;
+
+      $wpdb->query("UPDATE {$wpdb->posts} SET post_type = 'model' WHERE post_type = 'model_bio'");
+
+      update_option('tmw_migrated_model_bio', 1);
+      flush_rewrite_rules();
+      update_option('tmw_db_version', TMW_DB_VERSION);
     }
 
-    global $wpdb;
-
-    $wpdb->query("UPDATE {$wpdb->posts} SET post_type = 'model' WHERE post_type = 'model_bio'");
-
-    update_option('tmw_migrated_model_bio', 1);
-    flush_rewrite_rules();
-    update_option('tmw_db_version', TMW_DB_VERSION);
+    return;
   }
 }
 

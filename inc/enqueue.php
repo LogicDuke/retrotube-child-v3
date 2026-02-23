@@ -32,6 +32,10 @@ if (!function_exists('tmw_child_style_version')) {
  * STYLES + LIGHTWEIGHT OPTIMIZATIONS
  * ====================================================================== */
 add_action('wp_enqueue_scripts', function () {
+  if (is_admin()) {
+    return;
+  }
+
   $parent_version = wp_get_theme(get_template())->get('Version');
   $child_version  = tmw_child_style_version();
 

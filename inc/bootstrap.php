@@ -1,6 +1,11 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+// Global frontend runtime guard: avoid loading heavy frontend systems on admin/AJAX/cron requests.
+if (is_admin() || wp_doing_ajax() || defined('DOING_CRON')) {
+    return;
+}
+
 /** Lightweight autoload for namespaced classes (optional future use) */
 spl_autoload_register(function($class){
     $pfx = 'TMW\\Child\\';

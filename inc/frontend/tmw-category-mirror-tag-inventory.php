@@ -24,11 +24,15 @@ if (!function_exists('tmw_cat_mirror_log_once')) {
  * as long as the tag exists and has posts.
  */
 add_action('pre_get_posts', function ($query) {
-    if (is_admin() || wp_doing_ajax() || !($query instanceof WP_Query)) {
+    if (!($query instanceof WP_Query)) {
         return;
     }
 
-    if (!$query->is_main_query() || !$query->is_category()) {
+    if (is_admin() || !$query->is_main_query()) {
+        return;
+    }
+
+    if (!$query->is_category()) {
         return;
     }
 
