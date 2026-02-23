@@ -81,6 +81,10 @@ if (!function_exists('tmw_category_page_get_linked_term_url')) {
 }
 
 add_action('init', function () {
+    if (!tmw_is_frontend_request() || tmw_skip_runtime_for_admin_ajax_cron()) {
+        return;
+    }
+
     $labels = [
         'name'          => __('Category Pages', 'retrotube-child'),
         'singular_name' => __('Category Page', 'retrotube-child'),

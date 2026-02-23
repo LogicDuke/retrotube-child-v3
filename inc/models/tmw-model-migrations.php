@@ -6,20 +6,50 @@
 /**
  * Move all legacy model_bio posts into the model CPT.
  */
-add_action('init', function(){
-  global $wpdb;
-  if (get_option('tmw_migrated_model_bio')) return;
+if (!function_exists('tmw_should_skip_heavy_runtime')) {
+  function tmw_should_skip_heavy_runtime(): bool
+  {
+    if ((defined('DOING_CRON') && DOING_CRON) || wp_doing_ajax()) {
+      return true;
+    }
 
-  $wpdb->query("UPDATE {$wpdb->posts} SET post_type = 'model' WHERE post_type = 'model_bio'");
+    if (is_admin()) {
+      return true;
+    }
 
-  update_option('tmw_migrated_model_bio', 1);
-  flush_rewrite_rules();
-}, 5);
+    return false;
+  }
+}
+
+if (!function_exists('tmw_maybe_run_db_migration')) {
+  function tmw_maybe_run_db_migration(): void
+  {
+    if (tmw_should_skip_heavy_runtime()) {
+      return;
+    }
+
+    if (get_option('tmw_db_version') === TMW_DB_VERSION) {
+      return;
+    }
+
+    global $wpdb;
+
+    $wpdb->query("UPDATE {$wpdb->posts} SET post_type = 'model' WHERE post_type = 'model_bio'");
+
+    update_option('tmw_migrated_model_bio', 1);
+    flush_rewrite_rules();
+    update_option('tmw_db_version', TMW_DB_VERSION);
+  }
+}
+
+add_action('init', 'tmw_maybe_run_db_migration', 5);
 
 /* ======================================================================
  * LEGACY CPT CLEANUP
  * ====================================================================== */
 add_action('init', function(){
+  if (tmw_should_skip_heavy_runtime()) return;
+
   global $wp_post_types;
   if (isset($wp_post_types['model_bio'])) {
     unset($wp_post_types['model_bio']);
@@ -61,6 +91,7 @@ add_filter('register_post_type_args', function ($args, $post_type) {
  * One-time flush so the new /models/ archive starts working immediately.
  */
 add_action('init', function () {
+  if (tmw_should_skip_heavy_runtime()) return;
   if (get_option('tmw_flushed_cpt_rewrites_models')) return;
   flush_rewrite_rules();
   update_option('tmw_flushed_cpt_rewrites_models', 1);

@@ -94,7 +94,7 @@ require_once get_stylesheet_directory() . '/inc/tmw-mail-fix.php';
  * Enable with WP_DEBUG=true and optional TMW_TRASH_DEBUG=true in wp-config.php.
  * Logs run into wp-content/debug.log when WP_DEBUG_LOG is enabled.
  */
-if (is_admin() && defined('WP_DEBUG') && WP_DEBUG && (!defined('TMW_TRASH_DEBUG') || TMW_TRASH_DEBUG)) {
+if (defined('WP_DEBUG') && WP_DEBUG && current_user_can('manage_options') && (!defined('TMW_TRASH_DEBUG') || TMW_TRASH_DEBUG)) {
     /**
      * Normalize callback labels for logging.
      *
