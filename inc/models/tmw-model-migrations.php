@@ -11,13 +11,19 @@ add_action('init', function(){
     return;
   }
 
-  global $wpdb;
-  if (get_option('tmw_migrated_model_bio')) return;
+  $migration_version = (int) get_option('tmw_migration_version', 0);
+  if ($migration_version >= 1 || get_option('tmw_migrated_model_bio')) {
+    if ($migration_version < 1) {
+      update_option('tmw_migration_version', 1);
+    }
+    return;
+  }
 
+  global $wpdb;
   $wpdb->query("UPDATE {$wpdb->posts} SET post_type = 'model' WHERE post_type = 'model_bio'");
 
   update_option('tmw_migrated_model_bio', 1);
-  flush_rewrite_rules();
+  update_option('tmw_migration_version', 1);
 }, 5);
 
 /* ======================================================================
@@ -60,15 +66,6 @@ add_filter('register_post_type_args', function ($args, $post_type) {
 
   return $args;
 }, 10, 2);
-
-/**
- * One-time flush so the new /models/ archive starts working immediately.
- */
-add_action('init', function () {
-  if (get_option('tmw_flushed_cpt_rewrites_models')) return;
-  flush_rewrite_rules();
-  update_option('tmw_flushed_cpt_rewrites_models', 1);
-});
 
 /**
  * Redirect legacy /model/ archive to /models/

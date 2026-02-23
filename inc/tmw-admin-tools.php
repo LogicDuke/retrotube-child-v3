@@ -412,26 +412,11 @@ function rt_child_sync_model_profile( $model_post_id, $video_post_id ) {
 
 }
 
-add_action('after_switch_theme', function () {
-    flush_rewrite_rules();
-});
-
 /**
  * === [TMW FIX] Restore Models Taxonomy + Auto-Link ===
  * Version: v1.5.6-taxonomy-link-fix
  * Date: 2025-10-19
  */
-
-add_action('init', function() {
-  if (!taxonomy_exists('models')) {
-    return;
-  }
-
-  if (function_exists('tmw_bind_models_taxonomy')) {
-    tmw_bind_models_taxonomy();
-  }
-
-}, 20);
 
 if (!function_exists('tmw_extract_model_slug_from_title')) {
   function tmw_extract_model_slug_from_title($title) {
@@ -520,4 +505,3 @@ add_filter( 'pings_open', function( $open, $post_id ) {
     }
     return $open;
 }, 99, 2 );
-
