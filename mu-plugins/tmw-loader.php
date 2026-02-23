@@ -23,15 +23,15 @@ if (! defined('TMW_IS_ADMIN')) {
 }
 
 if (! defined('TMW_IS_AJAX')) {
-    define('TMW_IS_AJAX', wp_doing_ajax());
+    define('TMW_IS_AJAX', function_exists('wp_doing_ajax') && wp_doing_ajax());
 }
 
 if (! defined('TMW_IS_CRON')) {
-    define('TMW_IS_CRON', wp_doing_cron());
+    define('TMW_IS_CRON', function_exists('wp_doing_cron') && wp_doing_cron());
 }
 
 if (! defined('TMW_IS_CLI')) {
-    define('TMW_IS_CLI', defined('WP_CLI') && WP_CLI);
+    define('TMW_IS_CLI', (defined('WP_CLI') && WP_CLI) || PHP_SAPI === 'cli');
 }
 
 if (! defined('TMW_DEV_MODE')) {
@@ -55,10 +55,9 @@ function tmw_mu_bootstrap_modules(array $files): void
             continue;
         }
 
-        $bootstrap = require $file;
+        $bootstrap = require_once $file;
 
         if (! is_callable($bootstrap)) {
-            error_log(sprintf('[tmw-loader] Module did not return callable: %s', $file));
             continue;
         }
 

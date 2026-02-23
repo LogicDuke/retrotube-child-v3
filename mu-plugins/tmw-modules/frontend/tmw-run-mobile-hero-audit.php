@@ -15,7 +15,7 @@ return static function (): void {
     $registered = true;
 
     add_action('wp', static function (): void {
-        if (is_admin()) {
+        if (TMW_IS_ADMIN) {
             return;
         }
 
