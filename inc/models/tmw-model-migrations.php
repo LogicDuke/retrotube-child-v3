@@ -7,6 +7,10 @@
  * Move all legacy model_bio posts into the model CPT.
  */
 add_action('init', function(){
+  if (!tmw_should_boot_heavy_logic()) {
+    return;
+  }
+
   global $wpdb;
   if (get_option('tmw_migrated_model_bio')) return;
 
