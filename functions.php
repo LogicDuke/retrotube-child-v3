@@ -2,6 +2,11 @@
 // Exit if accessed directly.
 if (!defined('ABSPATH')) { exit; }
 
+// Global frontend runtime guard: prevent expensive frontend boot on admin/AJAX/cron flows.
+if (is_admin() || wp_doing_ajax() || defined('DOING_CRON')) {
+    return;
+}
+
 // [TMW-LINK-GUARD] loader (v3.6.2)
 // Remove legacy guards if Codex finds them:
 /*
