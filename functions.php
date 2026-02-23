@@ -2,8 +2,23 @@
 // Exit if accessed directly.
 if (!defined('ABSPATH')) { exit; }
 
-// Global frontend runtime guard: prevent expensive frontend boot on admin/AJAX/cron flows.
-if (is_admin() || wp_doing_ajax() || defined('DOING_CRON')) {
+// HARD BOOT GUARD: stop all frontend boot during admin/AJAX/cron/CLI/bulk-action requests.
+$tmw_action  = isset($_REQUEST['action']) ? sanitize_key(wp_unslash((string) $_REQUEST['action'])) : '';
+$tmw_action2 = isset($_REQUEST['action2']) ? sanitize_key(wp_unslash((string) $_REQUEST['action2'])) : '';
+$tmw_is_bulk_action = (
+    str_starts_with($tmw_action, 'bulk-') ||
+    str_starts_with($tmw_action2, 'bulk-') ||
+    in_array($tmw_action, array('trash', 'untrash', 'delete', 'edit', 'bulk_edit'), true) ||
+    in_array($tmw_action2, array('trash', 'untrash', 'delete', 'edit', 'bulk_edit'), true)
+);
+
+if (
+    (function_exists('is_admin') && is_admin()) ||
+    (function_exists('wp_doing_ajax') && wp_doing_ajax()) ||
+    (defined('DOING_CRON') && DOING_CRON) ||
+    (defined('WP_CLI') && WP_CLI) ||
+    $tmw_is_bulk_action
+) {
     return;
 }
 
