@@ -2,6 +2,8 @@
 // Exit if accessed directly.
 if (!defined('ABSPATH')) { exit; }
 
+require_once __DIR__ . '/inc/tmw-boot-guard.php';
+
 // [TMW-LINK-GUARD] loader (v3.6.2)
 // Remove legacy guards if Codex finds them:
 /*
@@ -51,7 +53,7 @@ require_once get_stylesheet_directory() . '/inc/tmw-rankmath-excluded-sanitizer.
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-sanity.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-content-analysis-home.php';
 require_once get_stylesheet_directory() . '/inc/tmw-rankmath-tag-archives.php';
-if (defined('WP_DEBUG') && WP_DEBUG) {
+if (defined('WP_DEBUG') && WP_DEBUG && tmw_should_boot_heavy_logic()) {
     $tmw_rankmath_hook_audit = get_stylesheet_directory() . '/inc/tmw-rankmath-hook-audit.php';
     if (file_exists($tmw_rankmath_hook_audit)) { require_once $tmw_rankmath_hook_audit; }
     $tmw_model_pagination_audit = get_stylesheet_directory() . '/inc/tmw-model-pagination-audit.php';
@@ -94,7 +96,7 @@ require_once get_stylesheet_directory() . '/inc/tmw-mail-fix.php';
  * Enable with WP_DEBUG=true and optional TMW_TRASH_DEBUG=true in wp-config.php.
  * Logs run into wp-content/debug.log when WP_DEBUG_LOG is enabled.
  */
-if (is_admin() && defined('WP_DEBUG') && WP_DEBUG && (!defined('TMW_TRASH_DEBUG') || TMW_TRASH_DEBUG)) {
+if (is_admin() && defined('WP_DEBUG') && WP_DEBUG && (!defined('TMW_TRASH_DEBUG') || TMW_TRASH_DEBUG) && tmw_should_boot_heavy_logic()) {
     /**
      * Normalize callback labels for logging.
      *

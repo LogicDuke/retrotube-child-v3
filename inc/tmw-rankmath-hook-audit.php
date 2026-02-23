@@ -76,6 +76,10 @@ if (!function_exists('tmw_rankmath_hook_audit_describe_callback')) {
 }
 
 add_action('template_redirect', function () {
+    if (!tmw_should_boot_heavy_logic()) {
+        return;
+    }
+
     if (!defined('WP_DEBUG') || !WP_DEBUG) {
         return;
     }
