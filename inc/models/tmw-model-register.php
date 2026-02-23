@@ -139,10 +139,6 @@ add_action('init', function () {
   add_rewrite_rule('^actor/([^/]+)/?$',  'index.php?' . TMW_TAX_SLUG . '=$matches[1]', 'top');
   add_rewrite_rule('^actors/([^/]+)/?$', 'index.php?' . TMW_TAX_SLUG . '=$matches[1]', 'top');
 
-  if (!get_option('tmw_models_flush_v3')) {
-    flush_rewrite_rules(false);
-    update_option('tmw_models_flush_v3', 1);
-  }
 }, 20);
 
 // --- Force all single model pages to use single-model.php ---
