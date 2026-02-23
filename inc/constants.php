@@ -13,3 +13,8 @@ define('TMW_CHILD_ASSETS', TMW_CHILD_URL . '/assets');
 if (!defined('TMW_BG_CACHE_VERSION')) {
     define('TMW_BG_CACHE_VERSION', '20260110');
 }
+
+// Versioned internal DB migrations.
+if (!defined('TMW_DB_VERSION')) {
+    define('TMW_DB_VERSION', '1.0.0');
+}

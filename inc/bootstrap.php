@@ -21,6 +21,25 @@ if (defined('WP_CLI') && WP_CLI) {
     }
 }
 
+
+if (!function_exists('tmw_is_frontend_request')) {
+    function tmw_is_frontend_request(): bool
+    {
+        return !is_admin() && !wp_doing_ajax();
+    }
+}
+
+if (!function_exists('tmw_skip_runtime_for_admin_ajax_cron')) {
+    function tmw_skip_runtime_for_admin_ajax_cron(): bool
+    {
+        if ((defined('DOING_CRON') && DOING_CRON) || wp_doing_ajax()) {
+            return true;
+        }
+
+        return false;
+    }
+}
+
 /** Setup & assets */
 require_once __DIR__ . '/setup.php';
 require_once __DIR__ . '/enqueue.php';

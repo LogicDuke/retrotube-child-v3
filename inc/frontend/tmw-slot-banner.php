@@ -9,6 +9,10 @@ if (!defined('ABSPATH')) {
 
 // Register widget area
 add_action('widgets_init', function () {
+    if (!tmw_is_frontend_request()) {
+        return;
+    }
+
     register_sidebar([
         'id'            => 'tmw-model-slot-banner-global',
         'name'          => __('Model Page – Slot Banner (Global)', 'retrotube-child'),

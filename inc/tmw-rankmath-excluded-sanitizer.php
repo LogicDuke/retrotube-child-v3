@@ -7,6 +7,10 @@ if (!defined('ABSPATH')) {
 if (!function_exists('tmw_rm_strip_invalid_rankmath_post_types')) {
     function tmw_rm_strip_invalid_rankmath_post_types($post_types)
     {
+        if (is_admin() || wp_doing_ajax()) {
+            return $post_types;
+        }
+
         if (!is_array($post_types)) {
             return $post_types;
         }
