@@ -262,6 +262,38 @@ if (!function_exists('tmw_canonical_current_url')) {
     }
 }
 
+if (!function_exists('tmw_canonical_should_redirect_request')) {
+    function tmw_canonical_should_redirect_request(): bool {
+        if (is_admin() || wp_doing_ajax() || is_feed() || is_preview() || is_paged()) {
+            return false;
+        }
+
+        if ((defined('DOING_CRON') && DOING_CRON) || headers_sent()) {
+            return false;
+        }
+
+        $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        if ($method !== 'GET' && $method !== 'HEAD') {
+            return false;
+        }
+
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            return false;
+        }
+
+        if (function_exists('wp_is_json_request') && wp_is_json_request()) {
+            return false;
+        }
+
+        $request_uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+        if ($request_uri !== '' && (strpos($request_uri, '/wp-json/') !== false || strpos($request_uri, 'rest_route=') !== false)) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
 add_filter('get_canonical_url', function ($canonical, $post) {
     $resolved = tmw_resolve_canonical_url();
     if (!$resolved) {
@@ -302,11 +334,7 @@ add_filter('wpseo_canonical', function ($canonical) {
 }, 20);
 
 add_action('template_redirect', function () {
-    if (is_admin() || wp_doing_ajax() || is_feed() || is_preview()) {
-        return;
-    }
-
-    if (is_paged()) {
+    if (!tmw_canonical_should_redirect_request()) {
         return;
     }
 
@@ -315,8 +343,20 @@ add_action('template_redirect', function () {
         return;
     }
 
+    $canonical = esc_url_raw($canonical);
+    if ($canonical === '') {
+        return;
+    }
+
     $current = tmw_canonical_current_url();
     if (!$current) {
+        return;
+    }
+
+    $site_host = wp_parse_url(home_url('/'), PHP_URL_HOST);
+    $canonical_host = wp_parse_url($canonical, PHP_URL_HOST);
+    if ($site_host && $canonical_host && strtolower((string) $canonical_host) !== strtolower((string) $site_host)) {
+        tmw_canonical_log_once('Canonical host mismatch, skipping redirect: ' . $canonical);
         return;
     }
 

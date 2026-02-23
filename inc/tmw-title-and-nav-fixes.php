@@ -57,68 +57,37 @@ add_filter('document_title_parts', function ($parts) {
 }, PHP_INT_MAX);
 
 /**
- * [TMW-NAV-ICON] Add star icon to Models menu item.
+ * [TMW-FIX] Replace a leading literal star in the primary Models menu item
+ * with the same FontAwesome icon style used by other header nav items.
  */
-add_filter('walker_nav_menu_start_el', function ($item_output, $item, $depth, $args) {
-    if (is_object($args) && !empty($args->theme_location)) {
-        $location = (string) $args->theme_location;
-        if (!in_array($location, ['primary', 'main', 'wpst-main-menu'], true)) {
-            return $item_output;
-        }
+add_filter('nav_menu_item_title', function ($title, $item, $args, $depth) {
+    if ((int) $depth !== 0 || !is_object($args)) {
+        return $title;
     }
 
-    $type = isset($item->type) ? (string) $item->type : '';
-    $object = isset($item->object) ? (string) $item->object : '';
-    $matches_models_item = ($type === 'post_type_archive' && $object === 'model');
-
-    if (!$matches_models_item) {
-        $url = isset($item->url) ? (string) $item->url : '';
-        $path = $url !== '' ? wp_parse_url($url, PHP_URL_PATH) : '';
-        $path = trim((string) $path, '/');
-        if ($path !== '') {
-            $segments = explode('/', $path);
-            $last = strtolower((string) end($segments));
-            $matches_models_item = ($last === 'models');
-        }
+    $location = isset($args->theme_location) ? (string) $args->theme_location : '';
+    if ($location !== 'wpst-main-menu') {
+        return $title;
     }
 
-    if (!$matches_models_item) {
-        return $item_output;
+    $item_title = isset($item->title) ? wp_strip_all_tags((string) $item->title) : '';
+    $item_title = trim($item_title);
+    $url = isset($item->url) ? (string) $item->url : '';
+    $path = trim((string) wp_parse_url($url, PHP_URL_PATH), '/');
+    $segments = $path !== '' ? explode('/', $path) : [];
+    $last = $segments ? strtolower((string) end($segments)) : '';
+
+    $is_models_item = ($item_title === '★ Models') || ($item_title === 'Models') || ($last === 'models');
+    if (!$is_models_item) {
+        return $title;
     }
 
-    if (stripos($item_output, 'fa-star') !== false
-        || stripos($item_output, 'tmw-star') !== false
-        || strpos($item_output, '★') !== false) {
-        return $item_output;
+    if (stripos($title, 'fa-star') !== false || stripos($title, 'tmw-menu-star') !== false) {
+        return $title;
     }
 
-    $use_fa = function_exists('wp_style_is')
-        && (wp_style_is('font-awesome', 'enqueued')
-            || wp_style_is('fontawesome', 'enqueued')
-            || wp_style_is('fa', 'enqueued'));
+    $clean_title = preg_replace('/^(?:★|&#9733;|&#x2605;|&starf;)\s*/u', '', (string) $title);
+    $clean_title = ltrim((string) $clean_title);
 
-    $icon_markup = $use_fa
-        ? '<i class="fa fa-star" aria-hidden="true"></i>'
-        : '<span class="tmw-star" aria-hidden="true">★</span>';
-
-    $anchor_pos = strpos($item_output, '<a');
-    if ($anchor_pos === false) {
-        return $item_output;
-    }
-
-    $anchor_close = strpos($item_output, '>', $anchor_pos);
-    if ($anchor_close === false) {
-        return $item_output;
-    }
-
-    $insertion = ' ' . $icon_markup . ' ';
-    $item_output = substr_replace($item_output, $insertion, $anchor_close + 1, 0);
-
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log(
-            '[TMW-NAV-ICON] injected=models item_id=' . (int) $item->ID . ' url=' . (string) $item->url
-        );
-    }
-
-    return $item_output;
+    return '<i class="fa fa-star tmw-menu-star" aria-hidden="true"></i> ' . $clean_title;
 }, 10, 4);

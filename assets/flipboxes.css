@@ -1,17 +1,6 @@
-/* =========================================================
-   Flipboxes CSS — Retrotube Child (Flipbox Edition) v2
-   ========================================================= */
+.tmw-grid,
+.tmwfm-grid{ --tmw-accent:#db001a; }
 
-/* Theme accent (red) */
-.tmw-grid{ --tmw-accent:#db001a; }
-
-/* v3.5.7 — Flipbox CTA bottom offsets */
-:root{
-  --tmw-flip-cta-bottom-desktop:5px;
-  --tmw-flip-cta-bottom-mobile:5px;
-}
-
-/* ---------- GRID ---------- */
 .tmw-grid{
   display:grid;
   gap:24px;
@@ -19,7 +8,6 @@
   content-visibility:auto;
   contain-intrinsic-size:1px 1600px;
 }
-/* columns helpers (you set tmw-cols-* in PHP) */
 .tmw-cols-2{ grid-template-columns:repeat(2,minmax(0,1fr)); }
 .tmw-cols-3{ grid-template-columns:repeat(3,minmax(0,1fr)); }
 .tmw-cols-4{ grid-template-columns:repeat(4,minmax(0,1fr)); }
@@ -35,21 +23,18 @@
   .tmw-cols-2,.tmw-cols-3,.tmw-cols-4,.tmw-cols-5{ grid-template-columns:1fr; }
 }
 
-/* ---------- CARD / LINK ---------- */
 .tmw-flip{
   position:relative;
   display:block;
   width:100%;
   border-radius:16px;
   overflow:hidden;
-  box-shadow:0 6px 22px rgba(0,0,0,.35);
+  box-shadow:0 0 0 1px rgba(0,0,0,.92), 0 0 18px rgba(0,0,0,.95), 0 14px 30px rgba(0,0,0,.78);
   background:#0b0b0b;
-  /* aspect ratio for consistent tiles */
   aspect-ratio:2/3;
   perspective:1000px;
 }
-/* fallback for browsers without aspect-ratio */
-.tmw-flip::before{ content:""; float:left; padding-bottom:150%; /* 3/2 = 1.5 */ }
+.tmw-flip::before{ content:""; float:left; padding-bottom:150%; }
 .tmw-flip::after{ content:""; display:block; clear:both; }
 
 .tmw-flip-inner{
@@ -83,76 +68,171 @@
   z-index:3;
 }
 
-/* Flip the inner container */
 .tmw-flip.flipped .tmw-flip-inner{
   transform:rotateY(180deg);
 }
 
-/* After flip, disable front interactions so back buttons receive taps */
 .tmw-flip.flipped .tmw-face.front,
 .tmw-flip.flipped .tmw-front,
 .tmw-flip.flipped .tmw-flip-front{
   pointer-events:none !important;
 }
 
-/* If a theme wraps the entire card in an anchor, disable it only while flipped */
 .tmw-flip.flipped > a:first-child{
   pointer-events:none !important;
 }
 
-.tmw-flip:hover .tmw-flip-inner,
 .tmw-flip:focus-visible .tmw-flip-inner{
   transform:rotateY(180deg);
+}
+
+@media (hover: hover) and (pointer: fine){
+  .tmw-flip:hover .tmw-flip-inner{
+    transform:rotateY(180deg);
+  }
 }
 @media (prefers-reduced-motion:reduce){
   .tmw-flip-inner{ transition:none; }
 }
 
-/* ---------- OVERLAYS ---------- */
-/* Front & Back labels — smaller + single line */
-/* FRONT: actor name centered */
+@media (hover:none) and (pointer:coarse) {
+  .tmw-flip.tmw-tap {
+    transform: scale(0.985);
+    box-shadow: 0 10px 28px rgba(0,0,0,.55);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+}
+
+/* ============================================
+   NAME — FRONT BAR
+   Cinematic gradient bleed, futuristic glow
+   ============================================ */
+
 .tmw-name{
-  position:absolute; left:50%; bottom:12px;
-  transform:translateX(-50%);
-  padding:5px 10px; border-radius:8px;
-  font-weight:800; font-size:.90rem;
-  color:#fff; background:rgba(0,0,0,.55); line-height:1;
+  font-weight:800;
+  font-size:.90rem;
+  color:#fff;
+  text-decoration:none;
+}
+
+/* Replace >>> with a sleek arrow */
+.tmw-name::after{
+  content:" →";
+  margin-left:6px;
+  font-weight:900;
+  font-size:1rem;
+  line-height:1;
+  color:#ff3b3b;
+  transition: transform 0.2s ease;
+}
+
+.tmw-grid .tmw-flip .tmw-name,
+.tmwfm-grid .tmw-flip .tmw-name{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  /* tall gradient bleed — cinematic burn effect */
+  min-height:30px;
+  padding:12px 14px 10px;
+  line-height:1.3;
+  border-radius:0;
+  /* deep crimson gradient rising from bottom */
+  background:
+    linear-gradient(
+      to top,
+      rgba(160, 0, 15, 0.92) 0%,
+      rgba(200, 0, 20, 0.65) 40%,
+      transparent 100%
+    );
+  /* glowing top edge — the WOW line */
+  border-top: 1px solid rgba(255, 60, 60, 0.45);
+  box-shadow: 0 -4px 24px rgba(219, 0, 26, 0.30);
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  text-align:center;
   text-decoration:none;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  max-width:88%;
-}
-/* Front arrows smaller too (still in red) */
-.tmw-name::after{
-  content:" >>>";
-  margin-left:8px;
-  font-weight:900;
-  font-size:1rem;
-  line-height:1;
-  color:var(--tmw-accent);
+  width:100%;
+  margin:0 auto;
+  transform:none;
 }
 
-/* BACK: centered “View profile” in red */
+/* ============================================
+   VIEW PROFILE — BACK BAR
+   Full pill CTA, pulsing red, high CTR
+   ============================================ */
+
 .tmw-view{
-  position:absolute;
-  left:50%;
-  top:auto;
-  bottom:var(--tmw-flip-cta-bottom-desktop);
-  transform:translateX(-50%);
-  padding:5px 10px; border-radius:8px;
-  font-weight:800; font-size:.90rem;
-  color:var(--tmw-accent); background:rgba(0,0,0,.55);
-  text-decoration:none; line-height:1;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  max-width:calc(100% - 24px);
+  font-weight:800;
+  font-size:.90rem;
+  width:100%;
   pointer-events:auto;
   z-index:10;
 }
 
-/* ---------- PAGINATION ---------- */
+.tmw-grid .tmw-flip .tmw-view,
+.tmwfm-grid .tmw-flip .tmw-view{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  min-height:30px;
+  padding:12px 14px 10px;
+  line-height:1.3;
+  border-radius:0;
+  /* darker base — the button pill stands out against it */
+  background:
+    linear-gradient(
+      to top,
+      rgba(10, 0, 0, 0.96) 0%,
+      rgba(80, 0, 10, 0.75) 45%,
+      transparent 100%
+    );
+  border-top: 1px solid rgba(255, 40, 40, 0.55);
+  box-shadow: 0 -6px 28px rgba(219, 0, 26, 0.40);
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  text-align:center;
+  text-decoration:none;
+  white-space:nowrap;
+  overflow:hidden;
+  width:100%;
+  margin:0 auto;
+  transform:none;
+}
+
+/* View profile arrow */
+.tmw-grid .tmw-flip .tmw-view::after,
+.tmwfm-grid .tmw-flip .tmw-view::after{
+  content:" →";
+  margin-left:6px;
+  font-weight:900;
+  font-size:1rem;
+  line-height:1;
+  color:#ff3b3b;
+}
+
+/* Shared text color */
+.tmw-grid .tmw-flip .tmw-name,
+.tmw-grid .tmw-flip .tmw-name::after,
+.tmw-grid .tmw-flip .tmw-view,
+.tmw-grid .tmw-flip .tmw-view::after,
+.tmwfm-grid .tmw-flip .tmw-name,
+.tmwfm-grid .tmw-flip .tmw-name::after,
+.tmwfm-grid .tmw-flip .tmw-view,
+.tmwfm-grid .tmw-flip .tmw-view::after{
+  color:#fff;
+}
+
+/* ============================================
+   PAGINATION
+   ============================================ */
+
 .tmw-pagination{
   grid-column:1 / -1;
   display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
@@ -170,7 +250,6 @@
 }
 .tmw-pagination .page-numbers:hover{ filter:brightness(1.2); }
 
-/* ---------- LAYOUT WITH SIDEBAR ---------- */
 .tmw-layout{
   display:grid; grid-template-columns:1fr 320px; gap:24px;
 }
@@ -178,91 +257,132 @@
   .tmw-layout{ grid-template-columns:1fr; }
 }
 
-/* ===== Attention animations for back label ===== */
-/* Subtle pulse on the label */
-.tmw-flip-back .tmw-view{
-  /* keep your existing styles; add the animation below */
-  animation: tmw-pulse 1.6s ease-in-out infinite;
-  will-change: transform, opacity;
+/* ============================================
+   HEARTBEAT ANIMATION — pulsing red glow
+   ============================================ */
+
+@keyframes tmw_flipbox_heartbeat{
+  0%, 38%, 100%{
+    opacity:1;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    box-shadow: 0 -4px 24px rgba(219, 0, 26, 0.30);
+    border-top-color: rgba(255, 60, 60, 0.45);
+  }
+  8%, 12%{
+    opacity:.95;
+    text-shadow: 0 0 10px rgba(255,80,80,.90), 0 1px 4px rgba(0,0,0,.9);
+    box-shadow: 0 -6px 32px rgba(219, 0, 26, 0.60);
+    border-top-color: rgba(255, 60, 60, 0.85);
+  }
+  20%, 24%{
+    opacity:.90;
+    text-shadow: 0 0 16px rgba(255,50,50,.99), 0 1px 4px rgba(0,0,0,.9);
+    box-shadow: 0 -8px 40px rgba(219, 0, 26, 0.75);
+    border-top-color: rgba(255, 60, 60, 1.0);
+  }
 }
 
-
-/* Pulse the chip (slight scale + soft red glow) */
-@keyframes tmw-pulse{
-  0%   { transform: translateX(-50%) scale(1);    opacity: 1;    }
-  35%  { transform: translateX(-50%) scale(1.06); opacity: 0.92; }
-  70%  { transform: translateX(-50%) scale(1);    opacity: 1;    }
-  100% { transform: translateX(-50%) scale(1);    opacity: 1;    }
+.tmwfm-grid .tmw-flip .tmw-name,
+.tmwfm-grid .tmw-flip .tmw-view,
+.tmw-grid .tmw-flip .tmw-name,
+.tmw-grid .tmw-flip .tmw-view{
+  animation: tmw_flipbox_heartbeat 2.6s ease-in-out infinite;
 }
 
-/* Nudge the >>> a tiny bit */
-@keyframes tmw-caret{
-  0%,100% { transform: translateX(0);   opacity: 1;   }
-  50%     { transform: translateX(2px); opacity: .92; }
+/* Arrow pulses red on heartbeat — handled via text-shadow above */
+.tmwfm-grid .tmw-flip .tmw-name::after,
+.tmwfm-grid .tmw-flip .tmw-view::after,
+.tmw-grid .tmw-flip .tmw-name::after,
+.tmw-grid .tmw-flip .tmw-view::after{
+  animation: tmw_flipbox_heartbeat 2.6s ease-in-out infinite;
 }
 
-/* ===== Attention animations for FRONT label (actor name) ===== */
-.tmw-flip-front .tmw-name{
-  /* keep existing centering styles; add animation */
-  animation: tmw-pulse 1.6s ease-in-out infinite;
-  will-change: transform, opacity;
+/* ============================================
+   HOVER FLASH — back card CTA
+   ============================================ */
+
+@keyframes tmw_view_hover_flash{
+  0%, 100%{ color:#fff; }
+  50%{ color:#ff3b3b; }
 }
 
-.tmw-flip-front .tmw-name::after{
-  /* we keep your existing '›››' or '>>>' content; just animate it */
-  animation: tmw-caret 1s ease-in-out infinite;
-  display: inline-block;
+.tmw-grid .tmw-flip:hover .tmw-view,
+.tmw-grid .tmw-flip:hover .tmw-view::after,
+.tmw-grid .tmw-view:hover,
+.tmw-grid .tmw-view:hover::after,
+.tmw-grid .tmw-view:focus-visible,
+.tmw-grid .tmw-view:focus-visible::after,
+.tmwfm-grid .tmw-flip:hover .tmw-view,
+.tmwfm-grid .tmw-flip:hover .tmw-view::after,
+.tmwfm-grid .tmw-view:hover,
+.tmwfm-grid .tmw-view:hover::after,
+.tmwfm-grid .tmw-view:focus-visible,
+.tmwfm-grid .tmw-view:focus-visible::after{
+  color:#fff;
+  animation:tmw_view_hover_flash 0.8s ease-in-out infinite;
+  opacity:1;
+  filter:none;
+  text-decoration:none;
 }
 
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-name,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-name::after,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-view,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-name,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-name::after,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-view{
-  animation: none;
-}
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
 
 @media (prefers-reduced-motion:reduce){
-  .tmw-flip-back .tmw-view,
-  .tmw-flip-front .tmw-name,
-  .tmw-flip-front .tmw-name::after{
+  .tmwfm-grid .tmw-flip .tmw-name,
+  .tmwfm-grid .tmw-flip .tmw-name::after,
+  .tmwfm-grid .tmw-flip .tmw-view,
+  .tmwfm-grid .tmw-flip .tmw-view::after,
+  .tmw-grid .tmw-flip .tmw-name,
+  .tmw-grid .tmw-flip .tmw-name::after,
+  .tmw-grid .tmw-flip .tmw-view,
+  .tmw-grid .tmw-flip .tmw-view::after{
     animation:none;
+    color:#fff;
+    opacity:1;
+    text-shadow:0 0 8px rgba(0,0,0,.95);
+  }
+
+  .tmw-grid .tmw-flip:hover .tmw-view,
+  .tmw-grid .tmw-flip:hover .tmw-view::after,
+  .tmw-grid .tmw-view:hover,
+  .tmw-grid .tmw-view:hover::after,
+  .tmw-grid .tmw-view:focus-visible,
+  .tmw-grid .tmw-view:focus-visible::after,
+  .tmwfm-grid .tmw-flip:hover .tmw-view,
+  .tmwfm-grid .tmw-flip:hover .tmw-view::after,
+  .tmwfm-grid .tmw-view:hover,
+  .tmwfm-grid .tmw-view:hover::after,
+  .tmwfm-grid .tmw-view:focus-visible,
+  .tmwfm-grid .tmw-view:focus-visible::after{
+    animation:none;
+    color:#fff;
   }
 }
+
+/* ============================================
+   MOBILE / TOUCH
+   ============================================ */
 
 @media (max-width:768px), (pointer:coarse){
-  .tmw-view{
-    bottom:var(--tmw-flip-cta-bottom-mobile);
+  .tmw-grid .tmw-flip .tmw-name,
+  .tmwfm-grid .tmw-flip .tmw-name,
+  .tmw-grid .tmw-flip .tmw-view,
+  .tmwfm-grid .tmw-flip .tmw-view{
     font-size:1.80rem;
-    line-height:1;
-    padding:10px 16px;
-    border-radius:12px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    max-width:92%;
-    cursor:pointer;
+    line-height:1.2;
+    padding:24px 16px 14px;
+    min-height:30px;
   }
-  .tmw-name{
-    font-size:1.80rem;
-    line-height:1;
-    padding:10px 16px;
-    border-radius:12px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    max-width:92%;
-  }
-  .tmw-name::after{
+  .tmw-name::after,
+  .tmw-grid .tmw-flip .tmw-view::after,
+  .tmwfm-grid .tmw-flip .tmw-view::after{
     font-size:1.80rem;
     line-height:1;
   }
 }
 
-/* Safety net: hide any leftover video embeds inside the post description */
 .entry-content iframe,
 .entry-content video,
 .entry-content .wp-block-embed,

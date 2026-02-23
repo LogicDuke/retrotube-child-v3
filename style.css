@@ -29,6 +29,42 @@ Text Domain: retrotube-child-v3
   line-height: 1;
 }
 
+.home .tmw-home-title-icon {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* ★ star inside homepage accordion titles — match .tmw-title .tmw-star */
+.home .widget-title .tmw-star.tmw-home-title-icon {
+  color: #fff;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+/* FA icons inside homepage accordion titles — inherit heading color/size */
+.home .widget-title i.fa.tmw-home-title-icon {
+  font-size: 1em;
+  line-height: 1;
+}
+
+/* Menu Models icon ★ — keep parity with other top-nav icons. */
+#site-navigation .menu > li > a > .tmw-menu-star,
+.main-navigation .menu > li > a > .tmw-menu-star {
+  font-size: 1em;
+  line-height: 1;
+  vertical-align: middle;
+  margin-right: .5em;
+}
+
+/* Home H1 Models icon ★ — prevent oversized glyph in the primary heading. */
+body.home h1.widget-title > i.fa.fa-star.tmw-home-title-icon {
+  font-size: .9em;
+  line-height: 1;
+  vertical-align: middle;
+  margin-right: .5em;
+}
+
 /* ============================================================
    [TMW-FIX] Top bar social icons (Home) show as squares
    - Scoped to the social icons only (won't affect other icons).
@@ -239,68 +275,6 @@ Text Domain: retrotube-child-v3
 
 .tmw-trigger {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-}
-
-.tmw-grid .tmw-flip,
-.tmwfm-grid .tmw-flip {
-  position: relative;
-  display: block;
-  perspective: 1000px;
-  text-decoration: none;
-  color: inherit;
-}
-
-.tmw-grid .tmw-flip::before,
-.tmwfm-grid .tmw-flip::before {
-  content: "";
-  display: block;
-  padding-top: 150%;
-}
-
-.tmw-grid .tmw-flip .tmw-flip-inner,
-.tmwfm-grid .tmw-flip .tmw-flip-inner,
-.tmw-grid .tmw-flip .tmw-flip-front,
-.tmwfm-grid .tmw-flip .tmw-flip-front,
-.tmw-grid .tmw-flip .tmw-flip-back,
-.tmwfm-grid .tmw-flip .tmw-flip-back {
-  position: absolute;
-  inset: 0;
-}
-
-.tmw-grid .tmw-flip-front,
-.tmwfm-grid .tmw-flip-front,
-.tmw-grid .tmw-flip-back,
-.tmwfm-grid .tmw-flip-back {
-  background-size: var(--tmw-bgsize, cover);
-  background-position: var(--tmw-bgpos, 50% 50%);
-  background-repeat: no-repeat;
-  border-radius: 12px;
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.tmw-grid .tmw-flip-inner,
-.tmwfm-grid .tmw-flip-inner {
-  transform-style: preserve-3d;
-  transition: transform 0.55s ease;
-}
-
-.tmw-grid .tmw-flip-front,
-.tmwfm-grid .tmw-flip-front {
-  transform: rotateY(0deg);
-}
-
-.tmw-grid .tmw-flip-back,
-.tmwfm-grid .tmw-flip-back {
-  transform: rotateY(180deg);
-}
-
-.tmw-grid .tmw-flip:hover .tmw-flip-inner,
-.tmw-grid .tmw-flip:focus .tmw-flip-inner,
-.tmwfm-grid .tmw-flip:hover .tmw-flip-inner,
-.tmwfm-grid .tmw-flip:focus .tmw-flip-inner {
-  transform: rotateY(180deg);
 }
 
 .model-flipbox {
@@ -701,13 +675,122 @@ article[id^="post-"]::before {
     border-top: 3px solid #333;
 }
 
-.single-model .thumb-block .entry-header {
+/* [TMW-FIX] Videos Featuring rating UX parity with /videos/, strictly scoped to model page section */
+.single-model .videos-featuring .videos-list .tmw-model-video-item {
+    position: relative;
+}
+
+/* Kill the inline baseline gap between thumbnail and rating bar */
+.single-model .videos-featuring .videos-list .tmw-model-video-item > a {
+    display: block;
+    line-height: 0;
+    font-size: 0;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Rating bar: in normal flow between thumbnail and title */
+.single-model .videos-featuring .videos-list .tmw-vid-rating {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+}
+
+.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-bar {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    height: 1.4em;
+    background-color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+/* Red meter: hidden by default, reveals on hover */
+.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-bar-meter {
+    display: block;
+    height: 100%;
+    background-color: #c00;
+    box-sizing: border-box;
+    transform: scaleX(0);
+    transform-origin: left center;
+    opacity: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item:hover .rating-bar-meter {
+    transform: scaleX(1);
+    opacity: 1;
+}
+
+.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-result {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    pointer-events: none;
+}
+
+.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-result .percentage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 0.8em;
+    font-weight: 600;
+    line-height: 1.4em;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    z-index: 3;
+    pointer-events: none;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage,
+.single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage span,
+.single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage i {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Title: match widget card style — small, light, no red */
+.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header {
     height: 3.5em;
     overflow: hidden;
     text-align: center;
-    font-size: 0.875em;
-    padding: 0.5em 0 0;
-    color: #ddd;
+    padding: 0.4em 0.3em 0;
+    margin: 0;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header .entry-title {
+    font-size: 0.8em;
+    font-weight: normal;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header .entry-title a {
+    color: #ddd !important;
+    text-decoration: none;
+}
+
+.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header .entry-title a:hover {
+    color: #fff !important;
 }
 
 /* identical margins & layout with .single-video */
@@ -787,43 +870,6 @@ a.tag-link {
   margin: 0 0 12px !important;
   /* do NOT set text-align on parent containers */
 }
-
-/* =========================
-   Flipbox: "View profile" CTA safe offset
-   v3.5.4 — keep the ribbon fully visible on back face
-   ========================= */
-:root {
-  /* Fine-tune if needed without touching selectors */
-  --tmw-flip-cta-top-desktop: 24px;
-  --tmw-flip-cta-top-mobile: 14px;
-}
-
-/* Ensure the back face is a positioning context */
-.tmw-flip .flip-back {
-  position: relative;
-}
-
-/* Nudge the CTA ribbon down a bit on the BACK side only */
-.tmw-flip .flip-back .view-profile {
-  position: absolute;
-  top: var(--tmw-flip-cta-top-desktop) !important; /* down from the very top */
-  left: 0;
-  right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  /* Safety: ignore any previous "center-on-edge" tricks */
-  bottom: auto !important;
-  transform: none !important;
-  /* Keep pill inside rounded edges */
-  max-width: calc(100% - 24px);
-}
-
-@media (max-width: 768px) {
-  .tmw-flip .flip-back .view-profile {
-    top: var(--tmw-flip-cta-top-mobile) !important;
-  }
-}
-
 
 /* v4.0.3-b — Mobile: center cards without vw overflow */
 @media (max-width: 840px) {
@@ -963,13 +1009,7 @@ a.tag-link {
 }
 
 .tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-name,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-name::after,
-.tmw-grid .tmw-flip:nth-of-type(n+13) .tmw-view,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-name,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-name::after,
-.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-view {
+.tmwfm-grid .tmw-flip:nth-of-type(n+13) .tmw-pulse {
   animation: none;
 }
 
@@ -1238,6 +1278,60 @@ a.tag-link {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* [TMW-FIX] Votebar: match thumbnail width + fix text size & centering
+   for [tmw_home_videos] / .widget_videos_block */
+
+.widget.widget_videos_block .thumb-block {
+    position: relative;
+}
+
+.widget.widget_videos_block .thumb-block > a,
+.widget.widget_videos_block .thumb-block .post-thumbnail {
+    display: block;
+}
+
+.widget.widget_videos_block .thumb-block img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.widget.widget_videos_block .thumb-block .tmw-vid-rating {
+    display: block;
+    width: 100% !important;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Single consolidated rule for the bar — flex for centering, !important to beat parent theme */
+.widget.widget_videos_block .thumb-block .rating-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11px !important;
+    line-height: 1 !important;
+}
+
+.widget.widget_videos_block .thumb-block .rating-bar-meter {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    max-width: 100%;
+}
+
+.widget.widget_videos_block .thumb-block .rating-bar > *:not(.rating-bar-meter) {
+    position: relative;
+    z-index: 1;
 }
 
 /* [TMW-A11Y-FOOTER-HOVER] Legal footer links: red on hover/focus (scope to 4 known URLs only) */

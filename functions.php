@@ -16,7 +16,6 @@ if (file_exists($__codex_link_guard)) {
 // [TMW-FILTER-LINKS] loader (v3.6.4)
 /*
 DELETE_BLOCK_START TMW-FILTER-CANONICAL v<=3.6.3
-// require_once __DIR__ . '/inc/tmw-filter-canonical.php';
 DELETE_BLOCK_END
 */
 $__tmw_filter_links = __DIR__ . '/inc/tmw-filter-links.php';
@@ -67,6 +66,7 @@ require_once get_stylesheet_directory() . '/inc/tmw-archive-schema.php';
 require_once __DIR__ . '/inc/tmw-tml-bridge.php';
 require_once TMW_CHILD_PATH . '/inc/frontend/tmw-voting.php';
 require_once get_stylesheet_directory() . '/inc/tmw-home-shortcodes.php';
+require_once get_stylesheet_directory() . '/inc/blocks/tmw-home-accordion-block.php';
 require_once get_stylesheet_directory() . '/inc/tmw-title-and-nav-fixes.php';
 
 // Ensure legacy experiments don't affect the default reset email contents.
@@ -87,6 +87,114 @@ if (is_admin()) {
 }
 
 require_once get_stylesheet_directory() . '/inc/tmw-mail-fix.php';
+
+/**
+ * Trash debugging instrumentation.
+ *
+ * Enable with WP_DEBUG=true and optional TMW_TRASH_DEBUG=true in wp-config.php.
+ * Logs run into wp-content/debug.log when WP_DEBUG_LOG is enabled.
+ */
+if (is_admin() && defined('WP_DEBUG') && WP_DEBUG && (!defined('TMW_TRASH_DEBUG') || TMW_TRASH_DEBUG)) {
+    /**
+     * Normalize callback labels for logging.
+     *
+     * @param mixed $callback Hook callback.
+     */
+    $tmw_format_hook_callback = static function ($callback): string {
+        if (is_string($callback)) {
+            return $callback;
+        }
+
+        if (is_array($callback) && isset($callback[0], $callback[1])) {
+            $target = is_object($callback[0]) ? get_class($callback[0]) : (string) $callback[0];
+
+            return $target . '::' . $callback[1];
+        }
+
+        if ($callback instanceof Closure) {
+            return 'Closure';
+        }
+
+        if (is_object($callback) && method_exists($callback, '__invoke')) {
+            return get_class($callback) . '::__invoke';
+        }
+
+        return 'Unknown callback';
+    };
+
+    /**
+     * Log every registered callback attached to a hook.
+     */
+    $tmw_log_hook_callbacks = static function (string $hook_name) use ($tmw_format_hook_callback): void {
+        global $wp_filter;
+
+        if (!isset($wp_filter[$hook_name])) {
+            error_log('[TRASH DEBUG] No callbacks registered for hook: ' . $hook_name);
+
+            return;
+        }
+
+        $hook = $wp_filter[$hook_name];
+        if (!($hook instanceof WP_Hook)) {
+            error_log('[TRASH DEBUG] Hook registry is not a WP_Hook for: ' . $hook_name);
+
+            return;
+        }
+
+        foreach ($hook->callbacks as $priority => $callbacks) {
+            foreach ($callbacks as $entry) {
+                $accepted_args = isset($entry['accepted_args']) ? (int) $entry['accepted_args'] : 1;
+                $label = isset($entry['function']) ? $tmw_format_hook_callback($entry['function']) : 'Unknown callback';
+
+                error_log(sprintf('[TRASH DEBUG] Hook %s priority=%d accepted_args=%d callback=%s', $hook_name, (int) $priority, $accepted_args, $label));
+            }
+        }
+    };
+
+    $tmw_trash_trace_started_at = microtime(true);
+    add_action('current_screen', static function ($screen) use ($tmw_log_hook_callbacks): void {
+        if (!($screen instanceof WP_Screen)) {
+            return;
+        }
+
+        $is_trash_request = isset($_GET['action']) && $_GET['action'] === 'trash';
+        if (!$is_trash_request) {
+            return;
+        }
+
+        error_log('[TRASH DEBUG] Entering trash flow on screen=' . $screen->id);
+        $tmw_log_hook_callbacks('pre_trash_post');
+        $tmw_log_hook_callbacks('trashed_post');
+        $tmw_log_hook_callbacks('before_delete_post');
+    });
+
+    add_filter('pre_trash_post', static function ($override, $post) {
+        $post_id = is_object($post) && isset($post->ID) ? (int) $post->ID : 0;
+        error_log('[TRASH DEBUG] pre_trash_post post_id=' . $post_id . ' override=' . var_export($override, true));
+
+        return $override;
+    }, 10, 2);
+
+    add_action('trashed_post', static function ($post_id) {
+        error_log('[TRASH DEBUG] trashed_post post_id=' . (int) $post_id);
+    });
+
+    add_action('before_delete_post', static function ($post_id, $post) {
+        $post_type = is_object($post) && isset($post->post_type) ? $post->post_type : 'unknown';
+        error_log('[TRASH DEBUG] before_delete_post post_id=' . (int) $post_id . ' post_type=' . $post_type);
+    }, 10, 2);
+
+    add_action('shutdown', static function () use ($tmw_trash_trace_started_at): void {
+        $is_trash_request = isset($_GET['action']) && $_GET['action'] === 'trash';
+        if (!$is_trash_request) {
+            return;
+        }
+
+        $elapsed = microtime(true) - $tmw_trash_trace_started_at;
+        $peak_mb = memory_get_peak_usage(true) / 1048576;
+        error_log(sprintf('[TRASH DEBUG] shutdown elapsed=%.3fs peak_memory=%.2fMB', $elapsed, $peak_mb));
+    });
+}
 
 // [TMW-BREADCRUMB-WP] Render breadcrumbs only after the main query is ready.
 add_action('wp', function () {

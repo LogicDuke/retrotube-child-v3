@@ -1,52 +1,71 @@
 (function () {
   try {
-    var isTouch = function () {
+    var isTouchOnly = function () {
       try {
-        return matchMedia('(hover: none)').matches || 'ontouchstart' in window;
+        return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
       } catch (_) {
-        return 'ontouchstart' in window;
+        return false;
       }
     };
 
-    if (!isTouch()) {
-      return;
-    }
+    if (!isTouchOnly()) return;
 
-    var inBackFace = function (el) {
-      return !!(el && el.closest('.tmw-face.back, .tmw-back, .tmw-flip-back'));
+    var cardSelector = '.tmw-flip';
+    var containerSelector = '.tmw-grid, .tmwfm-grid';
+    var tapPulseTimers = new WeakMap();
+
+    var closeAllExcept = function (activeCard) {
+      document.querySelectorAll(cardSelector + '.flipped').forEach(function (card) {
+        if (card !== activeCard) card.classList.remove('flipped');
+      });
     };
 
-    var inCard = function (el) {
-      return el ? el.closest('.tmw-flip') : null;
+    var pulseTapFeedback = function (card) {
+      var existingTimer = tapPulseTimers.get(card);
+      if (existingTimer) clearTimeout(existingTimer);
+
+      card.classList.add('tmw-tap');
+      var timeoutId = setTimeout(function () {
+        card.classList.remove('tmw-tap');
+        tapPulseTimers.delete(card);
+      }, 140);
+      tapPulseTimers.set(card, timeoutId);
     };
 
-    var onPointer = function (e) {
-      var card = inCard(e.target);
-      if (!card) {
-        return;
-      }
+    document.addEventListener(
+      'click',
+      function (e) {
+        var inFlipContext = e.target.closest(containerSelector);
+        var tappedCard = e.target.closest(cardSelector);
+        var cta = e.target.closest('.tmw-view');
 
-      var flipped = card.classList.contains('flipped');
-      var targetIsBack = inBackFace(e.target);
+        // Tap outside any flip context -> close all
+        if (!inFlipContext) {
+          closeAllExcept(null);
+          return;
+        }
 
-      if (flipped || targetIsBack) {
-        return;
-      }
+        // Tap inside context but not on a card -> close all
+        if (!tappedCard) {
+          closeAllExcept(null);
+          return;
+        }
 
-      var anchor = e.target.closest('a');
+        var isFlipped = tappedCard.classList.contains('flipped');
 
-      if (anchor) {
+        // If user taps CTA while already flipped -> allow navigation
+        if (cta && isFlipped) {
+          closeAllExcept(tappedCard);
+          return;
+        }
+
+        // Otherwise: prevent navigation (e.g., wrapper link) and toggle flip
         e.preventDefault();
-        e.stopPropagation();
-      }
-
-      card.classList.add('flipped');
-      card.classList.add('tmw-flip-armed');
-      setTimeout(function () {
-        card.classList.remove('tmw-flip-armed');
-      }, 1500);
-    };
-
-    document.addEventListener('pointerdown', onPointer, { capture: true, passive: false });
+        closeAllExcept(tappedCard);
+        pulseTapFeedback(tappedCard);
+        tappedCard.classList.toggle('flipped');
+      },
+      true
+    );
   } catch (_) {}
 })();
