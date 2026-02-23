@@ -521,19 +521,3 @@ add_filter( 'pings_open', function( $open, $post_id ) {
     return $open;
 }, 99, 2 );
 
-// === [TMW-MODEL-COMMENTS-FORCE] Bulk enable for existing models ===
-add_action( 'init', function() {
-    $models = get_posts([
-        'post_type' => 'model',
-        'numberposts' => -1,
-        'post_status' => 'publish',
-    ]);
-    foreach ( $models as $model ) {
-        if ( get_post_field( 'comment_status', $model->ID ) !== 'open' ) {
-            wp_update_post([
-                'ID' => $model->ID,
-                'comment_status' => 'open',
-            ]);
-        }
-    }
-});
