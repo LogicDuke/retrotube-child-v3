@@ -171,10 +171,15 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 				<div id="video-about" class="width<?php echo $width; ?>">
 				<div class="video-description">
 					<?php if ( xbox_get_field_value( 'wpst-options', 'show-description-video-about' ) == 'on' ) : ?>
+						<?php
+						$tmw_video_content_raw  = get_the_content();
+						$tmw_video_content_html = apply_filters( 'the_content', $tmw_video_content_raw );
+						$tmw_video_content_html = tmw_unwrap_single_accordion_if_present( $tmw_video_content_html );
+						?>
 						<?php if ( xbox_get_field_value( 'wpst-options', 'truncate-description' ) == 'on' ) : ?>
 							<div class="tmw-accordion tmw-accordion--video-desc">
 								<div id="tmw-video-desc-<?php echo (int) get_the_ID(); ?>" class="tmw-accordion-content tmw-accordion-collapsed more" data-tmw-accordion-lines="1">
-									<?php the_content(); ?>
+									<?php echo $tmw_video_content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								</div>
 								<div class="tmw-accordion-toggle-wrap">
 									<button class="tmw-accordion-toggle" type="button" data-tmw-accordion-toggle aria-controls="tmw-video-desc-<?php echo (int) get_the_ID(); ?>" aria-expanded="false" data-readmore-text="<?php echo esc_attr__( 'Read more', 'retrotube-child' ); ?>" data-close-text="<?php echo esc_attr__( 'Close', 'retrotube-child' ); ?>">
@@ -184,7 +189,7 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 								</div>
 							</div>
 						<?php else : ?>
-							<?php the_content(); ?>
+							<?php echo $tmw_video_content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						<?php endif; ?>
 					<?php endif; ?>
 				</div>

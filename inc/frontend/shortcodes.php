@@ -97,6 +97,93 @@ if (!function_exists('tmw_render_accordion')) {
   }
 }
 
+
+if (!function_exists('tmw_unwrap_single_accordion_if_present')) {
+  /**
+   * Unwrap a single top-level accordion and return its content body HTML.
+   *
+   * @param string $html Rendered content HTML.
+   * @return string
+   */
+  function tmw_unwrap_single_accordion_if_present(string $html): string {
+    if (trim($html) === '' || stripos($html, 'tmw-accordion') === false) {
+      return $html;
+    }
+
+    if (!class_exists('DOMDocument')) {
+      return $html;
+    }
+
+    $previous_internal_errors = libxml_use_internal_errors(true);
+
+    $document = new DOMDocument();
+    $wrapped_html = '<div id="tmw-accordion-root">' . $html . '</div>';
+
+    if (!$document->loadHTML('<?xml encoding="utf-8" ?>' . $wrapped_html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD)) {
+      libxml_clear_errors();
+      libxml_use_internal_errors($previous_internal_errors);
+      return $html;
+    }
+
+    $root = $document->getElementById('tmw-accordion-root');
+    if (!$root instanceof DOMElement) {
+      libxml_clear_errors();
+      libxml_use_internal_errors($previous_internal_errors);
+      return $html;
+    }
+
+    $element_children = [];
+    foreach ($root->childNodes as $child_node) {
+      if ($child_node instanceof DOMElement) {
+        $element_children[] = $child_node;
+      }
+    }
+
+    if (count($element_children) !== 1) {
+      libxml_clear_errors();
+      libxml_use_internal_errors($previous_internal_errors);
+      return $html;
+    }
+
+    $accordion = $element_children[0];
+    $accordion_classes = preg_split('/\s+/', trim((string) $accordion->getAttribute('class')));
+    if (!in_array('tmw-accordion', $accordion_classes, true)) {
+      libxml_clear_errors();
+      libxml_use_internal_errors($previous_internal_errors);
+      return $html;
+    }
+
+    $content_container = null;
+    foreach ($accordion->childNodes as $accordion_child) {
+      if (!($accordion_child instanceof DOMElement)) {
+        continue;
+      }
+
+      $classes = preg_split('/\s+/', trim((string) $accordion_child->getAttribute('class')));
+      if (in_array('tmw-accordion-content', $classes, true)) {
+        $content_container = $accordion_child;
+        break;
+      }
+    }
+
+    if (!$content_container instanceof DOMElement) {
+      libxml_clear_errors();
+      libxml_use_internal_errors($previous_internal_errors);
+      return $html;
+    }
+
+    $inner_html = '';
+    foreach ($content_container->childNodes as $inner_node) {
+      $inner_html .= $document->saveHTML($inner_node);
+    }
+
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous_internal_errors);
+
+    return $inner_html !== '' ? $inner_html : $html;
+  }
+}
+
 if (!function_exists('tmw_render_title_bar')) {
   /**
    * Render a reusable TMW title bar.
