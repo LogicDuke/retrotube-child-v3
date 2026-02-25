@@ -170,50 +170,9 @@ add_action('after_switch_theme', function () {
   flush_rewrite_rules();
 });
 
-// 1) Always show a Model/Models line on single video pages.
-// Prefers your 'models' taxonomy; falls back to legacy 'actors'.
-add_filter('the_content', function ($content) {
-  if ( ! is_singular(['post','video']) || ! in_the_loop() || ! is_main_query() ) return $content;
-
-  // If the theme already prints its own block, do nothing.
-  if (strpos($content, 'id="video-actors"') !== false ||
-      strpos($content, 'id="video-models"') !== false) {
-    return $content;
-  }
-
-  $post_id = get_the_ID();
-  $terms = get_the_terms($post_id, 'models');
-  if (empty($terms) || is_wp_error($terms)) {
-    $terms = get_the_terms($post_id, 'actors');
-  }
-  if (empty($terms) || is_wp_error($terms)) return $content;
-
-  $links = [];
-  foreach ($terms as $t) {
-    $model_link = tmw_get_model_link_for_term($t);
-    if (!$model_link) {
-      $fallback = get_term_link($t);
-      $model_link = is_wp_error($fallback) ? '' : $fallback;
-    }
-    if ($model_link) {
-      $links[] = sprintf('<a href="%s">%s</a>', esc_url($model_link), esc_html($t->name));
-    }
-  }
-
-  // singular when one model, plural otherwise
-  $label = (count($terms) === 1) ? 'Model' : 'Models';
-
-  $block = '<div id="video-models"><i class="fa fa-star"></i> ' .
-           $label . ': ' . implode(', ', $links) . '</div>';
-
-  // Place it right under the date/meta if present; otherwise prepend.
-  if (preg_match('~(<div[^>]+id="video-date"[^>]*>.*?</div>)~is', $content)) {
-    $content = preg_replace('~(<div[^>]+id="video-date"[^>]*>.*?</div>)~is', '$1' . $block, $content, 1);
-  } else {
-    $content = $block . $content;
-  }
-  return $content;
-}, 45);
+// 1) Legacy model-in-content injector retired.
+// The single-video template now renders model links in .video-meta-inline,
+// so we no longer inject model HTML into the_content.
 
 // 2) Keep old ‘actors’ and new ‘models’ in sync on save.
 add_action('save_post', function ($post_id) {

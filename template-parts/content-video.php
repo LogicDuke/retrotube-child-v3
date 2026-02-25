@@ -98,26 +98,51 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 		<!-- 🔹 Meta Info INLINE (Model / From / Date) -->
 		<div class="video-meta-inline">
 			<?php
-			// ✅ Show Model(s) only if terms exist
-			$terms = wp_get_post_terms( get_the_ID(), 'models' );
-			if ( empty( $terms ) || is_wp_error( $terms ) ) {
-				$terms = wp_get_post_terms( get_the_ID(), 'actors' ); // fallback
+			$model_terms = wp_get_post_terms( get_the_ID(), 'models' );
+			if ( empty( $model_terms ) || is_wp_error( $model_terms ) ) {
+				$model_terms = wp_get_post_terms( get_the_ID(), 'actors' );
 			}
-			if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
-                                echo '<span class="video-meta-item video-meta-model"><i class="fa fa-star"></i> Model:&nbsp;';
-				$links = array();
-                                foreach ( $terms as $term ) {
-                                        $model_link = function_exists( 'tmw_get_model_link_for_term' ) ? tmw_get_model_link_for_term( $term ) : '';
-                                        if ( ! $model_link ) {
-                                                $fallback = get_term_link( $term );
-                                                $model_link = is_wp_error( $fallback ) ? '' : $fallback;
-                                        }
-                                        if ( $model_link ) {
-                                                $links[] = '<a href="' . esc_url( $model_link ) . '">' . esc_html( $term->name ) . '</a>';
-                                        }
-                                }
-				echo implode( ', ', $links );
-				echo '</span>';
+
+			$model_links = array();
+			if ( ! empty( $model_terms ) && ! is_wp_error( $model_terms ) ) {
+				foreach ( $model_terms as $term ) {
+					$model_link = function_exists( 'tmw_get_model_link_for_term' ) ? tmw_get_model_link_for_term( $term ) : '';
+					if ( ! $model_link ) {
+						$fallback_link = get_term_link( $term );
+						$model_link    = is_wp_error( $fallback_link ) ? '' : $fallback_link;
+					}
+					if ( $model_link ) {
+						$model_links[] = '<a href="' . esc_url( $model_link ) . '">' . esc_html( $term->name ) . '</a>';
+					}
+				}
+			}
+
+			if ( empty( $model_links ) ) {
+				$meta_model_keys = array( 'model', 'models', 'actor', 'actors', 'performer', 'performers' );
+				foreach ( $meta_model_keys as $meta_model_key ) {
+					$raw_model_meta = get_post_meta( get_the_ID(), $meta_model_key, true );
+					if ( ! is_scalar( $raw_model_meta ) ) {
+						continue;
+					}
+
+					$raw_model_meta = trim( (string) $raw_model_meta );
+					if ( '' === $raw_model_meta ) {
+						continue;
+					}
+
+					$meta_models = array_filter( array_map( 'trim', preg_split( '/\s*[,|]\s*/', $raw_model_meta ) ) );
+					foreach ( $meta_models as $meta_model_name ) {
+						$model_links[] = '<a href="' . esc_url( home_url( '/?s=' . rawurlencode( $meta_model_name ) ) ) . '">' . esc_html( $meta_model_name ) . '</a>';
+					}
+
+					if ( ! empty( $model_links ) ) {
+						break;
+					}
+				}
+			}
+
+			if ( ! empty( $model_links ) ) {
+				echo '<span class="video-meta-item video-meta-model"><i class="fa fa-star"></i> Model:&nbsp;' . implode( ', ', $model_links ) . '</span>';
 			}
 
 			// ✅ Author always links
@@ -209,31 +234,10 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 	<?php endif; ?>
 
 	<?php
-	// [TMW-VIDEO-TAGS] v4.5.1 — Unified tag layout 100% identical to model page
+	// [TMW-VIDEO-TAGS] v4.5.2 — Show all crawlable post tags (no category slug gating)
 	if ( xbox_get_field_value( 'wpst-options', 'show-tags-video-about' ) == 'on' ) :
 		$video_tags = get_the_tags( get_the_ID() );
-		$video_tags_count = is_array( $video_tags ) ? count( $video_tags ) : 0;
-		$hub_video_tags   = array();
-		$hidden_nonhub    = 0;
-		$shown_hub        = 0;
-
-		if ( $video_tags_count > 0 ) {
-			foreach ( $video_tags as $tag ) {
-				$hub_cat = get_term_by( 'slug', $tag->slug, 'category' );
-				if ( empty( $hub_cat ) || is_wp_error( $hub_cat ) ) {
-					$hidden_nonhub++;
-					continue;
-				}
-				$shown_hub++;
-				$hub_video_tags[] = $tag;
-			}
-		}
-
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			if (defined('WP_DEBUG') && WP_DEBUG) { error_log( sprintf( '[TMW-HUB-TAG-UI] hidden_nonhub=%d shown_hub=%d post_id=%d', $hidden_nonhub, $shown_hub, (int) get_the_ID() ) ); }
-		}
-
-		if ( $shown_hub > 0 ) :
+		if ( ! empty( $video_tags ) && ! is_wp_error( $video_tags ) ) :
 		?>
 		<!-- === TMW-VIDEO-TAGS-UNIFIED === -->
 		<div class="post-tags entry-tags tmw-model-tags tmw-video-tags">
@@ -241,7 +245,7 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
 				<i class="fa fa-tags" aria-hidden="true"></i>
 				<?php echo esc_html__( 'Tags:', 'retrotube' ); ?>
 			</span>
-			<?php foreach ( $hub_video_tags as $tag ) : ?>
+			<?php foreach ( $video_tags as $tag ) : ?>
 				<a href="<?php echo esc_url( get_tag_link( $tag->term_id ) ); ?>"
 					class="label"
 					title="<?php echo esc_attr( $tag->name ); ?>">
