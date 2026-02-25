@@ -175,7 +175,43 @@ if (!function_exists('tmw_get_videos_for_model')) {
 
         $q = new WP_Query($args);
 
-        return $q->have_posts() ? $q->posts : [];
+        if ($q->have_posts()) {
+            return $q->posts;
+        }
+
+        $model_post = get_page_by_path($model_slug, OBJECT, ['model', 'model_bio']);
+        if (!$model_post instanceof WP_Post) {
+            return [];
+        }
+
+        $related_ids = get_post_meta($model_post->ID, 'rt_model_videos', true);
+        if (!is_array($related_ids)) {
+            $related_ids = is_scalar($related_ids) ? preg_split('/[\s,]+/', (string) $related_ids) : [];
+        }
+
+        $related_ids = array_values(array_unique(array_filter(array_map('absint', $related_ids))));
+        if (empty($related_ids)) {
+            return [];
+        }
+
+        if (is_int($limit) && $limit > 0) {
+            $related_ids = array_slice($related_ids, 0, $limit);
+        }
+
+        $fallback = new WP_Query([
+            'post_type'      => $post_type,
+            'post_status'    => 'publish',
+            'post__in'       => $related_ids,
+            'orderby'        => 'post__in',
+            'posts_per_page' => $limit,
+            'no_found_rows'  => true,
+        ]);
+
+        if (!$fallback->have_posts()) {
+            return [];
+        }
+
+        return array_values(array_unique($fallback->posts, SORT_REGULAR));
     }
 }
 
