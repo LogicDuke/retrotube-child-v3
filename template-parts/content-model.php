@@ -154,33 +154,42 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
         ?>
 
         <?php
-        // === TAGS - NO HUB FILTERING - SHOW ALL TAGS ===
+        // === [TMW-FIX] TAGS SECTION - Model's own tags ===
         $tmw_model_tags_count = get_query_var( 'tmw_model_tags_count', null );
-        $tmw_model_tags       = get_query_var( 'tmw_model_tags_data', [] );
+        $tmw_model_tags       = get_query_var( 'tmw_model_tags_data', array() );
+
+        if ( $tmw_model_tags_count === null ) {
+            $direct_tags = get_the_tags( get_the_ID() );
+            if ( ! empty( $direct_tags ) && ! is_wp_error( $direct_tags ) ) {
+                $tmw_model_tags = $direct_tags;
+                $tmw_model_tags_count = count( $direct_tags );
+            } else {
+                $tmw_model_tags = array();
+                $tmw_model_tags_count = 0;
+            }
+        }
         ?>
-        <?php if ( $tmw_model_tags_count !== null ) : ?>
-            <!-- === TMW-TAGS - ALL TAGS SHOWN === -->
-            <div class="post-tags entry-tags tmw-model-tags<?php echo $tmw_model_tags_count === 0 ? ' no-tags' : ''; ?>">
-                <span class="tag-title">
-                    <i class="fa fa-tags" aria-hidden="true"></i>
-                    <?php
-                    echo $tmw_model_tags_count === 0
-                        ? esc_html__( '(No tags linked)', 'retrotube' )
-                        : esc_html__( 'Tags:', 'retrotube' );
-                    ?>
-                </span>
-                <?php if ( $tmw_model_tags_count > 0 && is_array( $tmw_model_tags ) ) : ?>
-                    <?php foreach ( $tmw_model_tags as $tag ) : ?>
-                        <a href="<?php echo esc_url( get_tag_link( $tag->term_id ) ); ?>"
-                           class="label"
-                           title="<?php echo esc_attr( $tag->name ); ?>">
-                            <i class="fa fa-tag"></i><?php echo esc_html( $tag->name ); ?>
-                        </a>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-            <!-- === END TMW-TAGS === -->
-        <?php endif; ?>
+        <!-- === TMW-TAGS === -->
+        <div class="post-tags entry-tags tmw-model-tags<?php echo $tmw_model_tags_count === 0 ? ' no-tags' : ''; ?>">
+            <span class="tag-title">
+                <i class="fa fa-tags" aria-hidden="true"></i>
+                <?php
+                echo $tmw_model_tags_count === 0
+                    ? esc_html__( '(No tags linked)', 'retrotube' )
+                    : esc_html__( 'Tags:', 'retrotube' );
+                ?>
+            </span>
+            <?php if ( $tmw_model_tags_count > 0 && is_array( $tmw_model_tags ) ) : ?>
+                <?php foreach ( $tmw_model_tags as $tag ) : ?>
+                    <a href="<?php echo esc_url( get_tag_link( $tag->term_id ) ); ?>"
+                       class="label"
+                       title="<?php echo esc_attr( $tag->name ); ?>">
+                        <i class="fa fa-tag"></i><?php echo esc_html( $tag->name ); ?>
+                    </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <!-- === END TMW-TAGS === -->
 
         <?php
         // === VIDEOS FEATURING MODEL ===

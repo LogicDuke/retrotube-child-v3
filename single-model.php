@@ -13,43 +13,40 @@ get_header(); ?>
       while ( have_posts() ) :
         the_post();
 
-        // === Video & Tag Resolution ===
+        // === [TMW-FIX] Model tags + model videos resolution ===
         $post_id    = get_the_ID();
         $model_slug = get_post_field( 'post_name', $post_id );
-        $video_tags = array();
 
-        if ( function_exists( 'tmw_get_videos_for_model' ) ) {
-          $videos = tmw_get_videos_for_model( $model_slug, -1 );
-          $video_count = is_array( $videos ) ? count( $videos ) : 0;
+        $model_tags = get_the_tags( $post_id );
+        $tag_count  = 0;
+        $tag_array  = array();
 
-          if ( ! empty( $videos ) ) {
-            foreach ( $videos as $video_post ) {
-              $tags_for_video = wp_get_post_terms( $video_post->ID, 'post_tag' );
-              if ( ! is_wp_error( $tags_for_video ) && ! empty( $tags_for_video ) ) {
-                foreach ( $tags_for_video as $tag_term ) {
-                  $video_tags[ $tag_term->term_id ] = $tag_term;
-                }
-              }
-            }
-          }
+        if ( ! empty( $model_tags ) && ! is_wp_error( $model_tags ) ) {
+          $tag_array = $model_tags;
+          $tag_count = count( $model_tags );
         }
 
-        $tag_count = count( $video_tags );
-
         if ( $tag_count > 0 ) {
-          uasort( $video_tags, static function( $a, $b ) {
+          usort( $tag_array, static function( $a, $b ) {
             return strcasecmp( $a->name, $b->name );
           } );
         }
 
-        set_query_var( 'tmw_model_tags_data', array_values( $video_tags ) );
+        set_query_var( 'tmw_model_tags_data', $tag_array );
         set_query_var( 'tmw_model_tags_count', $tag_count );
+
+        $videos = array();
+        if ( function_exists( 'tmw_get_videos_for_model' ) ) {
+          $videos = tmw_get_videos_for_model( $model_slug, 24 );
+        }
+        set_query_var( 'tmw_model_videos', $videos );
         // Render the model content template.
         get_template_part( 'template-parts/content', 'model' );
 
         // Cleanup query vars.
         set_query_var( 'tmw_model_tags_data', array() );
         set_query_var( 'tmw_model_tags_count', null );
+        set_query_var( 'tmw_model_videos', null );
 
       endwhile;
     endif;

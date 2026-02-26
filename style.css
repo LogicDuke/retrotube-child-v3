@@ -1350,3 +1350,23 @@ footer#colophon.site-footer a[href*="/18-u-s-c-2257/"]:focus-visible {
   color: #e00000 !important;
   text-decoration: underline;
 }
+
+/* ============================================
+   [TMW-FIX] Model Page Layout
+   ============================================ */
+
+.single-model .tab-content,
+.single-model #video-about,
+.single-model .video-description {
+    overflow: visible !important;
+}
+
+.single-model .tmw-model-tags {
+    margin-top: 15px;
+    padding: 12px 0;
+}
+
+.single-model .tmw-model-tags.no-tags .tag-title {
+    color: #f5c842;
+    font-style: italic;
+}

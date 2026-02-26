@@ -110,6 +110,8 @@
 
                 toggle.blur();
             });
+
+            console.log('[TMW-Accordion] Initialized toggle for:', content.id, 'needsToggle:', needsToggle);
         });
     }
 
@@ -197,5 +199,9 @@
             subtree: true
         });
     }
+
+    window.addEventListener('load', function() {
+        initTMWAccordions();
+    });
 
 })();
