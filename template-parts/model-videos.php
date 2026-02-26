@@ -108,6 +108,23 @@ $original_post = $post;
             <span class="video-duration"><?php echo esc_html($duration); ?></span>
           <?php endif; ?>
         </a>
+        <?php
+        // --- TMW: Rating bar (identical to widget cards) ---
+        $vid_likes    = function_exists('tmw_get_post_likes_count')
+            ? tmw_get_post_likes_count($video_id)
+            : (int) get_post_meta($video_id, 'likes_count', true);
+        $vid_dislikes = function_exists('tmw_get_post_dislikes_count')
+            ? tmw_get_post_dislikes_count($video_id)
+            : (int) get_post_meta($video_id, 'dislikes_count', true);
+        $vid_likes    = is_numeric($vid_likes) ? (int) $vid_likes : 0;
+        $vid_dislikes = is_numeric($vid_dislikes) ? (int) $vid_dislikes : 0;
+        $vid_total    = $vid_likes + $vid_dislikes;
+        $vid_pct      = ($vid_total > 0) ? round(($vid_likes / $vid_total) * 100, 0) : 0;
+        ?>
+        <div class="tmw-vid-rating">
+          <div class="rating-bar"><div class="rating-bar-meter" style="width: <?php echo esc_attr($vid_pct); ?>%;"></div></div>
+          <div class="rating-result"><div class="percentage"><i class="fa fa-thumbs-up" aria-hidden="true"></i> <?php echo esc_html($vid_pct); ?>%</div></div>
+        </div>
         <h4 class="video-title"><a href="<?php echo esc_url($permalink); ?>"><?php echo esc_html($title); ?></a></h4>
       </article>
     <?php endforeach; ?>
