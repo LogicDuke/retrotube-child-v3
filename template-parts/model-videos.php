@@ -29,6 +29,23 @@ if (!is_array($videos)) {
 $video_count = is_array($videos) ? count($videos) : 0;
 
 if ($video_count === 0) {
+    $fallback_query = new WP_Query([
+        'post_type'      => ['post', 'video'],
+        'posts_per_page' => 12,
+        's'              => $model_name,
+        'post_status'    => 'publish',
+        'no_found_rows'  => true,
+    ]);
+
+    if ($fallback_query->have_posts()) {
+        $videos = $fallback_query->posts;
+        $video_count = count($videos);
+    }
+
+    wp_reset_postdata();
+}
+
+if ($video_count === 0) {
     return;
 }
 
