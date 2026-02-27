@@ -17,29 +17,36 @@ get_header(); ?>
         $post_id    = get_the_ID();
         $model_slug = get_post_field( 'post_name', $post_id );
 
-        $model_tags = get_the_tags( $post_id );
-        $tag_count  = 0;
-        $tag_array  = array();
-
-        if ( ! empty( $model_tags ) && ! is_wp_error( $model_tags ) ) {
-          $tag_array = $model_tags;
-          $tag_count = count( $model_tags );
-        }
-
-        if ( $tag_count > 0 ) {
-          usort( $tag_array, static function( $a, $b ) {
-            return strcasecmp( $a->name, $b->name );
-          } );
-        }
-
-        set_query_var( 'tmw_model_tags_data', $tag_array );
-        set_query_var( 'tmw_model_tags_count', $tag_count );
-
+        // Fetch videos for this model.
         $videos = array();
         if ( function_exists( 'tmw_get_videos_for_model' ) ) {
           $videos = tmw_get_videos_for_model( $model_slug, 24 );
         }
         set_query_var( 'tmw_model_videos', $videos );
+
+        // Collect tags from the associated videos (models don't have tags themselves).
+        $video_tags = array();
+        if ( ! empty( $videos ) ) {
+          foreach ( $videos as $v_post ) {
+            $tags_for_video = wp_get_post_terms( $v_post->ID, 'post_tag' );
+            if ( ! is_wp_error( $tags_for_video ) && ! empty( $tags_for_video ) ) {
+              foreach ( $tags_for_video as $tag_term ) {
+                $video_tags[ $tag_term->term_id ] = $tag_term;
+              }
+            }
+          }
+        }
+
+        $tag_count = count( $video_tags );
+
+        if ( $tag_count > 0 ) {
+          usort( $video_tags, static function( $a, $b ) {
+            return strcasecmp( $a->name, $b->name );
+          } );
+        }
+
+        set_query_var( 'tmw_model_tags_data', array_values( $video_tags ) );
+        set_query_var( 'tmw_model_tags_count', $tag_count );
         // Render the model content template.
         get_template_part( 'template-parts/content', 'model' );
 
