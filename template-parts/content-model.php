@@ -154,18 +154,47 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
         ?>
 
         <?php
-        // === [TMW-FIX] TAGS SECTION - Model's own tags ===
+        // === [TMW-FIX] TAGS SECTION - Collect from associated videos ===
         $tmw_model_tags_count = get_query_var( 'tmw_model_tags_count', null );
         $tmw_model_tags       = get_query_var( 'tmw_model_tags_data', array() );
 
-        if ( $tmw_model_tags_count === null ) {
+        // If query vars weren't set or returned 0, collect tags from associated videos.
+        if ( empty( $tmw_model_tags ) || $tmw_model_tags_count === null || $tmw_model_tags_count === 0 ) {
+            // First try model's own tags (unlikely but safe).
             $direct_tags = get_the_tags( get_the_ID() );
             if ( ! empty( $direct_tags ) && ! is_wp_error( $direct_tags ) ) {
                 $tmw_model_tags = $direct_tags;
                 $tmw_model_tags_count = count( $direct_tags );
             } else {
+                // Collect tags from associated videos.
                 $tmw_model_tags = array();
                 $tmw_model_tags_count = 0;
+                $tmw_vid_list = get_query_var( 'tmw_model_videos', null );
+                if ( empty( $tmw_vid_list ) ) {
+                    $m_slug = get_post_field( 'post_name', get_the_ID() );
+                    if ( function_exists( 'tmw_get_videos_for_model' ) && $m_slug ) {
+                        $tmw_vid_list = tmw_get_videos_for_model( $m_slug, 24 );
+                    }
+                }
+                if ( ! empty( $tmw_vid_list ) && is_array( $tmw_vid_list ) ) {
+                    $collected = array();
+                    foreach ( $tmw_vid_list as $v ) {
+                        if ( ! $v instanceof WP_Post ) { continue; }
+                        $vtags = wp_get_post_terms( $v->ID, 'post_tag' );
+                        if ( ! is_wp_error( $vtags ) && ! empty( $vtags ) ) {
+                            foreach ( $vtags as $vt ) {
+                                $collected[ $vt->term_id ] = $vt;
+                            }
+                        }
+                    }
+                    if ( ! empty( $collected ) ) {
+                        usort( $collected, static function( $a, $b ) {
+                            return strcasecmp( $a->name, $b->name );
+                        } );
+                        $tmw_model_tags = array_values( $collected );
+                        $tmw_model_tags_count = count( $tmw_model_tags );
+                    }
+                }
             }
         }
         ?>
