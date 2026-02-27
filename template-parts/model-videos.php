@@ -1,6 +1,7 @@
 <?php
 /**
  * Template Part: Model Videos Section — Hybrid Scan Query
+ * Card markup matches parent theme sidebar widget (loop-video thumb-block)
  */
 
 if (!defined('ABSPATH')) {
@@ -49,12 +50,40 @@ if ($video_count === 0) {
     return;
 }
 
+// Store resolved videos globally so tag section can access them.
+global $tmw_resolved_model_videos;
+$tmw_resolved_model_videos = $videos;
+
 $original_post = $post;
+
+/**
+ * Format raw seconds (e.g. "341") into MM:SS or HH:MM:SS.
+ */
+if (!function_exists('tmw_format_duration_display')) {
+    function tmw_format_duration_display($raw) {
+        $raw = trim($raw);
+        if (strpos($raw, ':') !== false) {
+            return $raw;
+        }
+        $secs = (int) $raw;
+        if ($secs <= 0) {
+            return $raw;
+        }
+        $h = floor($secs / 3600);
+        $m = floor(($secs % 3600) / 60);
+        $s = $secs % 60;
+        if ($h > 0) {
+            return sprintf('%d:%02d:%02d', $h, $m, $s);
+        }
+        return sprintf('%02d:%02d', $m, $s);
+    }
+}
 ?>
 <section class="tmw-model-videos videos-featuring widget widget_videos_block">
   <h3 class="tmw-section-header widget-title"><?php esc_html_e('Videos Featuring', 'retrotube'); ?> <?php echo esc_html($model_name); ?></h3>
   <div class="videos-list">
     <?php
+    $tmw_vid_uid = 100;
     foreach ($videos as $video_post) :
       if (!$video_post instanceof WP_Post) {
         continue;
@@ -67,35 +96,22 @@ $original_post = $post;
       $title     = get_the_title($post);
       $title     = is_string($title) ? trim($title) : '';
       if ($title === '' || preg_match('/^\d+$/', $title)) {
-        $title = sprintf(
-          /* translators: %s: model name. */
-          __('Video featuring %s', 'retrotube'),
-          $model_name
-        );
+        $title = sprintf(__('Video featuring %s', 'retrotube'), $model_name);
       }
-      $video_id  = get_the_ID();
-      $thumb     = get_the_post_thumbnail($post, 'wpst_thumb_large', [
-        'class' => 'video-thumb-img',
-        'alt'   => $title,
-        'loading' => 'lazy',
-        'decoding' => 'async',
-        'fetchpriority' => 'low',
-      ]);
+      $video_id = get_the_ID();
 
-      if (empty($thumb)) {
-        $thumb_meta = get_post_meta($post->ID, 'thumb', true);
-        if (is_string($thumb_meta) && $thumb_meta !== '') {
-          $thumb = sprintf(
-            '<img class="video-thumb-img" src="%s" alt="%s" loading="lazy" decoding="async" fetchpriority="low" />',
-            esc_url($thumb_meta),
-            esc_attr($title)
-          );
-        }
+      // Thumbnail URL.
+      $thumb_url = get_the_post_thumbnail_url($post, 'wpst_thumb_large');
+      if (empty($thumb_url)) {
+        $thumb_url = get_post_meta($post->ID, 'thumb', true);
       }
 
-      $duration = get_post_meta($post->ID, 'duration', true);
-      $duration = is_string($duration) ? trim($duration) : '';
+      // Duration.
+      $duration_raw = get_post_meta($post->ID, 'duration', true);
+      $duration_raw = is_string($duration_raw) ? trim($duration_raw) : '';
+      $duration_display = tmw_format_duration_display($duration_raw);
 
+      // Views.
       $views = function_exists('tmw_get_post_views_count')
           ? tmw_get_post_views_count($video_id)
           : (int) get_post_meta($video_id, 'post_views_count', true);
@@ -113,29 +129,25 @@ $original_post = $post;
       $vid_total    = $vid_likes + $vid_dislikes;
       $vid_pct      = ($vid_total > 0) ? round(($vid_likes / $vid_total) * 100, 0) : 0;
 
-      ?>
-      <article id="post-<?php echo esc_attr($video_id); ?>" <?php post_class('thumb-block tmw-model-video-item'); ?>>
-        <a class="post-thumbnail" href="<?php echo esc_url($permalink); ?>" aria-label="<?php echo esc_attr($title); ?>">
-          <?php
-          if (!empty($thumb)) {
-            echo $thumb; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-          }
-          ?>
-          <?php if ($duration !== '') : ?>
-            <span class="duration"><?php echo esc_html($duration); ?></span>
-          <?php endif; ?>
-        </a>
-        <div class="tmw-vid-rating">
-          <div class="rating-bar"><div class="rating-bar-meter" style="width: <?php echo esc_attr($vid_pct); ?>%;"></div></div>
-          <div class="rating-result"><div class="percentage"><i class="fa fa-thumbs-up" aria-hidden="true"></i> <?php echo esc_html($vid_pct); ?>%</div></div>
-        </div>
-        <header class="entry-header">
-          <h2 class="entry-title"><a href="<?php echo esc_url($permalink); ?>"><?php echo esc_html($title); ?></a></h2>
-        </header>
-        <?php if ($views > 0) : ?>
-          <span class="video-views tmw-vid-views"><i class="fa fa-eye" aria-hidden="true"></i> <?php echo esc_html(number_format_i18n($views)); ?></span>
-        <?php endif; ?>
-      </article>
+      // Thumbnail rotation data.
+      $thumbs_data = get_post_meta($post->ID, 'thumbs', true);
+      $thumbs_data = is_string($thumbs_data) ? trim($thumbs_data) : '';
+
+      $tmw_vid_uid++;
+    ?>
+<article data-video-uid="<?php echo esc_attr($tmw_vid_uid); ?>" data-post-id="<?php echo esc_attr($video_id); ?>" <?php post_class('loop-video thumb-block'); ?>>
+	<a href="<?php echo esc_url($permalink); ?>" title="<?php echo esc_attr($title); ?>">
+		<div class="post-thumbnail">
+			<div class="post-thumbnail-container<?php echo $thumbs_data !== '' ? ' video-with-thumbs thumbs-rotation' : ''; ?>"<?php echo $thumbs_data !== '' ? ' data-thumbs="' . esc_attr($thumbs_data) . '"' : ''; ?>><img width="300" height="168.75" <?php echo $thumbs_data !== '' ? 'data-src' : 'src'; ?>="<?php echo esc_url($thumb_url); ?>" alt="<?php echo esc_attr($title); ?>"></div>
+			<?php if ($views > 0) : ?><span class="views"><i class="fa fa-eye"></i> <?php echo esc_html(number_format_i18n($views)); ?></span><?php endif; ?>
+			<?php if ($duration_display !== '') : ?><span class="duration"><i class="fa fa-clock-o"></i><?php echo esc_html($duration_display); ?></span><?php endif; ?>
+		</div>
+		<div class="rating-bar"><div class="rating-bar-meter" style="width:<?php echo esc_attr($vid_pct); ?>%"></div><i class="fa fa-thumbs-up" aria-hidden="true"></i><span><?php echo esc_html($vid_pct); ?>%</span></div>
+		<header class="entry-header">
+			<span><?php echo esc_html($title); ?></span>
+		</header>
+	</a>
+</article>
     <?php endforeach; ?>
   </div>
 </section>
