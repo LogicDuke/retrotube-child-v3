@@ -155,56 +155,47 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
 
         <?php
         // === [TMW-FIX] TAGS SECTION - Collect from associated videos ===
-        // Fully self-contained: fetches videos and their tags directly.
         $tmw_model_tags       = array();
         $tmw_model_tags_count = 0;
-        $tmw_tag_debug        = array(); // debug breadcrumbs
 
-        // Step 1: Get model slug.
+        // Step 1: Get model info.
         $tmw_m_id   = get_the_ID();
         $tmw_m_slug = get_post_field( 'post_name', $tmw_m_id );
-        $tmw_tag_debug[] = 'model_id=' . $tmw_m_id . ' slug=' . $tmw_m_slug;
+        $tmw_m_name = get_the_title( $tmw_m_id );
 
-        // Step 2: Get videos for this model.
+        // Step 2: Get videos — try taxonomy query first, then fallback search.
         $tmw_tag_videos = array();
         if ( function_exists( 'tmw_get_videos_for_model' ) && $tmw_m_slug ) {
             $tmw_tag_videos = tmw_get_videos_for_model( $tmw_m_slug, 24 );
         }
-        $tmw_tag_debug[] = 'videos_found=' . ( is_array( $tmw_tag_videos ) ? count( $tmw_tag_videos ) : 0 );
+
+        // Fallback: same search query model-videos.php uses.
+        if ( empty( $tmw_tag_videos ) && $tmw_m_name ) {
+            $tmw_fb_q = new WP_Query( array(
+                'post_type'      => array( 'post', 'video' ),
+                'posts_per_page' => 12,
+                's'              => $tmw_m_name,
+                'post_status'    => 'publish',
+                'no_found_rows'  => true,
+            ) );
+            if ( $tmw_fb_q->have_posts() ) {
+                $tmw_tag_videos = $tmw_fb_q->posts;
+            }
+            wp_reset_postdata();
+        }
 
         // Step 3: Collect tags from each video.
         if ( ! empty( $tmw_tag_videos ) && is_array( $tmw_tag_videos ) ) {
             $collected = array();
             foreach ( $tmw_tag_videos as $tv ) {
                 if ( ! $tv instanceof WP_Post ) { continue; }
-
-                // Try post_tag first (standard WP), then any other tag-like taxonomy.
                 $tv_tags = wp_get_post_terms( $tv->ID, 'post_tag' );
-                if ( is_wp_error( $tv_tags ) || empty( $tv_tags ) ) {
-                    // Fallback: get all taxonomies for this post type and try each.
-                    $taxs = get_object_taxonomies( $tv->post_type, 'names' );
-                    $tmw_tag_debug[] = 'vid_' . $tv->ID . '_type=' . $tv->post_type . '_taxs=' . implode( ',', $taxs );
-                    foreach ( $taxs as $tx ) {
-                        if ( in_array( $tx, array( 'category', 'models', 'post_format' ), true ) ) {
-                            continue; // skip non-tag taxonomies
-                        }
-                        $tv_tags = wp_get_post_terms( $tv->ID, $tx );
-                        if ( ! is_wp_error( $tv_tags ) && ! empty( $tv_tags ) ) {
-                            $tmw_tag_debug[] = 'vid_' . $tv->ID . '_tags_from_tax=' . $tx . '_count=' . count( $tv_tags );
-                            break;
-                        }
-                    }
-                } else {
-                    $tmw_tag_debug[] = 'vid_' . $tv->ID . '_post_tag_count=' . count( $tv_tags );
-                }
-
                 if ( ! is_wp_error( $tv_tags ) && ! empty( $tv_tags ) ) {
                     foreach ( $tv_tags as $vt ) {
                         $collected[ $vt->term_id ] = $vt;
                     }
                 }
             }
-
             if ( ! empty( $collected ) ) {
                 usort( $collected, static function( $a, $b ) {
                     return strcasecmp( $a->name, $b->name );
@@ -213,9 +204,7 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
                 $tmw_model_tags_count = count( $tmw_model_tags );
             }
         }
-        $tmw_tag_debug[] = 'final_tag_count=' . $tmw_model_tags_count;
         ?>
-        <!-- TMW-TAG-DEBUG: <?php echo esc_html( implode( ' | ', $tmw_tag_debug ) ); ?> -->
         <!-- === TMW-TAGS === -->
         <div class="post-tags entry-tags tmw-model-tags<?php echo $tmw_model_tags_count === 0 ? ' no-tags' : ''; ?>">
             <span class="tag-title">
