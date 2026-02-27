@@ -486,13 +486,13 @@ article[id^="post-"]::before {
 /* === v2.7.7-remove-video-id === */
 .single-model .tmw-model-video-item .post-id,
 .single-model .tmw-model-video-item .video-meta,
-.single-model .tmw-model-video-item span,
 .single-model .tmw-model-video-item .entry-meta {
     display: none !important;
 }
 
 /* === v2.7.8-video-thumb-gap-fix === */
-.single-model .tmw-model-video-item .video-title {
+.single-model .tmw-model-video-item .video-title,
+.single-model .tmw-model-video-item .entry-header {
     margin-top: 3px !important;
     line-height: 1.2em;
 }
@@ -672,13 +672,13 @@ article[id^="post-"]::before {
 /* [TMW-FIX] Rating bar for Videos Featuring section on model pages */
 
 /* Kill inline baseline gap between thumbnail and rating bar */
-.single-model .tmw-model-video-item .video-thumb {
+.single-model .tmw-model-video-item .post-thumbnail {
     display: block;
     line-height: 0;
     font-size: 0;
 }
 
-.single-model .tmw-model-video-item .video-thumb img {
+.single-model .tmw-model-video-item .post-thumbnail img {
     display: block;
     width: 100%;
     height: auto;
@@ -755,6 +755,15 @@ article[id^="post-"]::before {
     visibility: visible !important;
     opacity: 1 !important;
     margin-right: 0.3em;
+}
+
+/* Views line under title */
+.single-model .tmw-model-video-item .tmw-vid-views {
+    display: block !important;
+    font-size: 0.75em;
+    color: #999;
+    text-align: center;
+    padding: 2px 0;
 }
 
 /* identical margins & layout with .single-video */
@@ -843,6 +852,7 @@ a.tag-link {
   .single-model .entry-related,
   .single-model .related-posts,
   .single-model .video-grid,
+  .single-model .videos-list,
   .single-model .videos,
   .single-model .posts,
   .single-model .loop-videos {
@@ -853,6 +863,7 @@ a.tag-link {
 
   /* FIX: use container-based sizing (no vw) to avoid overflow from side padding */
   .single-model .video-grid > *,
+  .single-model .videos-list > *,
   .single-model .posts > li,
   .single-model .loop-videos > * {
     width: 100% !important;        /* fill the container’s content box */
@@ -864,6 +875,7 @@ a.tag-link {
 
   /* Thumbs fill the card exactly */
   .single-model .video-grid img,
+  .single-model .videos-list img,
   .single-model .posts img,
   .single-model .loop-videos img {
     display: block !important;
@@ -873,6 +885,7 @@ a.tag-link {
 
   /* Optional safety: clip any tiny sub-pixel overflow caused by transforms */
   .single-model .video-grid,
+  .single-model .videos-list,
   .single-model .posts,
   .single-model .loop-videos {
     overflow-x: clip;
