@@ -14,6 +14,7 @@ require_once __DIR__ . '/models/tmw-model-archive-query-fix.php';
 require_once __DIR__ . '/models/tmw-model-admin-meta.php';
 require_once __DIR__ . '/models/tmw-model-flipbox-term-meta.php';
 require_once __DIR__ . '/models/tmw-model-flipbox-rest-meta.php';
+require_once __DIR__ . '/models/tmw-model-banner-rest-meta.php';
 require_once __DIR__ . '/models/tmw-model-flipbox-metabox.php';
 require_once __DIR__ . '/models/tmw-model-template-helpers.php';
 require_once __DIR__ . '/models/tmw-model-frontend-hooks.php';
