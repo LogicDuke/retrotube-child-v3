@@ -122,7 +122,7 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
       <input type="hidden" id="tmw_flip_front_id" name="tmw_flip_front_id" value="<?php echo esc_attr((string) $front_id); ?>">
       <button type="button" class="button tmw-flipbox-pick" data-target="tmw_flip_front_id" data-preview="tmw_flip_front_id_preview">Choose Front Image</button>
       <button type="button" class="button tmw-flipbox-remove" data-target="tmw_flip_front_id" data-preview="tmw_flip_front_id_preview">Remove</button>
-      <div style="margin-top:8px;">
+      <div class="tmw-flipbox-preview tmw-flipbox-preview-front" style="margin-top:8px;">
         <img id="tmw_flip_front_id_preview" src="<?php echo esc_url((string) $front_url); ?>" alt="" style="max-width:120px;height:auto;<?php echo $front_url ? '' : 'display:none;'; ?>">
       </div>
     </div>
@@ -132,26 +132,30 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
       <input type="hidden" id="tmw_flip_back_id" name="tmw_flip_back_id" value="<?php echo esc_attr((string) $back_id); ?>">
       <button type="button" class="button tmw-flipbox-pick" data-target="tmw_flip_back_id" data-preview="tmw_flip_back_id_preview">Choose Back Image</button>
       <button type="button" class="button tmw-flipbox-remove" data-target="tmw_flip_back_id" data-preview="tmw_flip_back_id_preview">Remove</button>
-      <div style="margin-top:8px;">
+      <div class="tmw-flipbox-preview tmw-flipbox-preview-back" style="margin-top:8px;">
         <img id="tmw_flip_back_id_preview" src="<?php echo esc_url((string) $back_url); ?>" alt="" style="max-width:120px;height:auto;<?php echo $back_url ? '' : 'display:none;'; ?>">
       </div>
     </div>
 
-    <p>
+    <p class="tmw-flipbox-control-row">
       <label for="tmw_flip_pos_front"><strong>Front Horizontal Position (0–100)</strong></label><br>
-      <input type="number" id="tmw_flip_pos_front" name="tmw_flip_pos_front" min="0" max="100" step="1" value="<?php echo esc_attr((string) $values['tmw_flip_pos_front']); ?>">
+      <input type="range" id="tmw_flip_pos_front" name="tmw_flip_pos_front" min="0" max="100" step="1" value="<?php echo esc_attr((string) $values['tmw_flip_pos_front']); ?>" data-readout="#tmw_flip_pos_front_readout" data-unit="%">
+      <span id="tmw_flip_pos_front_readout" class="tmw-flipbox-readout"><?php echo esc_html((string) $values['tmw_flip_pos_front']); ?>%</span>
     </p>
-    <p>
+    <p class="tmw-flipbox-control-row">
       <label for="tmw_flip_pos_back"><strong>Back Horizontal Position (0–100)</strong></label><br>
-      <input type="number" id="tmw_flip_pos_back" name="tmw_flip_pos_back" min="0" max="100" step="1" value="<?php echo esc_attr((string) $values['tmw_flip_pos_back']); ?>">
+      <input type="range" id="tmw_flip_pos_back" name="tmw_flip_pos_back" min="0" max="100" step="1" value="<?php echo esc_attr((string) $values['tmw_flip_pos_back']); ?>" data-readout="#tmw_flip_pos_back_readout" data-unit="%">
+      <span id="tmw_flip_pos_back_readout" class="tmw-flipbox-readout"><?php echo esc_html((string) $values['tmw_flip_pos_back']); ?>%</span>
     </p>
-    <p>
+    <p class="tmw-flipbox-control-row">
       <label for="tmw_flip_zoom_front"><strong>Front Zoom (1.0–2.5)</strong></label><br>
-      <input type="number" id="tmw_flip_zoom_front" name="tmw_flip_zoom_front" min="1" max="2.5" step="0.1" value="<?php echo esc_attr((string) $values['tmw_flip_zoom_front']); ?>">
+      <input type="range" id="tmw_flip_zoom_front" name="tmw_flip_zoom_front" min="1" max="2.5" step="0.1" value="<?php echo esc_attr((string) $values['tmw_flip_zoom_front']); ?>" data-readout="#tmw_flip_zoom_front_readout">
+      <span id="tmw_flip_zoom_front_readout" class="tmw-flipbox-readout"><?php echo esc_html(number_format((float) $values['tmw_flip_zoom_front'], 1)); ?></span>
     </p>
-    <p>
+    <p class="tmw-flipbox-control-row">
       <label for="tmw_flip_zoom_back"><strong>Back Zoom (1.0–2.5)</strong></label><br>
-      <input type="number" id="tmw_flip_zoom_back" name="tmw_flip_zoom_back" min="1" max="2.5" step="0.1" value="<?php echo esc_attr((string) $values['tmw_flip_zoom_back']); ?>">
+      <input type="range" id="tmw_flip_zoom_back" name="tmw_flip_zoom_back" min="1" max="2.5" step="0.1" value="<?php echo esc_attr((string) $values['tmw_flip_zoom_back']); ?>" data-readout="#tmw_flip_zoom_back_readout">
+      <span id="tmw_flip_zoom_back_readout" class="tmw-flipbox-readout"><?php echo esc_html(number_format((float) $values['tmw_flip_zoom_back'], 1)); ?></span>
     </p>
     <?php
   }
@@ -235,5 +239,12 @@ add_action('admin_enqueue_scripts', function ($hook): void {
     ['jquery'],
     '1.0.0',
     true
+  );
+
+  wp_enqueue_style(
+    'tmw-model-flipbox-metabox',
+    get_stylesheet_directory_uri() . '/css/tmw-model-flipbox-metabox.css',
+    [],
+    '1.0.0'
   );
 });
