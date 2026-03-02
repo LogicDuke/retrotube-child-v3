@@ -225,6 +225,7 @@ add_action('save_post', function ($post_id) {
 
   $pt = get_post_type($post_id);
   $detected_pt = function_exists('tmw_detect_livejasmin_post_type') ? tmw_detect_livejasmin_post_type() : 'video';
+  $detected_pt = !empty($detected_pt) ? $detected_pt : 'video';
   if ($pt !== 'post' && $pt !== $detected_pt) return;
 
   $actors_tax = 'actors';
@@ -248,17 +249,18 @@ add_action('save_post', function ($post_id) {
     return;
   }
 
+  update_post_meta($post_id, $lock_key, 1);
+
   $actors_slugs = wp_get_post_terms($post_id, $actors_tax, ['fields' => 'slugs']);
   $models_slugs = wp_get_post_terms($post_id, 'models', ['fields' => 'slugs']);
 
   if (is_wp_error($actors_slugs) || is_wp_error($models_slugs)) {
+    delete_post_meta($post_id, $lock_key);
     return;
   }
 
   $actors_slugs = array_values(array_unique(array_filter($actors_slugs)));
   $models_slugs = array_values(array_unique(array_filter($models_slugs)));
-
-  update_post_meta($post_id, $lock_key, 1);
 
   if (empty($models_slugs) && !empty($actors_slugs)) {
     wp_set_post_terms($post_id, $actors_slugs, 'models', false);
