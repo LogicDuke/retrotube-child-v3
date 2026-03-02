@@ -107,12 +107,22 @@ if (!function_exists('tmw_tools_overrides_for_term')) {
   function tmw_tools_overrides_for_term(int $term_id): array {
     $front_meta_raw = get_term_meta($term_id, 'tmw_flip_front_id', true);
     $back_meta_raw  = get_term_meta($term_id, 'tmw_flip_back_id', true);
+    $front_meta_direct_url = get_term_meta($term_id, 'tmw_flip_front_url', true);
+    $back_meta_direct_url  = get_term_meta($term_id, 'tmw_flip_back_url', true);
 
     $front_meta_id = absint($front_meta_raw);
     $back_meta_id  = absint($back_meta_raw);
 
     $front_meta_url = $front_meta_id ? wp_get_attachment_image_url($front_meta_id, 'full') : '';
     $back_meta_url  = $back_meta_id ? wp_get_attachment_image_url($back_meta_id, 'full') : '';
+
+    if ($front_meta_url === '' && is_string($front_meta_direct_url) && preg_match('~^https?://~i', $front_meta_direct_url)) {
+      $front_meta_url = $front_meta_direct_url;
+    }
+
+    if ($back_meta_url === '' && is_string($back_meta_direct_url) && preg_match('~^https?://~i', $back_meta_direct_url)) {
+      $back_meta_url = $back_meta_direct_url;
+    }
 
     if ($front_meta_url === '' && is_string($front_meta_raw) && preg_match('~^https?://~i', $front_meta_raw)) {
       $front_meta_url = $front_meta_raw;

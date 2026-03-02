@@ -127,13 +127,10 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
           <button type="button" class="button tmw-flipbox-pick" data-side="front" data-target="tmw_flip_front_id">Choose Front Image</button>
           <button type="button" class="button tmw-flipbox-remove" data-side="front" data-target="tmw_flip_front_id">Remove</button>
         </div>
-        <div
-          class="tmw-flipbox-preview tmw-flipbox-preview-front"
-          id="tmw_flip_front_preview"
-          data-url="<?php echo esc_url((string) $front_url); ?>"
-          style="<?php echo $front_url ? 'background-image:url(' . esc_url($front_url) . ');' : ''; ?>"
-        ></div>
-        <div class="tmw-flipbox-preview-label">Front</div>
+        <div class="tmw-mb-card-wrap">
+          <div class="tmw-mb-card" id="tmw_flip_front_preview" data-target="front" data-url="<?php echo esc_url((string) $front_url); ?>" style="<?php echo $front_url ? 'background-image:url(' . esc_url($front_url) . ');' : ''; ?>"></div>
+          <div class="tmw-flipbox-preview-label">Front</div>
+        </div>
         <p class="tmw-flipbox-control-row">
           <label for="tmw_flip_pos_front">Horizontal position</label><br>
           <input type="range" id="tmw_flip_pos_front" name="tmw_flip_pos_front" min="0" max="100" step="1" value="<?php echo esc_attr((string) $values['tmw_flip_pos_front']); ?>" data-readout="#tmw_flip_pos_front_readout" data-unit="%" data-side="front" data-control="position">
@@ -153,13 +150,10 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
           <button type="button" class="button tmw-flipbox-pick" data-side="back" data-target="tmw_flip_back_id">Choose Back Image</button>
           <button type="button" class="button tmw-flipbox-remove" data-side="back" data-target="tmw_flip_back_id">Remove</button>
         </div>
-        <div
-          class="tmw-flipbox-preview tmw-flipbox-preview-back"
-          id="tmw_flip_back_preview"
-          data-url="<?php echo esc_url((string) $back_url); ?>"
-          style="<?php echo $back_url ? 'background-image:url(' . esc_url($back_url) . ');' : ''; ?>"
-        ></div>
-        <div class="tmw-flipbox-preview-label">Back</div>
+        <div class="tmw-mb-card-wrap">
+          <div class="tmw-mb-card" id="tmw_flip_back_preview" data-target="back" data-url="<?php echo esc_url((string) $back_url); ?>" style="<?php echo $back_url ? 'background-image:url(' . esc_url($back_url) . ');' : ''; ?>"></div>
+          <div class="tmw-flipbox-preview-label">Back</div>
+        </div>
         <p class="tmw-flipbox-control-row">
           <label for="tmw_flip_pos_back">Horizontal position</label><br>
           <input type="range" id="tmw_flip_pos_back" name="tmw_flip_pos_back" min="0" max="100" step="1" value="<?php echo esc_attr((string) $values['tmw_flip_pos_back']); ?>" data-readout="#tmw_flip_pos_back_readout" data-unit="%" data-side="back" data-control="position">
@@ -252,7 +246,7 @@ add_action('admin_enqueue_scripts', function ($hook): void {
     'tmw-model-flipbox-metabox',
     get_stylesheet_directory_uri() . '/js/tmw-model-flipbox-metabox.js',
     ['jquery'],
-    '1.1.0',
+    '1.2.0',
     true
   );
 
@@ -260,6 +254,6 @@ add_action('admin_enqueue_scripts', function ($hook): void {
     'tmw-model-flipbox-metabox',
     get_stylesheet_directory_uri() . '/css/tmw-model-flipbox-metabox.css',
     [],
-    '1.1.0'
+    '1.2.0'
   );
 });

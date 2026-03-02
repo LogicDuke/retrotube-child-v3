@@ -1,12 +1,12 @@
 .tmw-flipbox-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
   margin-top: 12px;
 }
 
 .tmw-flipbox-panel {
-  max-width: 340px;
+  max-width: 320px;
 }
 
 .tmw-flipbox-actions {
@@ -15,25 +15,40 @@
   margin: 10px 0;
 }
 
-.tmw-flipbox-preview {
-  width: 320px;
+.tmw-mb-card-wrap {
+  width: 260px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.tmw-mb-card {
+  width: 260px;
   max-width: 100%;
   aspect-ratio: 2 / 3;
   border: 1px solid #dcdcde;
-  border-radius: 10px;
+  border-radius: 12px;
   background-color: #f6f7f7;
   background-repeat: no-repeat;
   background-position: 50% 50%;
   background-size: 100% auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
-.tmw-flipbox-preview.is-active {
+@supports not (aspect-ratio: 2 / 3) {
+  .tmw-mb-card {
+    position: relative;
+    height: 0;
+    padding-bottom: 150%;
+  }
+}
+
+.tmw-mb-card.is-active {
   background-color: #fff;
 }
 
 .tmw-flipbox-preview-label {
-  margin-top: 6px;
+  margin-top: 8px;
   text-align: center;
   font-weight: 600;
   color: #1d2327;
@@ -44,7 +59,7 @@
 }
 
 .tmw-flipbox-control-row input[type='range'] {
-  width: 320px;
+  width: 260px;
   max-width: 100%;
   margin-right: 8px;
 }

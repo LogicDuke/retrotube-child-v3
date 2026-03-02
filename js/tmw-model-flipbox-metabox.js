@@ -76,8 +76,16 @@
         return;
       }
 
+      var attachmentUrl = '';
+
+      if (attachment.sizes && attachment.sizes.full && attachment.sizes.full.url) {
+        attachmentUrl = attachment.sizes.full.url;
+      } else if (attachment.url) {
+        attachmentUrl = attachment.url;
+      }
+
       $target.val(attachment.id);
-      updatePreviewImage(side, attachment.url || '');
+      updatePreviewImage(side, attachmentUrl);
       applyPreview(side);
     });
 
