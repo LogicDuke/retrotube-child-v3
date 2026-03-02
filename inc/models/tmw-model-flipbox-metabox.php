@@ -251,7 +251,7 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
           <button type="button" class="button tmw-flipbox-remove" data-side="front" data-target="tmw_flip_front_id">Remove</button>
         </div>
         <div class="tmw-mb-card-wrap">
-          <div class="tmw-flipbox-card" id="tmw_flip_front_preview" data-target="front" data-url="<?php echo esc_url((string) $front_url); ?>" style="<?php echo $front_url ? 'background-image:url(' . esc_url($front_url) . ');' : ''; ?>"></div>
+          <div class="tmw-flipbox-card" id="tmw_flip_front_preview" data-side="front" data-url="<?php echo esc_url((string) $front_url); ?>" style="<?php echo $front_url ? 'background-image:url(' . esc_url($front_url) . ');' : ''; ?>"></div>
           <div class="tmw-flipbox-preview-label">Front</div>
         </div>
         <p class="tmw-flipbox-control-row">
@@ -274,7 +274,7 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
           <button type="button" class="button tmw-flipbox-remove" data-side="back" data-target="tmw_flip_back_id">Remove</button>
         </div>
         <div class="tmw-mb-card-wrap">
-          <div class="tmw-flipbox-card" id="tmw_flip_back_preview" data-target="back" data-url="<?php echo esc_url((string) $back_url); ?>" style="<?php echo $back_url ? 'background-image:url(' . esc_url($back_url) . ');' : ''; ?>"></div>
+          <div class="tmw-flipbox-card" id="tmw_flip_back_preview" data-side="back" data-url="<?php echo esc_url((string) $back_url); ?>" style="<?php echo $back_url ? 'background-image:url(' . esc_url($back_url) . ');' : ''; ?>"></div>
           <div class="tmw-flipbox-preview-label">Back</div>
         </div>
         <p class="tmw-flipbox-control-row">
@@ -310,81 +310,10 @@ if (!function_exists('tmw_model_flipbox_metabox_clamp_float')) {
 }
 
 add_action('save_post_model', function (int $post_id): void {
-  if (tmw_flipbox_audit_enabled()) {
-    $expected_keys = tmw_model_flipbox_metabox_keys();
-    $missing_post_keys = [];
-    foreach ($expected_keys as $expected_key) {
-      if (!isset($_POST[$expected_key])) {
-        $missing_post_keys[] = $expected_key;
-      }
-    }
-
-    $nonce_present = isset($_POST['tmw_flipbox_meta_nonce']);
-    $nonce_valid = false;
-    if ($nonce_present) {
-      $nonce_value = sanitize_text_field(wp_unslash($_POST['tmw_flipbox_meta_nonce']));
-      $nonce_valid = wp_verify_nonce($nonce_value, 'tmw_flipbox_meta') !== false;
-    }
-
-    error_log(sprintf(
-      '[TMW-FLIPBOX-AUDIT-SAVE] save_post_model start post_id=%d post_type=%s current_user_can_edit=%s DOING_AUTOSAVE=%s is_revision=%s nonce_present=%s nonce_valid=%s post_keys_present=%s missing_keys=%s',
-      $post_id,
-      (string) get_post_type($post_id),
-      current_user_can('edit_post', $post_id) ? 'yes' : 'no',
-      (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) ? 'yes' : 'no',
-      wp_is_post_revision($post_id) ? 'yes' : 'no',
-      $nonce_present ? 'yes' : 'no',
-      $nonce_valid ? 'yes' : 'no',
-      wp_json_encode(array_values(array_intersect($expected_keys, array_keys($_POST)))),
-      wp_json_encode($missing_post_keys)
-    ));
-
-    if (!empty($missing_post_keys)) {
-      error_log('[TMW-FLIPBOX-AUDIT-SAVE] POST missing metabox fields during save (likely Gutenberg REST save)');
-    }
-  }
-
-  if (!isset($_POST['tmw_flipbox_meta_nonce'])) {
-    return;
-  }
-
-  $nonce = sanitize_text_field(wp_unslash($_POST['tmw_flipbox_meta_nonce']));
-  if (!wp_verify_nonce($nonce, 'tmw_flipbox_meta')) {
-    return;
-  }
-
   if (!current_user_can('edit_post', $post_id)) {
     return;
   }
 
-  if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
-    return;
-  }
-
-  $sanitized = [
-    'tmw_flip_front_id' => isset($_POST['tmw_flip_front_id']) ? absint($_POST['tmw_flip_front_id']) : 0,
-    'tmw_flip_back_id' => isset($_POST['tmw_flip_back_id']) ? absint($_POST['tmw_flip_back_id']) : 0,
-    'tmw_flip_pos_front' => isset($_POST['tmw_flip_pos_front']) ? tmw_model_flipbox_metabox_clamp_int(wp_unslash($_POST['tmw_flip_pos_front']), 0, 100) : 50,
-    'tmw_flip_pos_back' => isset($_POST['tmw_flip_pos_back']) ? tmw_model_flipbox_metabox_clamp_int(wp_unslash($_POST['tmw_flip_pos_back']), 0, 100) : 50,
-    'tmw_flip_zoom_front' => isset($_POST['tmw_flip_zoom_front']) ? tmw_model_flipbox_metabox_clamp_float(wp_unslash($_POST['tmw_flip_zoom_front']), 1.0, 2.5) : 1.0,
-    'tmw_flip_zoom_back' => isset($_POST['tmw_flip_zoom_back']) ? tmw_model_flipbox_metabox_clamp_float(wp_unslash($_POST['tmw_flip_zoom_back']), 1.0, 2.5) : 1.0,
-  ];
-
-  foreach ($sanitized as $key => $value) {
-    update_post_meta($post_id, $key, $value);
-  }
-
-  $term = tmw_model_flipbox_metabox_get_term($post_id);
-  if (!$term) {
-    return;
-  }
-
-  foreach ($sanitized as $key => $value) {
-    update_term_meta($term->term_id, $key, $value);
-  }
-});
-
-add_action('save_post_model', function (int $post_id): void {
   if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
     return;
   }
@@ -427,7 +356,7 @@ add_action('admin_enqueue_scripts', function ($hook): void {
     'tmw-model-flipbox-metabox',
     get_stylesheet_directory_uri() . '/js/tmw-model-flipbox-metabox.js',
     ['jquery', 'wp-data'],
-    '1.3.0',
+    '1.4.0',
     true
   );
 
@@ -450,7 +379,7 @@ add_action('admin_enqueue_scripts', function ($hook): void {
     'tmw-model-flipbox-metabox',
     get_stylesheet_directory_uri() . '/css/tmw-model-flipbox-metabox.css',
     [],
-    '1.3.0'
+    '1.4.0'
   );
 });
 
