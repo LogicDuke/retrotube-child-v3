@@ -105,11 +105,22 @@ if (!function_exists('tmw_tools_overrides_for_term')) {
    * @return array<string,string> Override URLs and CSS.
    */
   function tmw_tools_overrides_for_term(int $term_id): array {
-    $front_meta_id = (int) get_term_meta($term_id, 'tmw_flip_front_id', true);
-    $back_meta_id  = (int) get_term_meta($term_id, 'tmw_flip_back_id', true);
+    $front_meta_raw = get_term_meta($term_id, 'tmw_flip_front_id', true);
+    $back_meta_raw  = get_term_meta($term_id, 'tmw_flip_back_id', true);
+
+    $front_meta_id = absint($front_meta_raw);
+    $back_meta_id  = absint($back_meta_raw);
 
     $front_meta_url = $front_meta_id ? wp_get_attachment_image_url($front_meta_id, 'full') : '';
     $back_meta_url  = $back_meta_id ? wp_get_attachment_image_url($back_meta_id, 'full') : '';
+
+    if ($front_meta_url === '' && is_string($front_meta_raw) && preg_match('~^https?://~i', $front_meta_raw)) {
+      $front_meta_url = $front_meta_raw;
+    }
+
+    if ($back_meta_url === '' && is_string($back_meta_raw) && preg_match('~^https?://~i', $back_meta_raw)) {
+      $back_meta_url = $back_meta_raw;
+    }
 
     $pos_meta_f  = get_term_meta($term_id, 'tmw_flip_pos_front', true);
     $pos_meta_b  = get_term_meta($term_id, 'tmw_flip_pos_back', true);
@@ -123,6 +134,10 @@ if (!function_exists('tmw_tools_overrides_for_term')) {
       return [
         'front_url' => is_string($front_meta_url) ? $front_meta_url : '',
         'back_url'  => is_string($back_meta_url) ? $back_meta_url : '',
+        'pos_front' => (string) ($pos_meta_f !== '' ? $pos_meta_f : 50),
+        'pos_back'  => (string) ($pos_meta_b !== '' ? $pos_meta_b : 50),
+        'zoom_front' => (string) ($zoom_meta_f !== '' ? $zoom_meta_f : 1.0),
+        'zoom_back'  => (string) ($zoom_meta_b !== '' ? $zoom_meta_b : 1.0),
         'css_front' => $css_front,
         'css_back'  => $css_back,
       ];
@@ -145,6 +160,10 @@ if (!function_exists('tmw_tools_overrides_for_term')) {
     return [
       'front_url' => is_string($front_url) ? $front_url : '',
       'back_url'  => is_string($back_url)  ? $back_url  : '',
+      'pos_front' => (string) ($pos_f !== null ? $pos_f : 50),
+      'pos_back'  => (string) ($pos_b !== null ? $pos_b : 50),
+      'zoom_front' => (string) ($zoom_f !== null ? $zoom_f : 1.0),
+      'zoom_back'  => (string) ($zoom_b !== null ? $zoom_b : 1.0),
       'css_front' => $css_front,
       'css_back'  => $css_back,
     ];
