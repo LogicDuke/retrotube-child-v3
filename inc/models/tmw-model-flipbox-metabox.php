@@ -274,6 +274,11 @@ add_action('save_post_model', function (int $post_id): void {
     return;
   }
 
+  if (defined('REST_REQUEST') && REST_REQUEST) {
+    tmw_flipbox_audit_log('save_post_model:exit-rest-request', ['post_id' => $post_id]);
+    return;
+  }
+
   if (!isset($_POST['tmw_flipbox_meta_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['tmw_flipbox_meta_nonce'])), 'tmw_flipbox_meta')) {
     tmw_flipbox_audit_log('save_post_model:exit-nonce', ['post_id' => $post_id]);
     return;
@@ -320,6 +325,22 @@ add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $
   $term_meta_snapshot = [];
 
   foreach (tmw_model_flipbox_metabox_keys() as $meta_key) {
+    $raw_value = get_post_meta($post_id, $meta_key, true);
+
+    if (in_array($meta_key, ['tmw_flip_front_id', 'tmw_flip_back_id'], true)) {
+      $sanitized_value = tmw_model_flipbox_sanitize_absint($raw_value);
+    } elseif (strpos($meta_key, 'zoom') !== false) {
+      $sanitized_value = tmw_model_flipbox_sanitize_zoom($raw_value);
+    } else {
+      $sanitized_value = tmw_model_flipbox_sanitize_pos($raw_value);
+    }
+
+    update_post_meta($post_id, $meta_key, $sanitized_value);
+
+    if ($term) {
+      update_term_meta((int) $term->term_id, $meta_key, $sanitized_value);
+    }
+
     $post_meta_snapshot[$meta_key] = get_post_meta($post_id, $meta_key, true);
     $term_meta_snapshot[$meta_key] = $term ? get_term_meta((int) $term->term_id, $meta_key, true) : null;
   }

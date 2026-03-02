@@ -148,6 +148,8 @@ if (!function_exists('tmw_render_banner_position_box')) {
     $value = max(0, min(100, $value));
     $banner   = function_exists('tmw_resolve_model_banner_url') ? tmw_resolve_model_banner_url($post->ID) : '';
     $banner_image_id = absint(get_post_meta($post->ID, '_tmw_banner_image_id', true));
+    $custom_banner = $banner_image_id > 0 ? wp_get_attachment_url($banner_image_id) : '';
+    $preview_banner = $custom_banner ?: $banner;
 
     wp_nonce_field('tmw_save_banner_position', 'tmw_banner_position_nonce');
 
@@ -171,7 +173,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
     echo '<hr />';
     echo '<p><strong>' . esc_html__('Banner Image Override', 'retrotube-child') . '</strong></p>';
     echo '<input type="hidden" name="tmw_banner_image_id" id="tmw_banner_image_id" value="' . esc_attr((string) $banner_image_id) . '" />';
-    echo '<p><img id="tmw_banner_image_preview" src="' . esc_url($banner) . '" alt="" style="max-width:100%;height:auto;display:' . ($banner ? 'block' : 'none') . ';" /></p>';
+    echo '<p><img id="tmw_banner_image_preview" src="' . esc_url($preview_banner) . '" alt="" style="max-width:100%;height:auto;display:' . ($preview_banner ? 'block' : 'none') . ';" /></p>';
     echo '<p>';
     echo '<button type="button" class="button" id="tmw_choose_banner_image">' . esc_html__('Choose Banner Image', 'retrotube-child') . '</button> ';
     echo '<button type="button" class="button" id="tmw_remove_banner_image">' . esc_html__('Remove', 'retrotube-child') . '</button>';
@@ -242,8 +244,19 @@ if (!function_exists('tmw_render_banner_position_box')) {
 
                         mediaFrame.on('select', function() {
                             const attachment = mediaFrame.state().get('selection').first().toJSON();
-                            imageInput.value = attachment.id || '';
-                            setPreview(attachment.url || '');
+                            const attachmentId = attachment.id || 0;
+                            const attachmentUrl = attachment.url || '';
+                            imageInput.value = attachmentId;
+                            setPreview(attachmentUrl);
+
+                            if (wp.data && wp.data.dispatch) {
+                                wp.data.dispatch('core/editor').editPost({
+                                    meta: {
+                                        _tmw_banner_image_id: attachmentId,
+                                        banner_image: attachmentUrl
+                                    }
+                                });
+                            }
                         });
                     }
 
@@ -254,8 +267,17 @@ if (!function_exists('tmw_render_banner_position_box')) {
             if (removeButton && imageInput) {
                 removeButton.addEventListener('click', function(e) {
                     e.preventDefault();
-                    imageInput.value = '';
+                    imageInput.value = 0;
                     setPreview('');
+
+                    if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+                        wp.data.dispatch('core/editor').editPost({
+                            meta: {
+                                _tmw_banner_image_id: 0,
+                                banner_image: ''
+                            }
+                        });
+                    }
                 });
             }
         })();
@@ -293,6 +315,11 @@ add_action('save_post_model', function ($post_id) {
     return;
   }
 
+  if (defined('REST_REQUEST') && REST_REQUEST) {
+    tmw_banner_audit_log('save_post_model:exit-rest-request', ['post_id' => (int) $post_id]);
+    return;
+  }
+
   if (!isset($_POST['tmw_banner_position_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['tmw_banner_position_nonce'])), 'tmw_save_banner_position')) {
     tmw_banner_audit_log('save_post_model:exit-nonce', ['post_id' => (int) $post_id]);
     return;
@@ -316,23 +343,34 @@ add_action('save_post_model', function ($post_id) {
     update_post_meta($post_id, '_banner_focal_y', $value);
   }
 
-  $attachment_id = isset($_POST['tmw_banner_image_id']) ? absint(wp_unslash($_POST['tmw_banner_image_id'])) : 0;
+  if (isset($_POST['tmw_banner_image_id'])) {
+    $attachment_id = absint(wp_unslash($_POST['tmw_banner_image_id']));
 
-  if ($attachment_id > 0) {
-    $attachment_url = wp_get_attachment_url($attachment_id);
-    tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => '_tmw_banner_image_id', 'value' => $attachment_id]);
-    tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => 'banner_image', 'value' => $attachment_url]);
-    update_post_meta($post_id, '_tmw_banner_image_id', $attachment_id);
-    update_post_meta($post_id, 'banner_image', $attachment_url);
-  } else {
-    tmw_banner_audit_log('save_post_model:delete-meta', ['post_id' => (int) $post_id, 'keys' => ['_tmw_banner_image_id', 'banner_image']]);
-    delete_post_meta($post_id, '_tmw_banner_image_id');
-    delete_post_meta($post_id, 'banner_image');
+    if ($attachment_id > 0) {
+      $attachment_url = wp_get_attachment_url($attachment_id);
+      tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => '_tmw_banner_image_id', 'value' => $attachment_id]);
+      tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => 'banner_image', 'value' => $attachment_url]);
+      update_post_meta($post_id, '_tmw_banner_image_id', $attachment_id);
+      update_post_meta($post_id, 'banner_image', $attachment_url);
+    } else {
+      tmw_banner_audit_log('save_post_model:delete-meta', ['post_id' => (int) $post_id, 'keys' => ['_tmw_banner_image_id', 'banner_image']]);
+      delete_post_meta($post_id, '_tmw_banner_image_id');
+      delete_post_meta($post_id, 'banner_image');
+    }
   }
 });
 
 add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
   $post_id = (int) $post->ID;
+  $attachment_id = absint(get_post_meta($post_id, '_tmw_banner_image_id', true));
+
+  if ($attachment_id > 0) {
+    $attachment_url = wp_get_attachment_url($attachment_id);
+    update_post_meta($post_id, 'banner_image', $attachment_url);
+  } else {
+    delete_post_meta($post_id, 'banner_image');
+  }
+
   tmw_banner_audit_log('rest_after_insert_model', [
     'post_id' => $post_id,
     'creating' => $creating,
