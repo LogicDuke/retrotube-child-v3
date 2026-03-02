@@ -14,21 +14,19 @@
     return typeof wp !== 'undefined' && typeof wp.media !== 'undefined';
   }
 
-  function hasEditorStore() {
-    return typeof wp !== 'undefined' && wp.data && wp.data.select && wp.data.dispatch;
+  function getEditorStore() {
+    if (typeof wp === 'undefined' || !wp.data || !wp.data.dispatch || !wp.data.select) {
+      return null;
+    }
+
+    return {
+      editor: wp.data.dispatch('core/editor'),
+      select: wp.data.select('core/editor')
+    };
   }
 
   function getPreview(side) {
-    return $('#tmw_flip_' + side + '_preview');
-  }
-
-  function getMetaState() {
-    if (!hasEditorStore()) {
-      return {};
-    }
-
-    var meta = wp.data.select('core/editor').getEditedPostAttribute('meta');
-    return meta && typeof meta === 'object' ? meta : {};
+    return $('#tmw-flipbox-' + side + '-preview');
   }
 
   function sanitizeInt(value, fallback) {
@@ -37,8 +35,7 @@
   }
 
   function sanitizePos(value) {
-    var n = sanitizeInt(value, 50);
-    return Math.max(0, Math.min(100, n));
+    return Math.max(0, Math.min(100, sanitizeInt(value, 50)));
   }
 
   function sanitizeZoom(value) {
@@ -46,58 +43,47 @@
     if (isNaN(n)) {
       n = 1;
     }
+
     return Math.max(1, Math.min(2.5, n));
   }
 
-  function normalizeMetaPatch(metaPatch) {
-    var out = {};
+  function getCurrentMeta() {
+    var store = getEditorStore();
+    if (!store) {
+      return {};
+    }
 
-    Object.keys(metaPatch).forEach(function (key) {
-      var value = metaPatch[key];
-      if (key.indexOf('_id') !== -1) {
-        out[key] = Math.max(0, sanitizeInt(value, 0));
-      } else if (key.indexOf('pos') !== -1) {
-        out[key] = sanitizePos(value);
-      } else if (key.indexOf('zoom') !== -1) {
-        out[key] = sanitizeZoom(value);
-      } else {
-        out[key] = value;
-      }
-    });
-
-    return out;
+    var meta = store.select.getEditedPostAttribute('meta') || {};
+    return meta && typeof meta === 'object' ? meta : {};
   }
 
-  function persistMeta(metaPatch) {
-    if (!hasEditorStore()) {
+  function getUiState() {
+    return {
+      tmw_flip_front_id: Math.max(0, sanitizeInt($('#tmw_flip_front_id').val(), 0)),
+      tmw_flip_back_id: Math.max(0, sanitizeInt($('#tmw_flip_back_id').val(), 0)),
+      tmw_flip_pos_front: sanitizePos($('#tmw_flip_pos_front').val()),
+      tmw_flip_pos_back: sanitizePos($('#tmw_flip_pos_back').val()),
+      tmw_flip_zoom_front: sanitizeZoom($('#tmw_flip_zoom_front').val()),
+      tmw_flip_zoom_back: sanitizeZoom($('#tmw_flip_zoom_back').val())
+    };
+  }
+
+  function persistAllMeta() {
+    var store = getEditorStore();
+    if (!store) {
       return;
     }
 
-    var meta = getMetaState();
-    wp.data.dispatch('core/editor').editPost({
-      meta: $.extend({}, meta, normalizeMetaPatch(metaPatch))
-    });
-  }
-
-  function updatePreviewImage(side, imageUrl) {
-    var $preview = getPreview(side);
-    var url = imageUrl || '';
-
-    $preview.attr('data-url', url);
-    $preview.css('background-image', url ? 'url(' + url + ')' : 'none');
-    $preview.toggleClass('is-active', !!url);
+    var nextMeta = $.extend({}, getCurrentMeta(), getUiState());
+    store.editor.editPost({ meta: nextMeta });
   }
 
   function updateReadout($input) {
     var readoutSelector = $input.data('readout');
     var unit = $input.data('unit') || '';
-    var value = $input.val();
+    var value = $input.data('control') === 'zoom' ? sanitizeZoom($input.val()).toFixed(1) : sanitizePos($input.val());
 
-    if ($input.data('control') === 'zoom') {
-      value = sanitizeZoom(value).toFixed(1);
-    }
-
-    if (typeof readoutSelector === 'string' && readoutSelector.length > 0) {
+    if (readoutSelector) {
       $(readoutSelector).text(value + unit);
     }
   }
@@ -105,41 +91,33 @@
   function applyPreview(side) {
     var pos = sanitizePos($('#tmw_flip_pos_' + side).val());
     var zoom = sanitizeZoom($('#tmw_flip_zoom_' + side).val());
-    var $preview = getPreview(side);
 
-    $preview.css({
+    getPreview(side).css({
       backgroundPosition: pos + '% 50%',
-      backgroundSize: (zoom * 100).toFixed(1) + '% auto'
+      backgroundSize: (zoom * 100) + '% auto'
     });
   }
 
-  function applyUiFromMeta(meta) {
-    var nextMeta = meta || getMetaState();
+  function updatePreviewImage(side, url) {
+    var imageUrl = url || '';
+    var $preview = getPreview(side);
 
-    META_KEYS.forEach(function (key) {
-      var $field = $('#' + key);
-      if (!$field.length || typeof nextMeta[key] === 'undefined' || nextMeta[key] === null || nextMeta[key] === '') {
-        return;
-      }
+    $preview.attr('data-url', imageUrl);
+    $preview.css('background-image', imageUrl ? 'url(' + imageUrl + ')' : 'none');
+    $preview.toggleClass('is-active', !!imageUrl);
+  }
 
-      if (key.indexOf('zoom') !== -1) {
-        $field.val(sanitizeZoom(nextMeta[key]).toFixed(1));
-      } else if (key.indexOf('pos') !== -1) {
-        $field.val(sanitizePos(nextMeta[key]));
-      } else {
-        $field.val(Math.max(0, sanitizeInt(nextMeta[key], 0)));
-      }
-    });
+  function hydrateFromMeta() {
+    var meta = getCurrentMeta();
+
+    $('#tmw_flip_front_id').val(Math.max(0, sanitizeInt(meta.tmw_flip_front_id, sanitizeInt($('#tmw_flip_front_id').val(), 0))));
+    $('#tmw_flip_back_id').val(Math.max(0, sanitizeInt(meta.tmw_flip_back_id, sanitizeInt($('#tmw_flip_back_id').val(), 0))));
+    $('#tmw_flip_pos_front').val(sanitizePos(typeof meta.tmw_flip_pos_front !== 'undefined' ? meta.tmw_flip_pos_front : $('#tmw_flip_pos_front').val()));
+    $('#tmw_flip_pos_back').val(sanitizePos(typeof meta.tmw_flip_pos_back !== 'undefined' ? meta.tmw_flip_pos_back : $('#tmw_flip_pos_back').val()));
+    $('#tmw_flip_zoom_front').val(sanitizeZoom(typeof meta.tmw_flip_zoom_front !== 'undefined' ? meta.tmw_flip_zoom_front : $('#tmw_flip_zoom_front').val()).toFixed(1));
+    $('#tmw_flip_zoom_back').val(sanitizeZoom(typeof meta.tmw_flip_zoom_back !== 'undefined' ? meta.tmw_flip_zoom_back : $('#tmw_flip_zoom_back').val()).toFixed(1));
 
     ['front', 'back'].forEach(function (side) {
-      var id = Math.max(0, sanitizeInt($('#tmw_flip_' + side + '_id').val(), 0));
-      var existingUrl = getPreview(side).attr('data-url') || '';
-      if (!id) {
-        updatePreviewImage(side, '');
-      } else if (existingUrl) {
-        updatePreviewImage(side, existingUrl);
-      }
-
       updateReadout($('#tmw_flip_pos_' + side));
       updateReadout($('#tmw_flip_zoom_' + side));
       applyPreview(side);
@@ -153,7 +131,6 @@
 
     var targetId = $trigger.data('target');
     var side = $trigger.data('side');
-    var $target = $('#' + targetId);
 
     var frame = wp.media({
       title: 'Select Image',
@@ -168,29 +145,18 @@
         return;
       }
 
-      var attachmentUrl = '';
-      if (attachment.sizes && attachment.sizes.full && attachment.sizes.full.url) {
-        attachmentUrl = attachment.sizes.full.url;
-      } else if (attachment.url) {
-        attachmentUrl = attachment.url;
-      }
-
-      $target.val(attachment.id);
+      var attachmentUrl = (attachment.sizes && attachment.sizes.full && attachment.sizes.full.url) ? attachment.sizes.full.url : (attachment.url || '');
+      $('#' + targetId).val(attachment.id);
       updatePreviewImage(side, attachmentUrl);
       applyPreview(side);
-
-      persistMeta((function () {
-        var out = {};
-        out[targetId] = attachment.id;
-        return out;
-      })());
+      persistAllMeta();
     });
 
     frame.open();
   }
 
   $(function () {
-    applyUiFromMeta();
+    hydrateFromMeta();
 
     $('.tmw-flipbox-pick').on('click', function (event) {
       event.preventDefault();
@@ -199,58 +165,44 @@
 
     $('.tmw-flipbox-remove').on('click', function (event) {
       event.preventDefault();
-
       var $trigger = $(this);
-      var targetId = $trigger.data('target');
       var side = $trigger.data('side');
+      var targetId = $trigger.data('target');
 
       $('#' + targetId).val('0');
       updatePreviewImage(side, '');
       applyPreview(side);
-
-      persistMeta((function () {
-        var out = {};
-        out[targetId] = 0;
-        return out;
-      })());
+      persistAllMeta();
     });
 
     $('#tmw_flip_pos_front, #tmw_flip_zoom_front, #tmw_flip_pos_back, #tmw_flip_zoom_back').on('input change', function () {
       var $input = $(this);
-      var side = $input.data('side');
-      var fieldId = $input.attr('id');
       var isZoom = $input.data('control') === 'zoom';
       var value = isZoom ? sanitizeZoom($input.val()) : sanitizePos($input.val());
 
       $input.val(isZoom ? value.toFixed(1) : value);
       updateReadout($input);
-      applyPreview(side);
-
-      persistMeta((function () {
-        var out = {};
-        out[fieldId] = value;
-        return out;
-      })());
+      applyPreview($input.data('side'));
+      persistAllMeta();
     });
 
-    if (hasEditorStore()) {
-      var lastMetaSerialized = '';
-
+    var store = getEditorStore();
+    if (store) {
+      var lastMeta = '';
       wp.data.subscribe(function () {
-        var meta = getMetaState();
-        var subset = {};
-
+        var meta = getCurrentMeta();
+        var snapshot = {};
         META_KEYS.forEach(function (key) {
-          subset[key] = meta[key];
+          snapshot[key] = meta[key];
         });
 
-        var serialized = JSON.stringify(subset);
-        if (serialized === lastMetaSerialized) {
+        var serialized = JSON.stringify(snapshot);
+        if (serialized === lastMeta) {
           return;
         }
 
-        lastMetaSerialized = serialized;
-        applyUiFromMeta(meta);
+        lastMeta = serialized;
+        hydrateFromMeta();
       });
     }
   });
