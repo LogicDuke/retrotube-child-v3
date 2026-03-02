@@ -51,11 +51,31 @@ if (!function_exists('tmw_tools_pick_from_map')) {
    */
   function tmw_tools_pick_from_map($map, array $cands) {
     if (!is_array($map) || empty($cands)) return null;
-    foreach ($cands as $k) if (isset($map[$k]) && $map[$k] !== '') return $map[$k];
-    $lower = []; foreach ($map as $k=>$v) $lower[strtolower((string)$k)] = $v;
-    foreach ($cands as $k) { $lk = strtolower((string)$k); if (isset($lower[$lk]) && $lower[$lk] !== '') return $lower[$lk]; }
-    $norm = []; foreach ($map as $k=>$v) $norm[preg_replace('~[ _-]+~','', strtolower((string)$k))] = $v;
-    foreach ($cands as $k) { $nk = preg_replace('~[ _-]+~','', strtolower((string)$k)); if (isset($norm[$nk]) && $norm[$nk] !== '') return $norm[$nk]; }
+
+    $trimmed = [];
+    foreach ($map as $k => $v) {
+      $trimmed[trim((string) $k)] = $v;
+    }
+
+    foreach ($cands as $k) {
+      $tk = trim((string) $k);
+      if (isset($trimmed[$tk]) && $trimmed[$tk] !== '') return $trimmed[$tk];
+    }
+
+    $lower = [];
+    foreach ($trimmed as $k => $v) $lower[strtolower((string) $k)] = $v;
+    foreach ($cands as $k) {
+      $lk = strtolower(trim((string) $k));
+      if (isset($lower[$lk]) && $lower[$lk] !== '') return $lower[$lk];
+    }
+
+    $norm = [];
+    foreach ($trimmed as $k => $v) $norm[preg_replace('~[ _-]+~', '', strtolower(trim((string) $k)))] = $v;
+    foreach ($cands as $k) {
+      $nk = preg_replace('~[ _-]+~', '', strtolower(trim((string) $k)));
+      if (isset($norm[$nk]) && $norm[$nk] !== '') return $norm[$nk];
+    }
+
     return null;
   }
 }
@@ -85,6 +105,29 @@ if (!function_exists('tmw_tools_overrides_for_term')) {
    * @return array<string,string> Override URLs and CSS.
    */
   function tmw_tools_overrides_for_term(int $term_id): array {
+    $front_meta_id = (int) get_term_meta($term_id, 'tmw_flip_front_id', true);
+    $back_meta_id  = (int) get_term_meta($term_id, 'tmw_flip_back_id', true);
+
+    $front_meta_url = $front_meta_id ? wp_get_attachment_image_url($front_meta_id, 'full') : '';
+    $back_meta_url  = $back_meta_id ? wp_get_attachment_image_url($back_meta_id, 'full') : '';
+
+    $pos_meta_f  = get_term_meta($term_id, 'tmw_flip_pos_front', true);
+    $pos_meta_b  = get_term_meta($term_id, 'tmw_flip_pos_back', true);
+    $zoom_meta_f = get_term_meta($term_id, 'tmw_flip_zoom_front', true);
+    $zoom_meta_b = get_term_meta($term_id, 'tmw_flip_zoom_back', true);
+
+    if ($front_meta_url || $back_meta_url) {
+      $css_front = tmw_bg_align_css($pos_meta_f !== '' ? $pos_meta_f : 50, $zoom_meta_f !== '' ? $zoom_meta_f : 1.0);
+      $css_back  = tmw_bg_align_css($pos_meta_b !== '' ? $pos_meta_b : 50, $zoom_meta_b !== '' ? $zoom_meta_b : 1.0);
+
+      return [
+        'front_url' => is_string($front_meta_url) ? $front_meta_url : '',
+        'back_url'  => is_string($back_meta_url) ? $back_meta_url : '',
+        'css_front' => $css_front,
+        'css_back'  => $css_back,
+      ];
+    }
+
     $s      = tmw_tools_settings();
     $cands  = tmw_get_model_keys($term_id);
 
