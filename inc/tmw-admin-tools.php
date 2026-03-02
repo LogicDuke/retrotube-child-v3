@@ -117,6 +117,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
       : 50;
     $value = max(0, min(100, $value));
     $banner   = function_exists('tmw_resolve_model_banner_url') ? tmw_resolve_model_banner_url($post->ID) : '';
+    $banner_image_id = absint(get_post_meta($post->ID, '_tmw_banner_image_id', true));
 
     wp_nonce_field('tmw_save_banner_position', 'tmw_banner_position_nonce');
 
@@ -137,6 +138,15 @@ if (!function_exists('tmw_render_banner_position_box')) {
     echo '<input type="range" min="0" max="100" step="1" value="' . esc_attr($value) . '" id="tmwBannerSlider" class="tmw-slider" name="banner_focal_y">
     <p><small>Vertical focus (%): <span id="tmwBannerValue">' . esc_html($value) . '</span> (0=top, 100=bottom)</small></p>';
 
+    echo '<hr />';
+    echo '<p><strong>' . esc_html__('Banner Image Override', 'retrotube-child') . '</strong></p>';
+    echo '<input type="hidden" name="tmw_banner_image_id" id="tmw_banner_image_id" value="' . esc_attr((string) $banner_image_id) . '" />';
+    echo '<p><img id="tmw_banner_image_preview" src="' . esc_url($banner) . '" alt="" style="max-width:100%;height:auto;display:' . ($banner ? 'block' : 'none') . ';" /></p>';
+    echo '<p>';
+    echo '<button type="button" class="button" id="tmw_choose_banner_image">' . esc_html__('Choose Banner Image', 'retrotube-child') . '</button> ';
+    echo '<button type="button" class="button" id="tmw_remove_banner_image">' . esc_html__('Remove', 'retrotube-child') . '</button>';
+    echo '</p>';
+
     ob_start();
     ?>
     <script>
@@ -145,6 +155,11 @@ if (!function_exists('tmw_render_banner_position_box')) {
             const previewWrap = document.getElementById("tmw-banner-preview") || document.getElementById("tmwBannerPreview");
             const previewFrame = previewWrap ? (previewWrap.classList && previewWrap.classList.contains('tmw-banner-frame') ? previewWrap : previewWrap.querySelector('.tmw-banner-frame')) : null;
             const val = document.getElementById("tmwBannerValue");
+            const imageInput = document.getElementById('tmw_banner_image_id');
+            const imagePreview = document.getElementById('tmw_banner_image_preview');
+            const chooseButton = document.getElementById('tmw_choose_banner_image');
+            const removeButton = document.getElementById('tmw_remove_banner_image');
+            let mediaFrame;
 
             function applyFocus(value) {
                 if (!previewFrame) {
@@ -162,11 +177,56 @@ if (!function_exists('tmw_render_banner_position_box')) {
                 }
             }
 
+            function setPreview(url) {
+                if (!imagePreview) {
+                    return;
+                }
+
+                if (url) {
+                    imagePreview.src = url;
+                    imagePreview.style.display = 'block';
+                } else {
+                    imagePreview.src = '';
+                    imagePreview.style.display = 'none';
+                }
+            }
+
             if (slider) {
                 slider.addEventListener("input", function(e){
                     applyFocus(e.target.value);
                 });
                 applyFocus(slider.value);
+            }
+
+            if (chooseButton && imageInput && typeof wp !== 'undefined' && wp.media) {
+                chooseButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    if (!mediaFrame) {
+                        mediaFrame = wp.media({
+                            title: 'Choose Banner Image',
+                            button: { text: 'Use banner image' },
+                            multiple: false,
+                            library: { type: 'image' }
+                        });
+
+                        mediaFrame.on('select', function() {
+                            const attachment = mediaFrame.state().get('selection').first().toJSON();
+                            imageInput.value = attachment.id || '';
+                            setPreview(attachment.url || '');
+                        });
+                    }
+
+                    mediaFrame.open();
+                });
+            }
+
+            if (removeButton && imageInput) {
+                removeButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    imageInput.value = '';
+                    setPreview('');
+                });
             }
         })();
     </script>
@@ -207,7 +267,31 @@ add_action('save_post_model', function ($post_id) {
     }
     update_post_meta($post_id, '_banner_focal_y', $value);
   }
+
+  $attachment_id = isset($_POST['tmw_banner_image_id']) ? absint(wp_unslash($_POST['tmw_banner_image_id'])) : 0;
+
+  if ($attachment_id > 0) {
+    update_post_meta($post_id, '_tmw_banner_image_id', $attachment_id);
+    update_post_meta($post_id, 'banner_image', wp_get_attachment_url($attachment_id));
+  } else {
+    delete_post_meta($post_id, '_tmw_banner_image_id');
+    delete_post_meta($post_id, 'banner_image');
+  }
 });
+
+
+add_action('admin_enqueue_scripts', function ($hook) {
+  if (!in_array($hook, ['post.php', 'post-new.php'], true)) {
+    return;
+  }
+
+  $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+  if (!$screen || ($screen->post_type ?? '') !== 'model') {
+    return;
+  }
+
+  wp_enqueue_media();
+}, 20);
 
 /* ======================================================================
  * FEATURED MODELS SHORTCODE META BOX

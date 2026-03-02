@@ -234,22 +234,34 @@ add_action('save_post_model', function (int $post_id): void {
     return;
   }
 
-  $term = tmw_model_flipbox_metabox_get_term($post_id);
-  if (!$term) {
+  if (!isset($_POST['tmw_flipbox_meta_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['tmw_flipbox_meta_nonce'])), 'tmw_flipbox_meta')) {
     return;
   }
 
+  $raw_front_id = isset($_POST['tmw_flip_front_id']) ? wp_unslash($_POST['tmw_flip_front_id']) : 0;
+  $raw_back_id = isset($_POST['tmw_flip_back_id']) ? wp_unslash($_POST['tmw_flip_back_id']) : 0;
+  $raw_pos_front = isset($_POST['tmw_flip_pos_front']) ? wp_unslash($_POST['tmw_flip_pos_front']) : 50;
+  $raw_pos_back = isset($_POST['tmw_flip_pos_back']) ? wp_unslash($_POST['tmw_flip_pos_back']) : 50;
+  $raw_zoom_front = isset($_POST['tmw_flip_zoom_front']) ? wp_unslash($_POST['tmw_flip_zoom_front']) : 1.0;
+  $raw_zoom_back = isset($_POST['tmw_flip_zoom_back']) ? wp_unslash($_POST['tmw_flip_zoom_back']) : 1.0;
+
+  $term = tmw_model_flipbox_metabox_get_term($post_id);
+
   $sanitized = [
-    'tmw_flip_front_id' => tmw_model_flipbox_sanitize_absint(get_post_meta($post_id, 'tmw_flip_front_id', true)),
-    'tmw_flip_back_id' => tmw_model_flipbox_sanitize_absint(get_post_meta($post_id, 'tmw_flip_back_id', true)),
-    'tmw_flip_pos_front' => tmw_model_flipbox_sanitize_pos(get_post_meta($post_id, 'tmw_flip_pos_front', true)),
-    'tmw_flip_pos_back' => tmw_model_flipbox_sanitize_pos(get_post_meta($post_id, 'tmw_flip_pos_back', true)),
-    'tmw_flip_zoom_front' => tmw_model_flipbox_sanitize_zoom(get_post_meta($post_id, 'tmw_flip_zoom_front', true)),
-    'tmw_flip_zoom_back' => tmw_model_flipbox_sanitize_zoom(get_post_meta($post_id, 'tmw_flip_zoom_back', true)),
+    'tmw_flip_front_id' => tmw_model_flipbox_sanitize_absint($raw_front_id),
+    'tmw_flip_back_id' => tmw_model_flipbox_sanitize_absint($raw_back_id),
+    'tmw_flip_pos_front' => tmw_model_flipbox_sanitize_pos($raw_pos_front),
+    'tmw_flip_pos_back' => tmw_model_flipbox_sanitize_pos($raw_pos_back),
+    'tmw_flip_zoom_front' => tmw_model_flipbox_sanitize_zoom($raw_zoom_front),
+    'tmw_flip_zoom_back' => tmw_model_flipbox_sanitize_zoom($raw_zoom_back),
   ];
 
   foreach ($sanitized as $key => $value) {
-    update_term_meta($term->term_id, $key, $value);
+    update_post_meta($post_id, $key, $value);
+
+    if ($term) {
+      update_term_meta($term->term_id, $key, $value);
+    }
   }
 }, 30);
 
