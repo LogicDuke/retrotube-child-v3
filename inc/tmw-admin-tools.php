@@ -1,5 +1,35 @@
 <?php
 
+
+if (!function_exists('tmw_audit_enabled')) {
+  function tmw_audit_enabled(): bool {
+    return defined('TMW_AUDIT_ENABLED') && TMW_AUDIT_ENABLED === true;
+  }
+}
+
+if (!function_exists('tmw_banner_audit_log')) {
+  /**
+   * Emit debug logs for banner save/audit flow.
+   *
+   * @param string               $event   Event label.
+   * @param array<string, mixed> $context Additional context payload.
+   */
+  function tmw_banner_audit_log(string $event, array $context = []): void {
+    if (!tmw_audit_enabled()) {
+      return;
+    }
+
+    $request_context = [
+      'REST_REQUEST' => defined('REST_REQUEST') ? (bool) REST_REQUEST : false,
+      'wp_doing_ajax' => function_exists('wp_doing_ajax') ? wp_doing_ajax() : false,
+      'request_method' => isset($_SERVER['REQUEST_METHOD']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) : '',
+      'request_uri' => isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '',
+    ];
+
+    error_log('[TMW-AUDIT-BANNER] ' . $event . ' ' . wp_json_encode(array_merge($request_context, $context))); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+  }
+}
+
 /* ======================================================================
  * SLOT BANNER BACKFILL TOOL
  * ====================================================================== */
@@ -240,19 +270,36 @@ add_action('add_meta_boxes', function () {
 });
 
 add_action('save_post_model', function ($post_id) {
+  tmw_banner_audit_log('save_post_model:entered', [
+    'post_id' => (int) $post_id,
+    'current_user_can_edit_post' => current_user_can('edit_post', $post_id),
+    'has_nonce' => isset($_POST['tmw_banner_position_nonce']),
+    'posted_banner_focal_y' => isset($_POST['banner_focal_y']) ? wp_unslash($_POST['banner_focal_y']) : null,
+    'posted_tmw_banner_image_id' => isset($_POST['tmw_banner_image_id']) ? wp_unslash($_POST['tmw_banner_image_id']) : null,
+    'existing_meta' => [
+      '_banner_focal_y' => get_post_meta($post_id, '_banner_focal_y', true),
+      '_tmw_banner_image_id' => get_post_meta($post_id, '_tmw_banner_image_id', true),
+      'banner_image' => get_post_meta($post_id, 'banner_image', true),
+    ],
+  ]);
+
   if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+    tmw_banner_audit_log('save_post_model:exit-doing-autosave', ['post_id' => (int) $post_id]);
     return;
   }
 
   if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+    tmw_banner_audit_log('save_post_model:exit-autosave-or-revision', ['post_id' => (int) $post_id]);
     return;
   }
 
   if (!isset($_POST['tmw_banner_position_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['tmw_banner_position_nonce'])), 'tmw_save_banner_position')) {
+    tmw_banner_audit_log('save_post_model:exit-nonce', ['post_id' => (int) $post_id]);
     return;
   }
 
   if (!current_user_can('edit_post', $post_id)) {
+    tmw_banner_audit_log('save_post_model:exit-no-cap', ['post_id' => (int) $post_id]);
     return;
   }
 
@@ -265,19 +312,39 @@ add_action('save_post_model', function ($post_id) {
     if ($value > 100) {
       $value = 100;
     }
+    tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => '_banner_focal_y', 'value' => $value]);
     update_post_meta($post_id, '_banner_focal_y', $value);
   }
 
   $attachment_id = isset($_POST['tmw_banner_image_id']) ? absint(wp_unslash($_POST['tmw_banner_image_id'])) : 0;
 
   if ($attachment_id > 0) {
+    $attachment_url = wp_get_attachment_url($attachment_id);
+    tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => '_tmw_banner_image_id', 'value' => $attachment_id]);
+    tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => 'banner_image', 'value' => $attachment_url]);
     update_post_meta($post_id, '_tmw_banner_image_id', $attachment_id);
-    update_post_meta($post_id, 'banner_image', wp_get_attachment_url($attachment_id));
+    update_post_meta($post_id, 'banner_image', $attachment_url);
   } else {
+    tmw_banner_audit_log('save_post_model:delete-meta', ['post_id' => (int) $post_id, 'keys' => ['_tmw_banner_image_id', 'banner_image']]);
     delete_post_meta($post_id, '_tmw_banner_image_id');
     delete_post_meta($post_id, 'banner_image');
   }
 });
+
+add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
+  $post_id = (int) $post->ID;
+  tmw_banner_audit_log('rest_after_insert_model', [
+    'post_id' => $post_id,
+    'creating' => $creating,
+    'current_user_can_edit_post' => current_user_can('edit_post', $post_id),
+    'request_meta' => $request->get_param('meta'),
+    'persisted_meta' => [
+      '_banner_focal_y' => get_post_meta($post_id, '_banner_focal_y', true),
+      '_tmw_banner_image_id' => get_post_meta($post_id, '_tmw_banner_image_id', true),
+      'banner_image' => get_post_meta($post_id, 'banner_image', true),
+    ],
+  ]);
+}, 20, 3);
 
 
 add_action('admin_enqueue_scripts', function ($hook) {
