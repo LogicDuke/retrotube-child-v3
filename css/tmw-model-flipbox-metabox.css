@@ -21,13 +21,13 @@
   margin: 0 auto;
 }
 
-.tmw-mb-card {
+.tmw-flipbox-card {
   width: 260px;
   max-width: 100%;
   aspect-ratio: 2 / 3;
   border: 1px solid #dcdcde;
-  border-radius: 12px;
-  background-color: #f6f7f7;
+  border-radius: 14px;
+  background-color: #eee;
   background-repeat: no-repeat;
   background-position: 50% 50%;
   background-size: 100% auto;
@@ -36,14 +36,21 @@
 }
 
 @supports not (aspect-ratio: 2 / 3) {
-  .tmw-mb-card {
+  .tmw-mb-card-wrap {
     position: relative;
     height: 0;
     padding-bottom: 150%;
   }
+
+  .tmw-flipbox-card {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
 }
 
-.tmw-mb-card.is-active {
+.tmw-flipbox-card.is-active {
   background-color: #fff;
 }
 

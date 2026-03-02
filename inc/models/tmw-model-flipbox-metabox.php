@@ -52,7 +52,7 @@ if (!function_exists('tmw_model_flipbox_metabox_get_term')) {
 
 if (!function_exists('tmw_model_flipbox_metabox_get_values')) {
   /**
-   * Load values from term meta first, post meta fallback.
+   * Load values from post meta first, term meta fallback.
    *
    * @param int $post_id Model post ID.
    * @return array<string,float|int>
@@ -63,12 +63,10 @@ if (!function_exists('tmw_model_flipbox_metabox_get_values')) {
 
     foreach (tmw_model_flipbox_metabox_keys() as $key) {
       $value = '';
-      if ($term) {
-        $value = get_term_meta($term->term_id, $key, true);
-      }
+      $value = get_post_meta($post_id, $key, true);
 
-      if ($value === '') {
-        $value = get_post_meta($post_id, $key, true);
+      if ($value === '' && $term) {
+        $value = get_term_meta($term->term_id, $key, true);
       }
 
       if ($value === '') {
@@ -92,6 +90,80 @@ if (!function_exists('tmw_model_flipbox_metabox_get_values')) {
     return $values;
   }
 }
+
+if (!function_exists('tmw_model_flipbox_meta_auth_callback')) {
+  function tmw_model_flipbox_meta_auth_callback(): bool {
+    return current_user_can('edit_posts');
+  }
+}
+
+if (!function_exists('tmw_model_flipbox_sanitize_absint')) {
+  function tmw_model_flipbox_sanitize_absint($value): int {
+    return absint($value);
+  }
+}
+
+if (!function_exists('tmw_model_flipbox_sanitize_pos')) {
+  function tmw_model_flipbox_sanitize_pos($value): int {
+    return tmw_model_flipbox_metabox_clamp_int($value, 0, 100);
+  }
+}
+
+if (!function_exists('tmw_model_flipbox_sanitize_zoom')) {
+  function tmw_model_flipbox_sanitize_zoom($value): float {
+    return tmw_model_flipbox_metabox_clamp_float($value, 1.0, 2.5);
+  }
+}
+
+add_action('init', function (): void {
+  register_post_meta('model', 'tmw_flip_front_id', [
+    'type' => 'integer',
+    'single' => true,
+    'show_in_rest' => true,
+    'sanitize_callback' => 'tmw_model_flipbox_sanitize_absint',
+    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
+  ]);
+
+  register_post_meta('model', 'tmw_flip_back_id', [
+    'type' => 'integer',
+    'single' => true,
+    'show_in_rest' => true,
+    'sanitize_callback' => 'tmw_model_flipbox_sanitize_absint',
+    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
+  ]);
+
+  register_post_meta('model', 'tmw_flip_pos_front', [
+    'type' => 'integer',
+    'single' => true,
+    'show_in_rest' => true,
+    'sanitize_callback' => 'tmw_model_flipbox_sanitize_pos',
+    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
+  ]);
+
+  register_post_meta('model', 'tmw_flip_pos_back', [
+    'type' => 'integer',
+    'single' => true,
+    'show_in_rest' => true,
+    'sanitize_callback' => 'tmw_model_flipbox_sanitize_pos',
+    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
+  ]);
+
+  register_post_meta('model', 'tmw_flip_zoom_front', [
+    'type' => 'number',
+    'single' => true,
+    'show_in_rest' => true,
+    'sanitize_callback' => 'tmw_model_flipbox_sanitize_zoom',
+    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
+  ]);
+
+  register_post_meta('model', 'tmw_flip_zoom_back', [
+    'type' => 'number',
+    'single' => true,
+    'show_in_rest' => true,
+    'sanitize_callback' => 'tmw_model_flipbox_sanitize_zoom',
+    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
+  ]);
+});
 
 if (!function_exists('tmw_render_model_flipbox_metabox')) {
   /**
@@ -128,7 +200,7 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
           <button type="button" class="button tmw-flipbox-remove" data-side="front" data-target="tmw_flip_front_id">Remove</button>
         </div>
         <div class="tmw-mb-card-wrap">
-          <div class="tmw-mb-card" id="tmw_flip_front_preview" data-target="front" data-url="<?php echo esc_url((string) $front_url); ?>" style="<?php echo $front_url ? 'background-image:url(' . esc_url($front_url) . ');' : ''; ?>"></div>
+          <div class="tmw-flipbox-card" id="tmw_flip_front_preview" data-target="front" data-url="<?php echo esc_url((string) $front_url); ?>" style="<?php echo $front_url ? 'background-image:url(' . esc_url($front_url) . ');' : ''; ?>"></div>
           <div class="tmw-flipbox-preview-label">Front</div>
         </div>
         <p class="tmw-flipbox-control-row">
@@ -151,7 +223,7 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
           <button type="button" class="button tmw-flipbox-remove" data-side="back" data-target="tmw_flip_back_id">Remove</button>
         </div>
         <div class="tmw-mb-card-wrap">
-          <div class="tmw-mb-card" id="tmw_flip_back_preview" data-target="back" data-url="<?php echo esc_url((string) $back_url); ?>" style="<?php echo $back_url ? 'background-image:url(' . esc_url($back_url) . ');' : ''; ?>"></div>
+          <div class="tmw-flipbox-card" id="tmw_flip_back_preview" data-target="back" data-url="<?php echo esc_url((string) $back_url); ?>" style="<?php echo $back_url ? 'background-image:url(' . esc_url($back_url) . ');' : ''; ?>"></div>
           <div class="tmw-flipbox-preview-label">Back</div>
         </div>
         <p class="tmw-flipbox-control-row">
@@ -227,6 +299,30 @@ add_action('save_post_model', function (int $post_id): void {
   }
 });
 
+add_action('save_post_model', function (int $post_id): void {
+  if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+    return;
+  }
+
+  $term = tmw_model_flipbox_metabox_get_term($post_id);
+  if (!$term) {
+    return;
+  }
+
+  $sanitized = [
+    'tmw_flip_front_id' => tmw_model_flipbox_sanitize_absint(get_post_meta($post_id, 'tmw_flip_front_id', true)),
+    'tmw_flip_back_id' => tmw_model_flipbox_sanitize_absint(get_post_meta($post_id, 'tmw_flip_back_id', true)),
+    'tmw_flip_pos_front' => tmw_model_flipbox_sanitize_pos(get_post_meta($post_id, 'tmw_flip_pos_front', true)),
+    'tmw_flip_pos_back' => tmw_model_flipbox_sanitize_pos(get_post_meta($post_id, 'tmw_flip_pos_back', true)),
+    'tmw_flip_zoom_front' => tmw_model_flipbox_sanitize_zoom(get_post_meta($post_id, 'tmw_flip_zoom_front', true)),
+    'tmw_flip_zoom_back' => tmw_model_flipbox_sanitize_zoom(get_post_meta($post_id, 'tmw_flip_zoom_back', true)),
+  ];
+
+  foreach ($sanitized as $key => $value) {
+    update_term_meta($term->term_id, $key, $value);
+  }
+}, 30);
+
 add_action('admin_enqueue_scripts', function ($hook): void {
   $screen = function_exists('get_current_screen') ? get_current_screen() : null;
   if (!$screen) {
@@ -245,8 +341,8 @@ add_action('admin_enqueue_scripts', function ($hook): void {
   wp_enqueue_script(
     'tmw-model-flipbox-metabox',
     get_stylesheet_directory_uri() . '/js/tmw-model-flipbox-metabox.js',
-    ['jquery'],
-    '1.2.0',
+    ['jquery', 'wp-data'],
+    '1.3.0',
     true
   );
 
@@ -254,6 +350,6 @@ add_action('admin_enqueue_scripts', function ($hook): void {
     'tmw-model-flipbox-metabox',
     get_stylesheet_directory_uri() . '/css/tmw-model-flipbox-metabox.css',
     [],
-    '1.2.0'
+    '1.3.0'
   );
 });

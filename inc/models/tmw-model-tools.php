@@ -90,7 +90,7 @@ if (!function_exists('tmw_bg_align_css')) {
   function tmw_bg_align_css($pos_percent = 50, $zoom = 1.0): string {
     $pos = max(0, min(100, (float)$pos_percent));
     $z   = max(1.0, min(2.5, (float)$zoom));
-    $bgsize = ($z > 1.0) ? sprintf('%.2f%% auto', $z * 100.0) : 'cover';
+    $bgsize = sprintf('calc(%.2f * 100%%) auto', $z);
     return sprintf(
       'background-position: %.2f%% 50%% !important; background-size: %s !important; --tmw-bgpos: %.2f%% 50%%; --tmw-bgsize: %s;',
       $pos, $bgsize, $pos, $bgsize
