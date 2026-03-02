@@ -222,13 +222,17 @@ add_filter('the_content', function ($content) {
 // 2) Keep old ‘actors’ and new ‘models’ in sync on save.
 add_action('save_post', function ($post_id) {
   if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) return;
+
   $pt = get_post_type($post_id);
-  if ($pt !== 'post' && $pt !== 'video') return;
+  $detected_pt = function_exists('tmw_detect_livejasmin_post_type') ? tmw_detect_livejasmin_post_type() : 'video';
+  if ($pt !== 'post' && $pt !== $detected_pt) return;
 
   $actors_tax = 'actors';
   if (function_exists('xbox_get_field_value')) {
     $tmp = xbox_get_field_value('lvjm-options', 'custom-video-actors');
-    $actors_tax = ($tmp !== '') ? $tmp : 'actors';
+    if (!empty($tmp)) {
+      $actors_tax = $tmp;
+    }
   }
 
   if (!taxonomy_exists('models') || !is_object_in_taxonomy($pt, 'models')) {
@@ -244,24 +248,24 @@ add_action('save_post', function ($post_id) {
     return;
   }
 
-  $actors = wp_get_post_terms($post_id, $actors_tax, ['fields' => 'slugs']);
-  $models = wp_get_post_terms($post_id, 'models', ['fields' => 'slugs']);
+  $actors_slugs = wp_get_post_terms($post_id, $actors_tax, ['fields' => 'slugs']);
+  $models_slugs = wp_get_post_terms($post_id, 'models', ['fields' => 'slugs']);
 
-  if (is_wp_error($actors) || is_wp_error($models)) {
+  if (is_wp_error($actors_slugs) || is_wp_error($models_slugs)) {
     return;
   }
 
-  $actors = array_values(array_unique(array_filter($actors)));
-  $models = array_values(array_unique(array_filter($models)));
+  $actors_slugs = array_values(array_unique(array_filter($actors_slugs)));
+  $models_slugs = array_values(array_unique(array_filter($models_slugs)));
 
   update_post_meta($post_id, $lock_key, 1);
 
-  if (empty($models) && !empty($actors)) {
-    wp_set_post_terms($post_id, $actors, 'models', false);
-  } elseif (empty($actors) && !empty($models)) {
-    wp_set_post_terms($post_id, $models, $actors_tax, false);
-  } elseif (!empty($actors) && !empty($models)) {
-    $merged = array_values(array_unique(array_merge($models, $actors)));
+  if (empty($models_slugs) && !empty($actors_slugs)) {
+    wp_set_post_terms($post_id, $actors_slugs, 'models', false);
+  } elseif (empty($actors_slugs) && !empty($models_slugs)) {
+    wp_set_post_terms($post_id, $models_slugs, $actors_tax, false);
+  } elseif (!empty($actors_slugs) && !empty($models_slugs)) {
+    $merged = array_values(array_unique(array_merge($models_slugs, $actors_slugs)));
     wp_set_post_terms($post_id, $merged, 'models', false);
     wp_set_post_terms($post_id, $merged, $actors_tax, false);
   }
