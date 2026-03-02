@@ -18,6 +18,32 @@
     return typeof wp !== 'undefined' && wp.data && wp.data.select && wp.data.dispatch;
   }
 
+  function getAuditConfig() {
+    if (typeof window === 'undefined' || typeof window.tmwFlipboxAudit === 'undefined') {
+      return { enabled: false, metaKeys: [], metaRegisteredInRest: {} };
+    }
+
+    return window.tmwFlipboxAudit;
+  }
+
+  function isAuditEnabled() {
+    return !!getAuditConfig().enabled;
+  }
+
+  function auditLogPreview(message, payload) {
+    if (!isAuditEnabled()) {
+      return;
+    }
+    console.log('[TMW-FLIPBOX-AUDIT-PREVIEW] ' + message, payload || {});
+  }
+
+  function auditLogSave(message, payload) {
+    if (!isAuditEnabled()) {
+      return;
+    }
+    console.log('[TMW-FLIPBOX-AUDIT-SAVE] ' + message, payload || {});
+  }
+
   function getPreview(side) {
     return $('#tmw_flip_' + side + '_preview');
   }
@@ -65,9 +91,74 @@
     $preview.attr('data-url', url);
     if (url) {
       $preview.css('background-image', 'url(' + url + ')').addClass('is-active');
+      auditLogPreview('Image applied to preview element via background-image', {
+        side: side,
+        targetElement: $preview.attr('id'),
+        mode: 'background-image',
+        url: url
+      });
     } else {
       $preview.css('background-image', 'none').removeClass('is-active');
+      auditLogPreview('Image cleared from preview element', {
+        side: side,
+        targetElement: $preview.attr('id'),
+        mode: 'background-image',
+        url: ''
+      });
     }
+  }
+
+  function auditPreviewComputedStyles(side, origin) {
+    if (!isAuditEnabled()) {
+      return;
+    }
+
+    var element = getPreview(side).get(0);
+    if (!element) {
+      auditLogPreview('Preview element not found', { side: side, origin: origin });
+      return;
+    }
+
+    var styles = window.getComputedStyle(element);
+    var payload = {
+      side: side,
+      origin: origin,
+      tagName: element.tagName,
+      clientWidth: element.clientWidth,
+      clientHeight: element.clientHeight,
+      aspectRatio: styles.getPropertyValue('aspect-ratio'),
+      width: styles.getPropertyValue('width'),
+      height: styles.getPropertyValue('height'),
+      objectFit: styles.getPropertyValue('object-fit'),
+      objectPosition: styles.getPropertyValue('object-position'),
+      backgroundSize: styles.getPropertyValue('background-size'),
+      backgroundPosition: styles.getPropertyValue('background-position'),
+      overflow: styles.getPropertyValue('overflow'),
+      backgroundImage: styles.getPropertyValue('background-image')
+    };
+
+    auditLogPreview('Computed preview styles', payload);
+  }
+
+  function auditGutenbergMeta(origin) {
+    if (!isAuditEnabled() || !hasEditorStore()) {
+      return;
+    }
+
+    var config = getAuditConfig();
+    var meta = getMetaState();
+    var snapshot = {};
+    (config.metaKeys || []).forEach(function (key) {
+      snapshot[key] = typeof meta[key] === 'undefined' ? null : meta[key];
+    });
+
+    auditLogSave('Gutenberg meta snapshot', {
+      origin: origin,
+      metaRegisteredInRest: config.metaRegisteredInRest || {},
+      keys: snapshot,
+      isSavingPost: wp.data.select('core/editor').isSavingPost(),
+      isAutosavingPost: wp.data.select('core/editor').isAutosavingPost()
+    });
   }
 
   function applyPreview(side) {
@@ -150,6 +241,7 @@
 
       updatePreviewImage(side, attachmentUrl);
       applyPreview(side);
+      auditPreviewComputedStyles(side, 'after-media-select');
     });
 
     frame.open();
@@ -204,6 +296,25 @@
       var $preview = getPreview(side);
       updatePreviewImage(side, $preview.attr('data-url') || '');
       applyPreview(side);
+      auditPreviewComputedStyles(side, 'dom-ready');
     });
+
+    if (isAuditEnabled() && hasEditorStore()) {
+      var lastSerialized = '';
+      wp.data.subscribe(function () {
+        var meta = getMetaState();
+        var currentSerialized = JSON.stringify(meta || {});
+        var isSavingPost = wp.data.select('core/editor').isSavingPost();
+
+        if (currentSerialized !== lastSerialized) {
+          auditGutenbergMeta('meta-change');
+          lastSerialized = currentSerialized;
+        }
+
+        if (isSavingPost) {
+          auditGutenbergMeta('before-or-during-save');
+        }
+      });
+    }
   });
 })(jQuery);
