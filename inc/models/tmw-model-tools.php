@@ -14,6 +14,11 @@ if (!function_exists('tmw_tools_settings')) {
     return is_array($opt) ? $opt : [];
   }
 }
+if (!function_exists('tmw_flipbox_audit_enabled')) {
+  function tmw_flipbox_audit_enabled(): bool {
+    return defined('TMW_FLIPBOX_AUDIT') && TMW_FLIPBOX_AUDIT === true;
+  }
+}
 if (!function_exists('tmw_get_model_keys')) {
   /**
    * Build a list of normalized model identifiers for overrides.
@@ -141,7 +146,7 @@ if (!function_exists('tmw_tools_overrides_for_term')) {
       $css_front = tmw_bg_align_css($pos_meta_f !== '' ? $pos_meta_f : 50, $zoom_meta_f !== '' ? $zoom_meta_f : 1.0);
       $css_back  = tmw_bg_align_css($pos_meta_b !== '' ? $pos_meta_b : 50, $zoom_meta_b !== '' ? $zoom_meta_b : 1.0);
 
-      return [
+      $result = [
         'front_url' => is_string($front_meta_url) ? $front_meta_url : '',
         'back_url'  => is_string($back_meta_url) ? $back_meta_url : '',
         'pos_front' => (string) ($pos_meta_f !== '' ? $pos_meta_f : 50),
@@ -151,6 +156,21 @@ if (!function_exists('tmw_tools_overrides_for_term')) {
         'css_front' => $css_front,
         'css_back'  => $css_back,
       ];
+
+      if (tmw_flipbox_audit_enabled() && !is_admin() && current_user_can('manage_options')) {
+        error_log(sprintf(
+          '[TMW-FLIPBOX-AUDIT] term_id=%d source=term_meta front_id=%s back_id=%s front_url=%s back_url=%s final_front_empty=%s final_back_empty=%s',
+          $term_id,
+          (string) $front_meta_raw,
+          (string) $back_meta_raw,
+          $result['front_url'],
+          $result['back_url'],
+          $result['front_url'] === '' ? 'yes' : 'no',
+          $result['back_url'] === '' ? 'yes' : 'no'
+        ));
+      }
+
+      return $result;
     }
 
     $s      = tmw_tools_settings();
@@ -167,7 +187,7 @@ if (!function_exists('tmw_tools_overrides_for_term')) {
     $css_front = tmw_bg_align_css($pos_f !== null ? $pos_f : 50, $zoom_f !== null ? $zoom_f : 1.0);
     $css_back  = tmw_bg_align_css($pos_b !== null ? $pos_b : 50, $zoom_b !== null ? $zoom_b : 1.0);
 
-    return [
+    $result = [
       'front_url' => is_string($front_url) ? $front_url : '',
       'back_url'  => is_string($back_url)  ? $back_url  : '',
       'pos_front' => (string) ($pos_f !== null ? $pos_f : 50),
@@ -177,6 +197,20 @@ if (!function_exists('tmw_tools_overrides_for_term')) {
       'css_front' => $css_front,
       'css_back'  => $css_back,
     ];
+
+    if (tmw_flipbox_audit_enabled() && !is_admin() && current_user_can('manage_options')) {
+      error_log(sprintf(
+        '[TMW-FLIPBOX-AUDIT] term_id=%d source=tools_options candidates=%s front_url=%s back_url=%s final_front_empty=%s final_back_empty=%s',
+        $term_id,
+        wp_json_encode($cands),
+        $result['front_url'],
+        $result['back_url'],
+        $result['front_url'] === '' ? 'yes' : 'no',
+        $result['back_url'] === '' ? 'yes' : 'no'
+      ));
+    }
+
+    return $result;
   }
 }
 
