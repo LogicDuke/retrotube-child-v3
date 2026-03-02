@@ -7,24 +7,27 @@ if (!defined('ABSPATH')) {
  * Determine whether heavy subsystems should boot.
  */
 function tmw_should_boot_heavy_logic(): bool {
-    // Never during AJAX.
-    if (wp_doing_ajax()) {
-        $allowed = false;
-        error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' uri=' . ($_SERVER['REQUEST_URI'] ?? '')); 
-        return $allowed;
-    }
-
     // Never during cron.
     if (defined('DOING_CRON') && DOING_CRON) {
         $allowed = false;
-        error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
+        $reason = 'cron';
+        error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' reason=' . $reason . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
         return $allowed;
     }
 
-    // Never during REST.
+    // Restrict AJAX unless authenticated admins/editors.
+    if (wp_doing_ajax()) {
+        $allowed = is_admin() && is_user_logged_in() && current_user_can('edit_posts');
+        $reason = $allowed ? 'ajax-admin-auth' : 'ajax-public';
+        error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' reason=' . $reason . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
+        return $allowed;
+    }
+
+    // Restrict REST unless authenticated editors.
     if (defined('REST_REQUEST') && REST_REQUEST) {
-        $allowed = false;
-        error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
+        $allowed = is_user_logged_in() && current_user_can('edit_posts');
+        $reason = $allowed ? 'rest-auth' : 'rest-public';
+        error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' reason=' . $reason . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
         return $allowed;
     }
 
@@ -35,13 +38,14 @@ function tmw_should_boot_heavy_logic(): bool {
 
         if ($action === 'trash' || $action2 === 'trash') {
             $allowed = false;
-            error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
+            $reason = 'admin-trash';
+            error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' reason=' . $reason . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
             return $allowed;
         }
     }
 
     $allowed = true;
-    error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
+    $reason = 'default';
+    error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' reason=' . $reason . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
     return $allowed;
 }
-
