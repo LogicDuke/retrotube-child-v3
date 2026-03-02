@@ -6,7 +6,31 @@ if (!defined('ABSPATH')) {
 
 if (!function_exists('tmw_flipbox_audit_enabled')) {
   function tmw_flipbox_audit_enabled(): bool {
-    return defined('TMW_FLIPBOX_AUDIT') && TMW_FLIPBOX_AUDIT === true;
+    return (defined('TMW_AUDIT_ENABLED') && TMW_AUDIT_ENABLED === true)
+      || (defined('TMW_FLIPBOX_AUDIT') && TMW_FLIPBOX_AUDIT === true);
+  }
+}
+
+if (!function_exists('tmw_flipbox_audit_log')) {
+  /**
+   * Emit debug logs for flipbox save/audit flow.
+   *
+   * @param string               $event   Event label.
+   * @param array<string, mixed> $context Additional context payload.
+   */
+  function tmw_flipbox_audit_log(string $event, array $context = []): void {
+    if (!tmw_flipbox_audit_enabled()) {
+      return;
+    }
+
+    $request_context = [
+      'REST_REQUEST' => defined('REST_REQUEST') ? (bool) REST_REQUEST : false,
+      'wp_doing_ajax' => function_exists('wp_doing_ajax') ? wp_doing_ajax() : false,
+      'request_method' => isset($_SERVER['REQUEST_METHOD']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) : '',
+      'request_uri' => isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '',
+    ];
+
+    error_log('[TMW-AUDIT-FLIPBOX] ' . $event . ' ' . wp_json_encode(array_merge($request_context, $context))); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
   }
 }
 
@@ -226,15 +250,32 @@ add_action('add_meta_boxes', function (): void {
 
 
 add_action('save_post_model', function (int $post_id): void {
+  tmw_flipbox_audit_log('save_post_model:entered', [
+    'post_id' => $post_id,
+    'current_user_can_edit_post' => current_user_can('edit_post', $post_id),
+    'has_nonce' => isset($_POST['tmw_flipbox_meta_nonce']),
+    'posted_meta' => [
+      'tmw_flip_front_id' => isset($_POST['tmw_flip_front_id']) ? wp_unslash($_POST['tmw_flip_front_id']) : null,
+      'tmw_flip_back_id' => isset($_POST['tmw_flip_back_id']) ? wp_unslash($_POST['tmw_flip_back_id']) : null,
+      'tmw_flip_pos_front' => isset($_POST['tmw_flip_pos_front']) ? wp_unslash($_POST['tmw_flip_pos_front']) : null,
+      'tmw_flip_pos_back' => isset($_POST['tmw_flip_pos_back']) ? wp_unslash($_POST['tmw_flip_pos_back']) : null,
+      'tmw_flip_zoom_front' => isset($_POST['tmw_flip_zoom_front']) ? wp_unslash($_POST['tmw_flip_zoom_front']) : null,
+      'tmw_flip_zoom_back' => isset($_POST['tmw_flip_zoom_back']) ? wp_unslash($_POST['tmw_flip_zoom_back']) : null,
+    ],
+  ]);
+
   if (!current_user_can('edit_post', $post_id)) {
+    tmw_flipbox_audit_log('save_post_model:exit-no-cap', ['post_id' => $post_id]);
     return;
   }
 
   if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+    tmw_flipbox_audit_log('save_post_model:exit-autosave-or-revision', ['post_id' => $post_id]);
     return;
   }
 
   if (!isset($_POST['tmw_flipbox_meta_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['tmw_flipbox_meta_nonce'])), 'tmw_flipbox_meta')) {
+    tmw_flipbox_audit_log('save_post_model:exit-nonce', ['post_id' => $post_id]);
     return;
   }
 
@@ -257,6 +298,13 @@ add_action('save_post_model', function (int $post_id): void {
   ];
 
   foreach ($sanitized as $key => $value) {
+    tmw_flipbox_audit_log('save_post_model:update-meta', [
+      'post_id' => $post_id,
+      'key' => $key,
+      'value' => $value,
+      'writes_term_meta' => (bool) $term,
+      'term_id' => $term ? (int) $term->term_id : 0,
+    ]);
     update_post_meta($post_id, $key, $value);
 
     if ($term) {
@@ -264,6 +312,28 @@ add_action('save_post_model', function (int $post_id): void {
     }
   }
 }, 30);
+
+add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
+  $post_id = (int) $post->ID;
+  $term = tmw_model_flipbox_metabox_get_term($post_id);
+  $post_meta_snapshot = [];
+  $term_meta_snapshot = [];
+
+  foreach (tmw_model_flipbox_metabox_keys() as $meta_key) {
+    $post_meta_snapshot[$meta_key] = get_post_meta($post_id, $meta_key, true);
+    $term_meta_snapshot[$meta_key] = $term ? get_term_meta((int) $term->term_id, $meta_key, true) : null;
+  }
+
+  tmw_flipbox_audit_log('rest_after_insert_model', [
+    'post_id' => $post_id,
+    'creating' => $creating,
+    'current_user_can_edit_post' => current_user_can('edit_post', $post_id),
+    'request_meta' => $request->get_param('meta'),
+    'persisted_post_meta' => $post_meta_snapshot,
+    'persisted_term_meta' => $term_meta_snapshot,
+    'term_id' => $term ? (int) $term->term_id : 0,
+  ]);
+}, 10, 3);
 
 add_action('admin_enqueue_scripts', function ($hook): void {
   $screen = function_exists('get_current_screen') ? get_current_screen() : null;
