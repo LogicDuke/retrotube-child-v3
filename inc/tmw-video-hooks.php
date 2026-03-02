@@ -9,10 +9,23 @@ if (!function_exists('tmw_pick_images_for_term')) {
   function tmw_pick_images_for_term(int $term_id): array {
     $front = ''; $back = '';
 
-    if (function_exists('tmw_aw_card_data')) {
+    $front_id = (int) get_term_meta($term_id, 'tmw_flip_front_id', true);
+    $back_id = (int) get_term_meta($term_id, 'tmw_flip_back_id', true);
+    if ($front_id > 0) {
+      $front = (string) wp_get_attachment_image_url($front_id, 'full');
+    }
+    if ($back_id > 0) {
+      $back = (string) wp_get_attachment_image_url($back_id, 'full');
+    }
+
+    if ((!$front || !$back) && function_exists('tmw_aw_card_data')) {
       $cd = tmw_aw_card_data($term_id);
-      $front = isset($cd['front']) ? (string)$cd['front'] : '';
-      $back  = isset($cd['back'])  ? (string)$cd['back']  : '';
+      if (!$front) {
+        $front = isset($cd['front']) ? (string) $cd['front'] : '';
+      }
+      if (!$back) {
+        $back = isset($cd['back']) ? (string) $cd['back'] : '';
+      }
     }
 
     // ACF overrides (taxonomy: models)

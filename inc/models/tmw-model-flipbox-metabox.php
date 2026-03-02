@@ -97,79 +97,6 @@ if (!function_exists('tmw_model_flipbox_metabox_get_values')) {
   }
 }
 
-if (!function_exists('tmw_model_flipbox_meta_auth_callback')) {
-  function tmw_model_flipbox_meta_auth_callback(): bool {
-    return current_user_can('edit_posts');
-  }
-}
-
-if (!function_exists('tmw_model_flipbox_sanitize_absint')) {
-  function tmw_model_flipbox_sanitize_absint($value): int {
-    return absint($value);
-  }
-}
-
-if (!function_exists('tmw_model_flipbox_sanitize_pos')) {
-  function tmw_model_flipbox_sanitize_pos($value): int {
-    return tmw_model_flipbox_metabox_clamp_int($value, 0, 100);
-  }
-}
-
-if (!function_exists('tmw_model_flipbox_sanitize_zoom')) {
-  function tmw_model_flipbox_sanitize_zoom($value): float {
-    return tmw_model_flipbox_metabox_clamp_float($value, 1.0, 2.5);
-  }
-}
-
-add_action('init', function (): void {
-  register_post_meta('model', 'tmw_flip_front_id', [
-    'type' => 'integer',
-    'single' => true,
-    'show_in_rest' => true,
-    'sanitize_callback' => 'tmw_model_flipbox_sanitize_absint',
-    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
-  ]);
-
-  register_post_meta('model', 'tmw_flip_back_id', [
-    'type' => 'integer',
-    'single' => true,
-    'show_in_rest' => true,
-    'sanitize_callback' => 'tmw_model_flipbox_sanitize_absint',
-    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
-  ]);
-
-  register_post_meta('model', 'tmw_flip_pos_front', [
-    'type' => 'integer',
-    'single' => true,
-    'show_in_rest' => true,
-    'sanitize_callback' => 'tmw_model_flipbox_sanitize_pos',
-    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
-  ]);
-
-  register_post_meta('model', 'tmw_flip_pos_back', [
-    'type' => 'integer',
-    'single' => true,
-    'show_in_rest' => true,
-    'sanitize_callback' => 'tmw_model_flipbox_sanitize_pos',
-    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
-  ]);
-
-  register_post_meta('model', 'tmw_flip_zoom_front', [
-    'type' => 'number',
-    'single' => true,
-    'show_in_rest' => true,
-    'sanitize_callback' => 'tmw_model_flipbox_sanitize_zoom',
-    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
-  ]);
-
-  register_post_meta('model', 'tmw_flip_zoom_back', [
-    'type' => 'number',
-    'single' => true,
-    'show_in_rest' => true,
-    'sanitize_callback' => 'tmw_model_flipbox_sanitize_zoom',
-    'auth_callback' => 'tmw_model_flipbox_meta_auth_callback',
-  ]);
-});
 
 if (!function_exists('tmw_render_model_flipbox_metabox')) {
   /**
@@ -251,7 +178,7 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
           <button type="button" class="button tmw-flipbox-remove" data-side="front" data-target="tmw_flip_front_id">Remove</button>
         </div>
         <div class="tmw-mb-card-wrap">
-          <div class="tmw-flipbox-card" id="tmw_flip_front_preview" data-side="front" data-url="<?php echo esc_url((string) $front_url); ?>" style="<?php echo $front_url ? 'background-image:url(' . esc_url($front_url) . ');' : ''; ?>"></div>
+          <div class="tmw-flipbox-card" id="tmw-flipbox-front-preview" data-side="front" data-url="<?php echo esc_url((string) $front_url); ?>" style="<?php echo $front_url ? 'background-image:url(' . esc_url($front_url) . ');' : ''; ?>"></div>
           <div class="tmw-flipbox-preview-label">Front</div>
         </div>
         <p class="tmw-flipbox-control-row">
@@ -274,7 +201,7 @@ if (!function_exists('tmw_render_model_flipbox_metabox')) {
           <button type="button" class="button tmw-flipbox-remove" data-side="back" data-target="tmw_flip_back_id">Remove</button>
         </div>
         <div class="tmw-mb-card-wrap">
-          <div class="tmw-flipbox-card" id="tmw_flip_back_preview" data-side="back" data-url="<?php echo esc_url((string) $back_url); ?>" style="<?php echo $back_url ? 'background-image:url(' . esc_url($back_url) . ');' : ''; ?>"></div>
+          <div class="tmw-flipbox-card" id="tmw-flipbox-back-preview" data-side="back" data-url="<?php echo esc_url((string) $back_url); ?>" style="<?php echo $back_url ? 'background-image:url(' . esc_url($back_url) . ');' : ''; ?>"></div>
           <div class="tmw-flipbox-preview-label">Back</div>
         </div>
         <p class="tmw-flipbox-control-row">
@@ -297,17 +224,6 @@ add_action('add_meta_boxes', function (): void {
   add_meta_box('tmw_flipbox', 'Flipbox Images', 'tmw_render_model_flipbox_metabox', 'model', 'normal', 'default');
 });
 
-if (!function_exists('tmw_model_flipbox_metabox_clamp_int')) {
-  function tmw_model_flipbox_metabox_clamp_int($value, int $min, int $max): int {
-    return max($min, min($max, (int) $value));
-  }
-}
-
-if (!function_exists('tmw_model_flipbox_metabox_clamp_float')) {
-  function tmw_model_flipbox_metabox_clamp_float($value, float $min, float $max): float {
-    return max($min, min($max, (float) $value));
-  }
-}
 
 add_action('save_post_model', function (int $post_id): void {
   if (!current_user_can('edit_post', $post_id)) {
