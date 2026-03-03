@@ -25,11 +25,11 @@ add_action('init', function (): void {
   ]);
 
   register_post_meta('model', 'banner_image', [
-    'type' => 'string',
+    'type' => 'integer',
     'single' => true,
     'show_in_rest' => true,
-    'default' => '',
-    'sanitize_callback' => 'esc_url_raw',
+    'default' => 0,
+    'sanitize_callback' => 'absint',
     'auth_callback' => 'tmw_model_banner_meta_auth_callback',
   ]);
 });
