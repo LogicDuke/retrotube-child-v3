@@ -274,10 +274,6 @@ add_action('save_post_model', function (int $post_id): void {
     return;
   }
 
-  if (defined('REST_REQUEST') && REST_REQUEST) {
-    tmw_flipbox_audit_log('save_post_model:exit-rest-request', ['post_id' => $post_id]);
-    return;
-  }
 
   if (!isset($_POST['tmw_flipbox_meta_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['tmw_flipbox_meta_nonce'])), 'tmw_flipbox_meta')) {
     tmw_flipbox_audit_log('save_post_model:exit-nonce', ['post_id' => $post_id]);
