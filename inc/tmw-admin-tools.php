@@ -1,8 +1,8 @@
 <?php
 
 
-if (!function_exists('tmw_audit_enabled')) {
-  function tmw_audit_enabled(): bool {
+if (!function_exists('tmw_banner_audit_enabled')) {
+  function tmw_banner_audit_enabled(): bool {
     return defined('TMW_AUDIT_ENABLED') && TMW_AUDIT_ENABLED === true;
   }
 }
@@ -14,19 +14,26 @@ if (!function_exists('tmw_banner_audit_log')) {
    * @param string               $event   Event label.
    * @param array<string, mixed> $context Additional context payload.
    */
-  function tmw_banner_audit_log(string $event, array $context = []): void {
-    if (!tmw_audit_enabled()) {
+  function tmw_banner_audit_log(string $event, array $data = []): void {
+    if (!tmw_banner_audit_enabled()) {
       return;
     }
 
-    $request_context = [
-      'REST_REQUEST' => defined('REST_REQUEST') ? (bool) REST_REQUEST : false,
-      'wp_doing_ajax' => function_exists('wp_doing_ajax') ? wp_doing_ajax() : false,
-      'request_method' => isset($_SERVER['REQUEST_METHOD']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) : '',
-      'request_uri' => isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '',
+    $post_id = 0;
+    if (isset($data['post_id'])) {
+      $post_id = absint($data['post_id']);
+      unset($data['post_id']);
+    }
+
+    $payload = [
+      'event' => $event,
+      'uri' => isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '',
+      'user_id' => get_current_user_id(),
+      'post_id' => $post_id,
+      'data' => $data,
     ];
 
-    error_log('[TMW-AUDIT-BANNER] ' . $event . ' ' . wp_json_encode(array_merge($request_context, $context))); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+    error_log('[TMW-BANNER-AUDIT] ' . wp_json_encode($payload)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
   }
 }
 
@@ -142,14 +149,14 @@ function tmw_render_slot_banner_backfill_page() {
  * ====================================================================== */
 if (!function_exists('tmw_render_banner_position_box')) {
   function tmw_render_banner_position_box($post) {
+    wp_enqueue_media();
+
     $value = function_exists('tmw_get_model_banner_focal_y')
       ? (int) round(tmw_get_model_banner_focal_y($post->ID))
       : 50;
     $value = max(0, min(100, $value));
-    $banner   = function_exists('tmw_resolve_model_banner_url') ? tmw_resolve_model_banner_url($post->ID) : '';
     $banner_image_id = absint(get_post_meta($post->ID, 'tmw_banner_image_id', true));
-    $custom_banner = $banner_image_id > 0 ? wp_get_attachment_url($banner_image_id) : '';
-    $preview_banner = $custom_banner ?: $banner;
+    $preview_banner = $banner_image_id > 0 ? wp_get_attachment_url($banner_image_id) : '';
 
     wp_nonce_field('tmw_save_banner_position', 'tmw_banner_position_nonce');
 
@@ -173,12 +180,11 @@ if (!function_exists('tmw_render_banner_position_box')) {
     echo '<hr />';
     echo '<p><strong>' . esc_html__('Banner Image Override', 'retrotube-child') . '</strong></p>';
     echo '<input type="hidden" name="tmw_banner_image_id" id="tmw_banner_image_id" value="' . esc_attr((string) $banner_image_id) . '" />';
-    echo '<p><img id="tmw_banner_image_preview" src="' . esc_url($preview_banner) . '" alt="" style="max-width:100%;height:auto;display:' . ($preview_banner ? 'block' : 'none') . ';" /></p>';
+    echo '<p><img id="tmw-banner-img-preview" src="' . esc_url($preview_banner) . '" alt="" style="max-width:100%;height:auto;display:' . ($preview_banner ? 'block' : 'none') . ';" /></p>';
     echo '<p>';
-    echo '<button type="button" class="button" id="tmw_choose_banner_image">' . esc_html__('Choose Banner Image', 'retrotube-child') . '</button> ';
-    echo '<button type="button" class="button" id="tmw_remove_banner_image">' . esc_html__('Remove', 'retrotube-child') . '</button>';
+    echo '<button type="button" class="button" id="tmw-banner-img-pick">' . esc_html__('Choose Banner Image', 'retrotube-child') . '</button> ';
+    echo '<button type="button" class="button" id="tmw-banner-img-remove" style="display:' . ($banner_image_id > 0 ? 'inline-block' : 'none') . ';">' . esc_html__('Remove', 'retrotube-child') . '</button>';
     echo '</p>';
-    echo '<input type="hidden" name="tmw_banner_image_cleared" id="tmw_banner_image_cleared" value="0" />';
 
     ob_start();
     ?>
@@ -191,9 +197,9 @@ if (!function_exists('tmw_render_banner_position_box')) {
                 : null;
             var valSpan      = document.getElementById('tmwBannerValue');
             var imageInput   = document.getElementById('tmw_banner_image_id');
-            var imagePreview = document.getElementById('tmw_banner_image_preview');
-            var chooseButton = document.getElementById('tmw_choose_banner_image');
-            var removeButton = document.getElementById('tmw_remove_banner_image');
+            var imagePreview = document.getElementById('tmw-banner-img-preview');
+            var chooseButton = document.getElementById('tmw-banner-img-pick');
+            var removeButton = document.getElementById('tmw-banner-img-remove');
             var mediaFrame;
 
             function applyFocus(value) {
@@ -215,6 +221,29 @@ if (!function_exists('tmw_render_banner_position_box')) {
                 if (!imagePreview) { return; }
                 imagePreview.src = url || '';
                 imagePreview.style.display = url ? 'block' : 'none';
+                if (removeButton) {
+                    removeButton.style.display = url ? 'inline-block' : 'none';
+                }
+            }
+
+            function persistBannerMeta(attachmentId) {
+                if (typeof wp === 'undefined' || !wp.data || !wp.data.select || !wp.data.dispatch) {
+                    return;
+                }
+
+                var editor = wp.data.select('core/editor');
+                var dispatcher = wp.data.dispatch('core/editor');
+                if (!editor || !dispatcher || !dispatcher.editPost) {
+                    return;
+                }
+
+                var currentMeta = editor.getEditedPostAttribute('meta') || {};
+                var mergedMeta = Object.assign({}, currentMeta, {
+                    tmw_banner_image_id: attachmentId,
+                    banner_image: attachmentId
+                });
+
+                dispatcher.editPost({ meta: mergedMeta });
             }
 
             if (chooseButton && imageInput && typeof wp !== 'undefined' && wp.media) {
@@ -229,8 +258,11 @@ if (!function_exists('tmw_render_banner_position_box')) {
                         });
                         mediaFrame.on('select', function() {
                             var att = mediaFrame.state().get('selection').first().toJSON();
-                            imageInput.value = att.id || 0;
-                            setPreview(att.url || '');
+                            var selectedId = parseInt(att.id, 10) || 0;
+                            var selectedUrl = (att.sizes && att.sizes.full && att.sizes.full.url) ? att.sizes.full.url : (att.url || '');
+                            imageInput.value = selectedId;
+                            setPreview(selectedUrl);
+                            persistBannerMeta(selectedId);
                         });
                     }
                     mediaFrame.open();
@@ -242,8 +274,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
                     e.preventDefault();
                     imageInput.value = 0;
                     setPreview('');
-                    var cleared = document.getElementById('tmw_banner_image_cleared');
-                    if (cleared) { cleared.value = '1'; }
+                    persistBannerMeta(0);
                 });
             }
         })();
@@ -279,40 +310,56 @@ add_action('save_post_model', function ($post_id) {
       $attachment_id = absint(wp_unslash($_POST['tmw_banner_image_id']));
 
       if ($attachment_id > 0) {
-        $url = wp_get_attachment_url($attachment_id);
         update_post_meta($post_id, 'tmw_banner_image_id', $attachment_id);
-        if ($url) {
-          update_post_meta($post_id, 'banner_image', esc_url_raw($url));
-        }
-      } elseif (!empty($_POST['tmw_banner_image_cleared']) && $_POST['tmw_banner_image_cleared'] === '1') {
-        // Only delete when user explicitly clicked Remove.
+        update_post_meta($post_id, 'banner_image', $attachment_id);
+      } else {
         delete_post_meta($post_id, 'tmw_banner_image_id');
         delete_post_meta($post_id, 'banner_image');
       }
-      // attachment_id=0 and not cleared = do nothing, preserve existing banner.
+
+      tmw_banner_audit_log('save_post_model', [
+        'post_id' => $post_id,
+        'banner_id_posted' => $attachment_id,
+        'banner_image_meta_after' => get_post_meta($post_id, 'banner_image', true),
+        'tmw_banner_image_id_meta_after' => get_post_meta($post_id, 'tmw_banner_image_id', true),
+      ]);
     }
   }
 });
 
-// REST save (Gutenberg) — sync banner_image URL whenever tmw_banner_image_id is in the payload.
-add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request): void {
-  $meta = $request->get_param('meta');
-  if (!is_array($meta) || !array_key_exists('tmw_banner_image_id', $meta)) {
-    return; // Not in this payload — do nothing, preserve existing banner.
+// REST save (Gutenberg) — sync banner_image ID whenever tmw_banner_image_id is in the payload.
+add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
+  $post_id = (int) $post->ID;
+  $request_meta = (array) ($request->get_param('meta') ?: []);
+  $meta_keys = array_keys($request_meta);
+
+  tmw_banner_audit_log('rest_after_insert_model_request', [
+    'post_id' => $post_id,
+    'creating' => $creating,
+    'request_meta_keys' => $meta_keys,
+    'request_tmw_banner_image_id' => $request_meta['tmw_banner_image_id'] ?? null,
+  ]);
+
+  if (!array_key_exists('tmw_banner_image_id', $request_meta)) {
+    return;
   }
 
-  $post_id       = (int) $post->ID;
-  $attachment_id = absint($meta['tmw_banner_image_id']);
+  $attachment_id = absint(get_post_meta($post_id, 'tmw_banner_image_id', true));
 
   if ($attachment_id > 0) {
-    $url = wp_get_attachment_url($attachment_id);
-    update_post_meta($post_id, 'tmw_banner_image_id', $attachment_id);
-    if ($url) {
-      update_post_meta($post_id, 'banner_image', esc_url_raw($url));
-    }
+    update_post_meta($post_id, 'banner_image', $attachment_id);
+  } else {
+    delete_post_meta($post_id, 'banner_image');
+    delete_post_meta($post_id, 'tmw_banner_image_id');
   }
-  // Deletion via REST not supported — use the metabox Remove button.
-}, 20, 2);
+
+  tmw_banner_audit_log('rest_after_insert_model_applied', [
+    'post_id' => $post_id,
+    'resolved_tmw_banner_image_id' => $attachment_id,
+    'banner_image_meta_after' => get_post_meta($post_id, 'banner_image', true),
+    'tmw_banner_image_id_meta_after' => get_post_meta($post_id, 'tmw_banner_image_id', true),
+  ]);
+}, 10, 3);
 
 
 
