@@ -147,7 +147,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
       : 50;
     $value = max(0, min(100, $value));
     $banner   = function_exists('tmw_resolve_model_banner_url') ? tmw_resolve_model_banner_url($post->ID) : '';
-    $banner_image_id = absint(get_post_meta($post->ID, '_tmw_banner_image_id', true));
+    $banner_image_id = absint(get_post_meta($post->ID, 'tmw_banner_image_id', true));
     $custom_banner = $banner_image_id > 0 ? wp_get_attachment_url($banner_image_id) : '';
     $preview_banner = $custom_banner ?: $banner;
 
@@ -252,7 +252,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
                             if (wp.data && wp.data.dispatch) {
                                 wp.data.dispatch('core/editor').editPost({
                                     meta: {
-                                        _tmw_banner_image_id: attachmentId,
+                                        tmw_banner_image_id: attachmentId,
                                         banner_image: attachmentUrl
                                     }
                                 });
@@ -273,7 +273,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
                     if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
                         wp.data.dispatch('core/editor').editPost({
                             meta: {
-                                _tmw_banner_image_id: 0,
+                                tmw_banner_image_id: 0,
                                 banner_image: ''
                             }
                         });
@@ -300,7 +300,7 @@ add_action('save_post_model', function ($post_id) {
     'posted_tmw_banner_image_id' => isset($_POST['tmw_banner_image_id']) ? wp_unslash($_POST['tmw_banner_image_id']) : null,
     'existing_meta' => [
       '_banner_focal_y' => get_post_meta($post_id, '_banner_focal_y', true),
-      '_tmw_banner_image_id' => get_post_meta($post_id, '_tmw_banner_image_id', true),
+      'tmw_banner_image_id' => get_post_meta($post_id, 'tmw_banner_image_id', true),
       'banner_image' => get_post_meta($post_id, 'banner_image', true),
     ],
   ]);
@@ -348,13 +348,13 @@ add_action('save_post_model', function ($post_id) {
 
     if ($attachment_id > 0) {
       $attachment_url = wp_get_attachment_url($attachment_id);
-      tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => '_tmw_banner_image_id', 'value' => $attachment_id]);
+      tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => 'tmw_banner_image_id', 'value' => $attachment_id]);
       tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => 'banner_image', 'value' => $attachment_url]);
-      update_post_meta($post_id, '_tmw_banner_image_id', $attachment_id);
+      update_post_meta($post_id, 'tmw_banner_image_id', $attachment_id);
       update_post_meta($post_id, 'banner_image', $attachment_url);
     } else {
-      tmw_banner_audit_log('save_post_model:delete-meta', ['post_id' => (int) $post_id, 'keys' => ['_tmw_banner_image_id', 'banner_image']]);
-      delete_post_meta($post_id, '_tmw_banner_image_id');
+      tmw_banner_audit_log('save_post_model:delete-meta', ['post_id' => (int) $post_id, 'keys' => ['tmw_banner_image_id', 'banner_image']]);
+      delete_post_meta($post_id, 'tmw_banner_image_id');
       delete_post_meta($post_id, 'banner_image');
     }
   }
@@ -362,23 +362,39 @@ add_action('save_post_model', function ($post_id) {
 
 add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
   $post_id = (int) $post->ID;
-  $attachment_id = absint(get_post_meta($post_id, '_tmw_banner_image_id', true));
 
-  if ($attachment_id > 0) {
-    $attachment_url = wp_get_attachment_url($attachment_id);
-    update_post_meta($post_id, 'banner_image', $attachment_url);
-  } else {
-    delete_post_meta($post_id, 'banner_image');
+  // Only touch banner_image if this REST request explicitly contained tmw_banner_image_id.
+  // Without this guard, every Gutenberg save (title edit, status change, etc.) would
+  // delete banner_image because tmw_banner_image_id defaults to 0 in the DB — wiping any
+  // banner configured via ACF term fields or a prior picker save.
+  $request_meta = (array) ($request->get_param('meta') ?: []);
+  $banner_key_in_request = array_key_exists('tmw_banner_image_id', $request_meta);
+
+  if ($banner_key_in_request) {
+    $attachment_id = absint(get_post_meta($post_id, 'tmw_banner_image_id', true));
+
+    if ($attachment_id > 0) {
+      $attachment_url = wp_get_attachment_url($attachment_id);
+      if ($attachment_url) {
+        update_post_meta($post_id, 'banner_image', $attachment_url);
+      }
+    } else {
+      // User explicitly cleared the image — remove the override so the resolver
+      // falls back to the ACF term field rather than a stale empty string.
+      delete_post_meta($post_id, 'tmw_banner_image_id');
+      delete_post_meta($post_id, 'banner_image');
+    }
   }
 
   tmw_banner_audit_log('rest_after_insert_model', [
     'post_id' => $post_id,
     'creating' => $creating,
     'current_user_can_edit_post' => current_user_can('edit_post', $post_id),
+    'banner_key_in_request' => $banner_key_in_request,
     'request_meta' => $request->get_param('meta'),
     'persisted_meta' => [
       '_banner_focal_y' => get_post_meta($post_id, '_banner_focal_y', true),
-      '_tmw_banner_image_id' => get_post_meta($post_id, '_tmw_banner_image_id', true),
+      'tmw_banner_image_id' => get_post_meta($post_id, 'tmw_banner_image_id', true),
       'banner_image' => get_post_meta($post_id, 'banner_image', true),
     ],
   ]);
