@@ -23,9 +23,12 @@ function tmw_should_boot_heavy_logic(): bool {
         return $allowed;
     }
 
-    // Never block REST — save hooks must always run during Gutenberg saves.
+    // Restrict REST unless authenticated admins/editors.
     if (defined('REST_REQUEST') && REST_REQUEST) {
-        return true;
+        $allowed = is_user_logged_in() && current_user_can('edit_posts');
+        $reason = $allowed ? 'rest-auth' : 'rest-public';
+        error_log('[TMW-GUARD] Heavy boot allowed=' . ($allowed ? 'YES' : 'NO') . ' reason=' . $reason . ' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
+        return $allowed;
     }
 
     // Skip during bulk trash.
