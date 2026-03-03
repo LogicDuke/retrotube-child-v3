@@ -374,8 +374,8 @@ add_action('admin_enqueue_scripts', function ($hook): void {
   wp_enqueue_script(
     'tmw-model-flipbox-metabox',
     get_stylesheet_directory_uri() . '/js/tmw-model-flipbox-metabox.js',
-    ['jquery', 'wp-data'],
-    '1.4.0',
+    ['jquery'],
+    (string) filemtime(get_stylesheet_directory() . '/js/tmw-model-flipbox-metabox.js'),
     true
   );
 
@@ -394,13 +394,6 @@ add_action('admin_enqueue_scripts', function ($hook): void {
     'metaRegisteredInRest' => $meta_rest_registration,
   ]);
 
-  // Pass AJAX config so the JS can save independently of Gutenberg.
-  $screen_post_id = isset($_GET['post']) ? absint($_GET['post']) : 0;
-  wp_localize_script('tmw-model-flipbox-metabox', 'tmwFlipbox', [
-    'ajaxUrl' => admin_url('admin-ajax.php'),
-    'nonce'   => wp_create_nonce('tmw_flipbox_ajax_save'),
-    'postId'  => $screen_post_id,
-  ]);
 
   wp_enqueue_style(
     'tmw-model-flipbox-metabox',
@@ -410,48 +403,6 @@ add_action('admin_enqueue_scripts', function ($hook): void {
   );
 });
 
-
-// ============================================================
-// AJAX SAVE — fires when JS posts to admin-ajax.php
-// Completely independent of Gutenberg's REST save cycle.
-// ============================================================
-add_action('wp_ajax_tmw_flipbox_save', function (): void {
-  // Verify nonce.
-  if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'tmw_flipbox_ajax_save')) {
-    wp_send_json_error(['message' => 'bad_nonce'], 403);
-  }
-
-  $post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
-  if (!$post_id || !current_user_can('edit_post', $post_id)) {
-    wp_send_json_error(['message' => 'no_permission'], 403);
-  }
-
-  $sanitized = [
-    'tmw_flip_front_id'  => tmw_model_flipbox_sanitize_absint(wp_unslash($_POST['tmw_flip_front_id']  ?? 0)),
-    'tmw_flip_back_id'   => tmw_model_flipbox_sanitize_absint(wp_unslash($_POST['tmw_flip_back_id']   ?? 0)),
-    'tmw_flip_pos_front' => tmw_model_flipbox_sanitize_pos(wp_unslash($_POST['tmw_flip_pos_front']    ?? 50)),
-    'tmw_flip_pos_back'  => tmw_model_flipbox_sanitize_pos(wp_unslash($_POST['tmw_flip_pos_back']     ?? 50)),
-    'tmw_flip_zoom_front'=> tmw_model_flipbox_sanitize_zoom(wp_unslash($_POST['tmw_flip_zoom_front']  ?? 1.0)),
-    'tmw_flip_zoom_back' => tmw_model_flipbox_sanitize_zoom(wp_unslash($_POST['tmw_flip_zoom_back']   ?? 1.0)),
-  ];
-
-  $term = tmw_model_flipbox_metabox_get_term($post_id);
-
-  foreach ($sanitized as $key => $value) {
-    update_post_meta($post_id, $key, $value);
-    if ($term) {
-      update_term_meta((int) $term->term_id, $key, $value);
-    }
-  }
-
-  tmw_flipbox_audit_log('ajax_save:success', [
-    'post_id'   => $post_id,
-    'term_id'   => $term ? (int) $term->term_id : 0,
-    'sanitized' => $sanitized,
-  ]);
-
-  wp_send_json_success(['saved' => $sanitized]);
-});
 
 add_action('admin_notices', function (): void {
   if (!tmw_flipbox_audit_enabled()) {
