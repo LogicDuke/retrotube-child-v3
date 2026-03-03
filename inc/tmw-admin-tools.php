@@ -183,83 +183,18 @@ if (!function_exists('tmw_render_banner_position_box')) {
     ?>
     <script>
         (function(){
-            var slider      = document.getElementById('tmwBannerSlider');
-            var previewWrap = document.getElementById('tmw-banner-preview') || document.getElementById('tmwBannerPreview');
+            var slider       = document.getElementById('tmwBannerSlider');
+            var previewWrap  = document.getElementById('tmw-banner-preview') || document.getElementById('tmwBannerPreview');
             var previewFrame = previewWrap
                 ? (previewWrap.classList.contains('tmw-banner-frame') ? previewWrap : previewWrap.querySelector('.tmw-banner-frame'))
                 : null;
-            var valSpan     = document.getElementById('tmwBannerValue');
-            var imageInput  = document.getElementById('tmw_banner_image_id');
+            var valSpan      = document.getElementById('tmwBannerValue');
+            var imageInput   = document.getElementById('tmw_banner_image_id');
             var imagePreview = document.getElementById('tmw_banner_image_preview');
             var chooseButton = document.getElementById('tmw_choose_banner_image');
             var removeButton = document.getElementById('tmw_remove_banner_image');
             var mediaFrame;
 
-            // ── resolve parent Gutenberg store with retry ──────────────────────
-            var _bannerStoreCache = null;
-            function resolveBannerStore() {
-                if (_bannerStoreCache) { return _bannerStoreCache; }
-                var sources = [];
-                try {
-                    if (window.parent && window.parent !== window && window.parent.wp) {
-                        sources.push(window.parent.wp);
-                    }
-                } catch(e) {}
-                if (typeof wp !== 'undefined') { sources.push(wp); }
-
-                for (var i = 0; i < sources.length; i++) {
-                    var w = sources[i];
-                    if (!w || !w.data || typeof w.data.dispatch !== 'function') { continue; }
-                    try {
-                        var ed  = w.data.dispatch('core/editor');
-                        var sel = w.data.select('core/editor');
-                        if (ed && sel && typeof ed.editPost === 'function') {
-                            _bannerStoreCache = { editor: ed, select: sel, wpData: w.data };
-                            return _bannerStoreCache;
-                        }
-                    } catch(e) {}
-                }
-                return null;
-            }
-
-            function pushBannerMeta(store) {
-                if (!store || !imageInput) { return; }
-                var id  = parseInt(imageInput.value, 10) || 0;
-                var url = (imagePreview && imagePreview.src && id > 0) ? imagePreview.src : '';
-                try {
-                    var current = store.select.getEditedPostAttribute('meta') || {};
-                    store.editor.editPost({ meta: Object.assign({}, current, {
-                        tmw_banner_image_id: id,
-                        banner_image: url
-                    })});
-                } catch(e) {}
-            }
-
-            // Subscribe: inject meta just as save triggers
-            function initBannerStoreBindings() {
-                var store = resolveBannerStore();
-                if (!store) { return false; }
-                var lastSaving = false;
-                store.wpData.subscribe(function() {
-                    try {
-                        var saving = store.select.isSavingPost();
-                        if (saving && !lastSaving) { pushBannerMeta(store); }
-                        lastSaving = saving;
-                    } catch(e) {}
-                });
-                return true;
-            }
-
-            (function waitBanner() {
-                if (initBannerStoreBindings()) { return; }
-                var n = 0;
-                var t = setInterval(function() {
-                    n++;
-                    if (initBannerStoreBindings() || n > 40) { clearInterval(t); }
-                }, 250);
-            })();
-
-            // ── slider ────────────────────────────────────────────────────────
             function applyFocus(value) {
                 if (!previewFrame) { return; }
                 var img = previewFrame.querySelector('img');
@@ -275,7 +210,6 @@ if (!function_exists('tmw_render_banner_position_box')) {
                 applyFocus(slider.value);
             }
 
-            // ── image picker ──────────────────────────────────────────────────
             function setPreview(url) {
                 if (!imagePreview) { return; }
                 imagePreview.src = url || '';
@@ -296,8 +230,6 @@ if (!function_exists('tmw_render_banner_position_box')) {
                             var att = mediaFrame.state().get('selection').first().toJSON();
                             imageInput.value = att.id || 0;
                             setPreview(att.url || '');
-                            // Push immediately so post is marked dirty.
-                            pushBannerMeta(resolveBannerStore());
                         });
                     }
                     mediaFrame.open();
@@ -309,7 +241,6 @@ if (!function_exists('tmw_render_banner_position_box')) {
                     e.preventDefault();
                     imageInput.value = 0;
                     setPreview('');
-                    pushBannerMeta(resolveBannerStore());
                 });
             }
         })();
@@ -344,11 +275,6 @@ add_action('save_post_model', function ($post_id) {
 
   if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
     tmw_banner_audit_log('save_post_model:exit-autosave-or-revision', ['post_id' => (int) $post_id]);
-    return;
-  }
-
-  if (defined('REST_REQUEST') && REST_REQUEST) {
-    tmw_banner_audit_log('save_post_model:exit-rest-request', ['post_id' => (int) $post_id]);
     return;
   }
 
@@ -392,45 +318,6 @@ add_action('save_post_model', function ($post_id) {
   }
 });
 
-add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
-  $post_id = (int) $post->ID;
-
-  // Only touch banner_image if this REST request explicitly contained tmw_banner_image_id.
-  // Without this guard, every Gutenberg save (title edit, status change, etc.) would
-  // delete banner_image because tmw_banner_image_id defaults to 0 in the DB — wiping any
-  // banner configured via ACF term fields or a prior picker save.
-  $request_meta = (array) ($request->get_param('meta') ?: []);
-  $banner_key_in_request = array_key_exists('tmw_banner_image_id', $request_meta);
-
-  if ($banner_key_in_request) {
-    $attachment_id = absint(get_post_meta($post_id, 'tmw_banner_image_id', true));
-
-    if ($attachment_id > 0) {
-      $attachment_url = wp_get_attachment_url($attachment_id);
-      if ($attachment_url) {
-        update_post_meta($post_id, 'banner_image', $attachment_url);
-      }
-    } else {
-      // User explicitly cleared the image — remove the override so the resolver
-      // falls back to the ACF term field rather than a stale empty string.
-      delete_post_meta($post_id, 'tmw_banner_image_id');
-      delete_post_meta($post_id, 'banner_image');
-    }
-  }
-
-  tmw_banner_audit_log('rest_after_insert_model', [
-    'post_id' => $post_id,
-    'creating' => $creating,
-    'current_user_can_edit_post' => current_user_can('edit_post', $post_id),
-    'banner_key_in_request' => $banner_key_in_request,
-    'request_meta' => $request->get_param('meta'),
-    'persisted_meta' => [
-      '_banner_focal_y' => get_post_meta($post_id, '_banner_focal_y', true),
-      'tmw_banner_image_id' => get_post_meta($post_id, 'tmw_banner_image_id', true),
-      'banner_image' => get_post_meta($post_id, 'banner_image', true),
-    ],
-  ]);
-}, 20, 3);
 
 
 add_action('admin_enqueue_scripts', function ($hook) {
