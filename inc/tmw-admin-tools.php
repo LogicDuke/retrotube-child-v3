@@ -183,57 +183,108 @@ if (!function_exists('tmw_render_banner_position_box')) {
     ?>
     <script>
         (function(){
-            const slider = document.getElementById("tmwBannerSlider");
-            const previewWrap = document.getElementById("tmw-banner-preview") || document.getElementById("tmwBannerPreview");
-            const previewFrame = previewWrap ? (previewWrap.classList && previewWrap.classList.contains('tmw-banner-frame') ? previewWrap : previewWrap.querySelector('.tmw-banner-frame')) : null;
-            const val = document.getElementById("tmwBannerValue");
-            const imageInput = document.getElementById('tmw_banner_image_id');
-            const imagePreview = document.getElementById('tmw_banner_image_preview');
-            const chooseButton = document.getElementById('tmw_choose_banner_image');
-            const removeButton = document.getElementById('tmw_remove_banner_image');
-            let mediaFrame;
+            var slider      = document.getElementById('tmwBannerSlider');
+            var previewWrap = document.getElementById('tmw-banner-preview') || document.getElementById('tmwBannerPreview');
+            var previewFrame = previewWrap
+                ? (previewWrap.classList.contains('tmw-banner-frame') ? previewWrap : previewWrap.querySelector('.tmw-banner-frame'))
+                : null;
+            var valSpan     = document.getElementById('tmwBannerValue');
+            var imageInput  = document.getElementById('tmw_banner_image_id');
+            var imagePreview = document.getElementById('tmw_banner_image_preview');
+            var chooseButton = document.getElementById('tmw_choose_banner_image');
+            var removeButton = document.getElementById('tmw_remove_banner_image');
+            var mediaFrame;
 
-            function applyFocus(value) {
-                if (!previewFrame) {
-                    return;
+            // ── resolve parent Gutenberg store with retry ──────────────────────
+            var _bannerStoreCache = null;
+            function resolveBannerStore() {
+                if (_bannerStoreCache) { return _bannerStoreCache; }
+                var sources = [];
+                try {
+                    if (window.parent && window.parent !== window && window.parent.wp) {
+                        sources.push(window.parent.wp);
+                    }
+                } catch(e) {}
+                if (typeof wp !== 'undefined') { sources.push(wp); }
+
+                for (var i = 0; i < sources.length; i++) {
+                    var w = sources[i];
+                    if (!w || !w.data || typeof w.data.dispatch !== 'function') { continue; }
+                    try {
+                        var ed  = w.data.dispatch('core/editor');
+                        var sel = w.data.select('core/editor');
+                        if (ed && sel && typeof ed.editPost === 'function') {
+                            _bannerStoreCache = { editor: ed, select: sel, wpData: w.data };
+                            return _bannerStoreCache;
+                        }
+                    } catch(e) {}
                 }
-                const img = previewFrame.querySelector('img');
-                if (!img || !img.style) {
-                    return;
-                }
-                const numeric = parseInt(value, 10);
-                const clamped = Math.max(0, Math.min(100, isNaN(numeric) ? 50 : numeric));
-                img.style.objectPosition = `50% ${clamped}%`;
-                if (val) {
-                    val.textContent = clamped;
-                }
+                return null;
             }
 
-            function setPreview(url) {
-                if (!imagePreview) {
-                    return;
-                }
+            function pushBannerMeta(store) {
+                if (!store || !imageInput) { return; }
+                var id  = parseInt(imageInput.value, 10) || 0;
+                var url = (imagePreview && imagePreview.src && id > 0) ? imagePreview.src : '';
+                try {
+                    var current = store.select.getEditedPostAttribute('meta') || {};
+                    store.editor.editPost({ meta: Object.assign({}, current, {
+                        tmw_banner_image_id: id,
+                        banner_image: url
+                    })});
+                } catch(e) {}
+            }
 
-                if (url) {
-                    imagePreview.src = url;
-                    imagePreview.style.display = 'block';
-                } else {
-                    imagePreview.src = '';
-                    imagePreview.style.display = 'none';
-                }
+            // Subscribe: inject meta just as save triggers
+            function initBannerStoreBindings() {
+                var store = resolveBannerStore();
+                if (!store) { return false; }
+                var lastSaving = false;
+                store.wpData.subscribe(function() {
+                    try {
+                        var saving = store.select.isSavingPost();
+                        if (saving && !lastSaving) { pushBannerMeta(store); }
+                        lastSaving = saving;
+                    } catch(e) {}
+                });
+                return true;
+            }
+
+            (function waitBanner() {
+                if (initBannerStoreBindings()) { return; }
+                var n = 0;
+                var t = setInterval(function() {
+                    n++;
+                    if (initBannerStoreBindings() || n > 40) { clearInterval(t); }
+                }, 250);
+            })();
+
+            // ── slider ────────────────────────────────────────────────────────
+            function applyFocus(value) {
+                if (!previewFrame) { return; }
+                var img = previewFrame.querySelector('img');
+                if (!img) { return; }
+                var n = parseInt(value, 10);
+                var c = Math.max(0, Math.min(100, isNaN(n) ? 50 : n));
+                img.style.objectPosition = '50% ' + c + '%';
+                if (valSpan) { valSpan.textContent = c; }
             }
 
             if (slider) {
-                slider.addEventListener("input", function(e){
-                    applyFocus(e.target.value);
-                });
+                slider.addEventListener('input', function(e){ applyFocus(e.target.value); });
                 applyFocus(slider.value);
+            }
+
+            // ── image picker ──────────────────────────────────────────────────
+            function setPreview(url) {
+                if (!imagePreview) { return; }
+                imagePreview.src = url || '';
+                imagePreview.style.display = url ? 'block' : 'none';
             }
 
             if (chooseButton && imageInput && typeof wp !== 'undefined' && wp.media) {
                 chooseButton.addEventListener('click', function(e) {
                     e.preventDefault();
-
                     if (!mediaFrame) {
                         mediaFrame = wp.media({
                             title: 'Choose Banner Image',
@@ -241,30 +292,14 @@ if (!function_exists('tmw_render_banner_position_box')) {
                             multiple: false,
                             library: { type: 'image' }
                         });
-
                         mediaFrame.on('select', function() {
-                            const attachment = mediaFrame.state().get('selection').first().toJSON();
-                            const attachmentId = attachment.id || 0;
-                            const attachmentUrl = attachment.url || '';
-                            imageInput.value = attachmentId;
-                            setPreview(attachmentUrl);
-
-                            // Classic metaboxes run in an iframe — reach the parent Gutenberg frame.
-                            var _wpData = (window.parent && window.parent.wp && window.parent.wp.data) ? window.parent.wp.data : (wp && wp.data ? wp.data : null);
-                            if (_wpData && _wpData.dispatch) {
-                                var _editor = _wpData.dispatch('core/editor');
-                                if (_editor && typeof _editor.editPost === 'function') {
-                                    _editor.editPost({
-                                        meta: {
-                                            tmw_banner_image_id: attachmentId,
-                                            banner_image: attachmentUrl
-                                        }
-                                    });
-                                }
-                            }
+                            var att = mediaFrame.state().get('selection').first().toJSON();
+                            imageInput.value = att.id || 0;
+                            setPreview(att.url || '');
+                            // Push immediately so post is marked dirty.
+                            pushBannerMeta(resolveBannerStore());
                         });
                     }
-
                     mediaFrame.open();
                 });
             }
@@ -274,19 +309,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
                     e.preventDefault();
                     imageInput.value = 0;
                     setPreview('');
-
-                    var _wpDataRemove = (window.parent && window.parent.wp && window.parent.wp.data) ? window.parent.wp.data : (typeof wp !== 'undefined' && wp.data ? wp.data : null);
-                    if (_wpDataRemove && _wpDataRemove.dispatch) {
-                        var _editorRemove = _wpDataRemove.dispatch('core/editor');
-                        if (_editorRemove && typeof _editorRemove.editPost === 'function') {
-                            _editorRemove.editPost({
-                                meta: {
-                                    tmw_banner_image_id: 0,
-                                    banner_image: ''
-                                }
-                            });
-                        }
-                    }
+                    pushBannerMeta(resolveBannerStore());
                 });
             }
         })();
@@ -734,4 +757,3 @@ add_filter( 'pings_open', function( $open, $post_id ) {
     }
     return $open;
 }, 99, 2 );
-
