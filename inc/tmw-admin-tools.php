@@ -249,13 +249,18 @@ if (!function_exists('tmw_render_banner_position_box')) {
                             imageInput.value = attachmentId;
                             setPreview(attachmentUrl);
 
-                            if (wp.data && wp.data.dispatch) {
-                                wp.data.dispatch('core/editor').editPost({
-                                    meta: {
-                                        tmw_banner_image_id: attachmentId,
-                                        banner_image: attachmentUrl
-                                    }
-                                });
+                            // Classic metaboxes run in an iframe — reach the parent Gutenberg frame.
+                            var _wpData = (window.parent && window.parent.wp && window.parent.wp.data) ? window.parent.wp.data : (wp && wp.data ? wp.data : null);
+                            if (_wpData && _wpData.dispatch) {
+                                var _editor = _wpData.dispatch('core/editor');
+                                if (_editor && typeof _editor.editPost === 'function') {
+                                    _editor.editPost({
+                                        meta: {
+                                            tmw_banner_image_id: attachmentId,
+                                            banner_image: attachmentUrl
+                                        }
+                                    });
+                                }
                             }
                         });
                     }
@@ -270,13 +275,17 @@ if (!function_exists('tmw_render_banner_position_box')) {
                     imageInput.value = 0;
                     setPreview('');
 
-                    if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
-                        wp.data.dispatch('core/editor').editPost({
-                            meta: {
-                                tmw_banner_image_id: 0,
-                                banner_image: ''
-                            }
-                        });
+                    var _wpDataRemove = (window.parent && window.parent.wp && window.parent.wp.data) ? window.parent.wp.data : (typeof wp !== 'undefined' && wp.data ? wp.data : null);
+                    if (_wpDataRemove && _wpDataRemove.dispatch) {
+                        var _editorRemove = _wpDataRemove.dispatch('core/editor');
+                        if (_editorRemove && typeof _editorRemove.editPost === 'function') {
+                            _editorRemove.editPost({
+                                meta: {
+                                    tmw_banner_image_id: 0,
+                                    banner_image: ''
+                                }
+                            });
+                        }
                     }
                 });
             }
