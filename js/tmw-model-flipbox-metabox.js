@@ -14,15 +14,40 @@
     return typeof wp !== 'undefined' && typeof wp.media !== 'undefined';
   }
 
+  /**
+   * Classic metaboxes in Gutenberg run inside an iframe.
+   * The local window.wp.data does NOT have 'core/editor' registered —
+   * that store only exists in the parent frame (the actual Gutenberg editor).
+   * We must reach window.parent.wp.data to dispatch editPost().
+   */
   function getEditorStore() {
-    if (typeof wp === 'undefined' || !wp.data || !wp.data.dispatch || !wp.data.select) {
-      return null;
+    var candidates = [];
+
+    // Parent frame first — this is where 'core/editor' lives in Gutenberg.
+    if (window.parent && window.parent !== window && window.parent.wp) {
+      candidates.push(window.parent.wp);
     }
 
-    return {
-      editor: wp.data.dispatch('core/editor'),
-      select: wp.data.select('core/editor')
-    };
+    // Local frame as fallback (works if Classic Editor plugin is active, no iframe).
+    if (typeof wp !== 'undefined') {
+      candidates.push(wp);
+    }
+
+    for (var i = 0; i < candidates.length; i++) {
+      var candidate = candidates[i];
+      if (!candidate || !candidate.data || typeof candidate.data.dispatch !== 'function') {
+        continue;
+      }
+
+      var editor = candidate.data.dispatch('core/editor');
+      var select = candidate.data.select('core/editor');
+
+      if (editor && select && typeof editor.editPost === 'function') {
+        return { editor: editor, select: select, wpData: candidate.data };
+      }
+    }
+
+    return null;
   }
 
   function getPreview(side) {
@@ -50,11 +75,11 @@
   function getCurrentMeta() {
     var store = getEditorStore();
     if (!store) {
-      return {};
+      return null; // null = store not reachable, preserve DOM values
     }
 
     var meta = store.select.getEditedPostAttribute('meta') || {};
-    return meta && typeof meta === 'object' ? meta : {};
+    return meta && typeof meta === 'object' ? meta : null;
   }
 
   function getUiState() {
@@ -74,7 +99,9 @@
       return;
     }
 
-    var nextMeta = $.extend({}, getCurrentMeta(), getUiState());
+    // Merge with current store meta so we don't wipe unrelated keys.
+    var currentMeta = store.select.getEditedPostAttribute('meta') || {};
+    var nextMeta = $.extend({}, currentMeta, getUiState());
     store.editor.editPost({ meta: nextMeta });
   }
 
@@ -107,17 +134,48 @@
     $preview.toggleClass('is-active', !!imageUrl);
   }
 
+  /**
+   * Sync the DOM inputs from the Gutenberg store.
+   * Only runs if the store is reachable AND has a non-zero value —
+   * a store value of 0 (the registered default) should not overwrite a
+   * PHP-rendered value that came from post_meta or term_meta.
+   */
   function hydrateFromMeta() {
     var meta = getCurrentMeta();
 
-    $('#tmw_flip_front_id').val(Math.max(0, sanitizeInt(meta.tmw_flip_front_id, sanitizeInt($('#tmw_flip_front_id').val(), 0))));
-    $('#tmw_flip_back_id').val(Math.max(0, sanitizeInt(meta.tmw_flip_back_id, sanitizeInt($('#tmw_flip_back_id').val(), 0))));
-    $('#tmw_flip_pos_front').val(sanitizePos(typeof meta.tmw_flip_pos_front !== 'undefined' ? meta.tmw_flip_pos_front : $('#tmw_flip_pos_front').val()));
-    $('#tmw_flip_pos_back').val(sanitizePos(typeof meta.tmw_flip_pos_back !== 'undefined' ? meta.tmw_flip_pos_back : $('#tmw_flip_pos_back').val()));
-    $('#tmw_flip_zoom_front').val(sanitizeZoom(typeof meta.tmw_flip_zoom_front !== 'undefined' ? meta.tmw_flip_zoom_front : $('#tmw_flip_zoom_front').val()).toFixed(1));
-    $('#tmw_flip_zoom_back').val(sanitizeZoom(typeof meta.tmw_flip_zoom_back !== 'undefined' ? meta.tmw_flip_zoom_back : $('#tmw_flip_zoom_back').val()).toFixed(1));
+    // Store not reachable (Classic Editor, or iframe issue) — keep PHP-rendered values.
+    if (!meta) {
+      ['front', 'back'].forEach(function (side) {
+        updateReadout($('#tmw_flip_pos_' + side));
+        updateReadout($('#tmw_flip_zoom_' + side));
+        applyPreview(side);
+      });
+      return;
+    }
 
+    // For image IDs: only overwrite DOM if store has a positive (real) value.
+    // A store value of 0 means "never saved via REST" — trust the PHP-rendered value.
     ['front', 'back'].forEach(function (side) {
+      var idKey = 'tmw_flip_' + side + '_id';
+      var storeId = sanitizeInt(meta[idKey], -1);
+      if (storeId > 0) {
+        $('#tmw_flip_' + side + '_id').val(storeId);
+      }
+      // If storeId is 0 or -1, leave the PHP-rendered hidden input value alone.
+    });
+
+    // For pos/zoom: store has meaningful defaults (50 / 1.0), prefer store value if present.
+    ['front', 'back'].forEach(function (side) {
+      var posKey = 'tmw_flip_pos_' + side;
+      var zoomKey = 'tmw_flip_zoom_' + side;
+
+      if (typeof meta[posKey] !== 'undefined') {
+        $('#tmw_flip_pos_' + side).val(sanitizePos(meta[posKey]));
+      }
+      if (typeof meta[zoomKey] !== 'undefined') {
+        $('#tmw_flip_zoom_' + side).val(sanitizeZoom(meta[zoomKey]).toFixed(1));
+      }
+
       updateReadout($('#tmw_flip_pos_' + side));
       updateReadout($('#tmw_flip_zoom_' + side));
       applyPreview(side);
@@ -189,8 +247,8 @@
     var store = getEditorStore();
     if (store) {
       var lastMeta = '';
-      wp.data.subscribe(function () {
-        var meta = getCurrentMeta();
+      store.wpData.subscribe(function () {
+        var meta = store.select.getEditedPostAttribute('meta') || {};
         var snapshot = {};
         META_KEYS.forEach(function (key) {
           snapshot[key] = meta[key];
