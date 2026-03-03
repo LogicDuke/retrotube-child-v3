@@ -15,7 +15,7 @@ if (!function_exists('tmw_model_banner_meta_auth_callback')) {
 }
 
 add_action('init', function (): void {
-  register_post_meta('model', '_tmw_banner_image_id', [
+  register_post_meta('model', 'tmw_banner_image_id', [
     'type' => 'integer',
     'single' => true,
     'show_in_rest' => true,
