@@ -178,6 +178,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
     echo '<button type="button" class="button" id="tmw_choose_banner_image">' . esc_html__('Choose Banner Image', 'retrotube-child') . '</button> ';
     echo '<button type="button" class="button" id="tmw_remove_banner_image">' . esc_html__('Remove', 'retrotube-child') . '</button>';
     echo '</p>';
+    echo '<input type="hidden" name="tmw_banner_image_cleared" id="tmw_banner_image_cleared" value="0" />';
 
     ob_start();
     ?>
@@ -241,6 +242,8 @@ if (!function_exists('tmw_render_banner_position_box')) {
                     e.preventDefault();
                     imageInput.value = 0;
                     setPreview('');
+                    var cleared = document.getElementById('tmw_banner_image_cleared');
+                    if (cleared) { cleared.value = '1'; }
                 });
             }
         })();
@@ -310,11 +313,13 @@ add_action('save_post_model', function ($post_id) {
       tmw_banner_audit_log('save_post_model:update-meta', ['post_id' => (int) $post_id, 'key' => 'banner_image', 'value' => $attachment_url]);
       update_post_meta($post_id, 'tmw_banner_image_id', $attachment_id);
       update_post_meta($post_id, 'banner_image', $attachment_url);
-    } else {
+    } elseif (!empty($_POST['tmw_banner_image_cleared']) && $_POST['tmw_banner_image_cleared'] === '1') {
+      // User explicitly clicked Remove — clear the override.
       tmw_banner_audit_log('save_post_model:delete-meta', ['post_id' => (int) $post_id, 'keys' => ['tmw_banner_image_id', 'banner_image']]);
       delete_post_meta($post_id, 'tmw_banner_image_id');
       delete_post_meta($post_id, 'banner_image');
     }
+    // If attachment_id=0 and not cleared, do nothing — preserve whatever banner exists.
   }
 });
 
