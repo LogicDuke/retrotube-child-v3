@@ -149,14 +149,10 @@ function tmw_render_slot_banner_backfill_page() {
  * ====================================================================== */
 if (!function_exists('tmw_render_banner_position_box')) {
   function tmw_render_banner_position_box($post) {
-    wp_enqueue_media();
-
     $value = function_exists('tmw_get_model_banner_focal_y')
       ? (int) round(tmw_get_model_banner_focal_y($post->ID))
       : 50;
     $value = max(0, min(100, $value));
-    $banner_image_id = absint(get_post_meta($post->ID, 'tmw_banner_image_id', true));
-    $preview_banner = $banner_image_id > 0 ? wp_get_attachment_url($banner_image_id) : '';
 
     wp_nonce_field('tmw_save_banner_position', 'tmw_banner_position_nonce');
 
@@ -177,15 +173,6 @@ if (!function_exists('tmw_render_banner_position_box')) {
     echo '<input type="range" min="0" max="100" step="1" value="' . esc_attr($value) . '" id="tmwBannerSlider" class="tmw-slider" name="banner_focal_y">
     <p><small>Vertical focus (%): <span id="tmwBannerValue">' . esc_html($value) . '</span> (0=top, 100=bottom)</small></p>';
 
-    echo '<hr />';
-    echo '<p><strong>' . esc_html__('Banner Image Override', 'retrotube-child') . '</strong></p>';
-    echo '<input type="hidden" name="tmw_banner_image_id" id="tmw_banner_image_id" value="' . esc_attr((string) $banner_image_id) . '" />';
-    echo '<p><img id="tmw-banner-img-preview" src="' . esc_url($preview_banner) . '" alt="" style="max-width:100%;height:auto;display:' . ($preview_banner ? 'block' : 'none') . ';" /></p>';
-    echo '<p>';
-    echo '<button type="button" class="button" id="tmw-banner-img-pick">' . esc_html__('Choose Banner Image', 'retrotube-child') . '</button> ';
-    echo '<button type="button" class="button" id="tmw-banner-img-remove" style="display:' . ($banner_image_id > 0 ? 'inline-block' : 'none') . ';">' . esc_html__('Remove', 'retrotube-child') . '</button>';
-    echo '</p>';
-
     ob_start();
     ?>
     <script>
@@ -196,11 +183,6 @@ if (!function_exists('tmw_render_banner_position_box')) {
                 ? (previewWrap.classList.contains('tmw-banner-frame') ? previewWrap : previewWrap.querySelector('.tmw-banner-frame'))
                 : null;
             var valSpan      = document.getElementById('tmwBannerValue');
-            var imageInput   = document.getElementById('tmw_banner_image_id');
-            var imagePreview = document.getElementById('tmw-banner-img-preview');
-            var chooseButton = document.getElementById('tmw-banner-img-pick');
-            var removeButton = document.getElementById('tmw-banner-img-remove');
-            var mediaFrame;
 
             function applyFocus(value) {
                 if (!previewFrame) { return; }
@@ -215,67 +197,6 @@ if (!function_exists('tmw_render_banner_position_box')) {
             if (slider) {
                 slider.addEventListener('input', function(e){ applyFocus(e.target.value); });
                 applyFocus(slider.value);
-            }
-
-            function setPreview(url) {
-                if (!imagePreview) { return; }
-                imagePreview.src = url || '';
-                imagePreview.style.display = url ? 'block' : 'none';
-                if (removeButton) {
-                    removeButton.style.display = url ? 'inline-block' : 'none';
-                }
-            }
-
-            function persistBannerMeta(attachmentId) {
-                if (typeof wp === 'undefined' || !wp.data || !wp.data.select || !wp.data.dispatch) {
-                    return;
-                }
-
-                var editor = wp.data.select('core/editor');
-                var dispatcher = wp.data.dispatch('core/editor');
-                if (!editor || !dispatcher || !dispatcher.editPost) {
-                    return;
-                }
-
-                var currentMeta = editor.getEditedPostAttribute('meta') || {};
-                var mergedMeta = Object.assign({}, currentMeta, {
-                    tmw_banner_image_id: attachmentId,
-                    banner_image: attachmentId
-                });
-
-                dispatcher.editPost({ meta: mergedMeta });
-            }
-
-            if (chooseButton && imageInput && typeof wp !== 'undefined' && wp.media) {
-                chooseButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (!mediaFrame) {
-                        mediaFrame = wp.media({
-                            title: 'Choose Banner Image',
-                            button: { text: 'Use banner image' },
-                            multiple: false,
-                            library: { type: 'image' }
-                        });
-                        mediaFrame.on('select', function() {
-                            var att = mediaFrame.state().get('selection').first().toJSON();
-                            var selectedId = parseInt(att.id, 10) || 0;
-                            var selectedUrl = (att.sizes && att.sizes.full && att.sizes.full.url) ? att.sizes.full.url : (att.url || '');
-                            imageInput.value = selectedId;
-                            setPreview(selectedUrl);
-                            persistBannerMeta(selectedId);
-                        });
-                    }
-                    mediaFrame.open();
-                });
-            }
-
-            if (removeButton && imageInput) {
-                removeButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    imageInput.value = 0;
-                    setPreview('');
-                    persistBannerMeta(0);
-                });
             }
         })();
     </script>
