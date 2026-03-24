@@ -1243,3 +1243,13 @@ footer#colophon.site-footer a[href*="/18-u-s-c-2257/"]:focus-visible {
     color: #f5c842;
     font-style: italic;
 }
+
+/* [TMW-SEO-ARCHIVE] Cross-links between mirrored category/tag archives. */
+.tmw-archive-crosslink {
+    margin: 12px 0 0;
+    font-size: 14px;
+}
+
+.tmw-archive-crosslink a {
+    text-decoration: underline;
+}

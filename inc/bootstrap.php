@@ -38,6 +38,7 @@ require_once __DIR__ . '/frontend/flipboxes.php';
 require_once __DIR__ . '/frontend/comments.php';
 require_once __DIR__ . '/frontend/taxonomies.php';
 require_once __DIR__ . '/frontend/shortcodes.php';
+require_once __DIR__ . '/frontend/tmw-seo-archive-display.php';
 require_once __DIR__ . '/frontend/template-tags.php';
 require_once __DIR__ . '/frontend/model-stats.php';
 require_once __DIR__ . '/frontend/tmw-slot-banner.php';
