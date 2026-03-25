@@ -171,6 +171,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
       $current_attachment_url = '';
     }
 
+    echo '<div id="tmw-banner-metabox-root" class="tmw-banner-metabox-root">';
     echo '<div class="tmw-banner-picker" style="margin:0 0 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">';
     echo '<strong>' . esc_html__('Banner Image', 'retrotube-child') . '</strong>';
     echo '<span id="tmw-banner-picker-label">' . esc_html($current_attachment_url ? __('Image selected', 'retrotube-child') : __('No image selected', 'retrotube-child')) . '</span>';
@@ -194,6 +195,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
 
     echo '<input type="range" min="0" max="100" step="1" value="' . esc_attr($value) . '" id="tmwBannerSlider" class="tmw-slider" name="banner_focal_y">';
     echo '<p><small>Vertical focus (%): <span id="tmwBannerValue">' . esc_html($value) . '</span> (0=top, 100=bottom)</small></p>';
+    echo '</div>';
   }
 }
 

@@ -31,15 +31,36 @@
     return isNaN(n) ? 50 : Math.max(0, Math.min(100, n));
   }
 
+  function metaboxRoot() {
+    var $root = $('#tmw-banner-metabox-root');
+    if ($root.length) {
+      return $root.first();
+    }
+
+    var $slider = $('#tmwBannerSlider').first();
+    if ($slider.length) {
+      var $fallback = $slider.closest('#model_banner_position, .postbox, .components-panel__body, .meta-box-sortables');
+      if ($fallback.length) {
+        return $fallback.first();
+      }
+    }
+
+    return $(document.body);
+  }
+
+  function scoped(selector) {
+    return metaboxRoot().find(selector).first();
+  }
+
   function getBannerId() {
-    return parseInt($('#tmw_banner_image_id').val(), 10) || 0;
+    return parseInt(scoped('[id="tmw_banner_image_id"]').val(), 10) || 0;
   }
 
   function currentMeta() {
     return {
       tmw_banner_image_id: getBannerId(),
       banner_image: getBannerId(),
-      _banner_focal_y: sanitizeFocus($('#tmwBannerSlider').val())
+      _banner_focal_y: sanitizeFocus(scoped('#tmwBannerSlider').val())
     };
   }
 
@@ -54,8 +75,34 @@
     }
   }
 
+  function stripDuplicateBannerUis() {
+    var $root = metaboxRoot();
+
+    $('[id="tmw_banner_image_id"]').each(function () {
+      var $field = $(this);
+      if ($root.has($field).length) {
+        return;
+      }
+      $field.prop('disabled', true);
+    });
+
+    $('.tmw-banner-picker').each(function () {
+      var $picker = $(this);
+      if ($root.has($picker).length) {
+        return;
+      }
+
+      var $container = $picker.closest('.postbox, .components-panel__body, .components-base-control, .editor-post-taxonomies__hierarchical-terms-list');
+      if ($container.length) {
+        $container.hide();
+      } else {
+        $picker.hide();
+      }
+    });
+  }
+
   function ensurePreviewFrame() {
-    var $wrap = $('#tmw-banner-preview');
+    var $wrap = scoped('#tmw-banner-preview');
     if (!$wrap.length) {
       return $();
     }
@@ -74,10 +121,15 @@
   }
 
   function updatePickerLabel(url) {
-    var $label = $('#tmw-banner-picker-label');
+    var $label = scoped('#tmw-banner-picker-label');
+    var $remove = scoped('#tmw-banner-remove');
     var hasUrl = !!url;
-    $label.text(hasUrl ? 'Image selected' : 'No image selected');
-    $('#tmw-banner-remove').prop('disabled', !hasUrl).toggle(hasUrl);
+    if ($label.length) {
+      $label.text(hasUrl ? 'Image selected' : 'No image selected');
+    }
+    if ($remove.length) {
+      $remove.prop('disabled', !hasUrl).toggle(hasUrl);
+    }
   }
 
   function applyPreview(url) {
@@ -95,16 +147,22 @@
     }
 
     updatePickerLabel(url);
-    applyFocus($('#tmwBannerSlider').val());
+    applyFocus(scoped('#tmwBannerSlider').val());
   }
 
   function applyFocus(value) {
     var $frame = ensurePreviewFrame();
     var $img = $frame.find('img').first();
     var focus = sanitizeFocus(value);
+    var $slider = scoped('#tmwBannerSlider');
+    var $readout = scoped('#tmwBannerValue');
 
-    $('#tmwBannerSlider').val(focus);
-    $('#tmwBannerValue').text(focus);
+    if ($slider.length) {
+      $slider.val(focus);
+    }
+    if ($readout.length) {
+      $readout.text(focus);
+    }
 
     if ($img.length && $img.attr('src')) {
       $img.css('object-position', '50% ' + focus + '%');
@@ -114,12 +172,18 @@
   }
 
   function currentPreviewUrl() {
-    return $('#tmw_banner_image_url').val() || '';
+    return scoped('[id="tmw_banner_image_url"]').val() || '';
   }
 
   function setBanner(id, url) {
-    $('#tmw_banner_image_id').val(id > 0 ? id : 0);
-    $('#tmw_banner_image_url').val(url || '');
+    var $id = scoped('[id="tmw_banner_image_id"]');
+    var $url = scoped('[id="tmw_banner_image_url"]');
+    if ($id.length) {
+      $id.val(id > 0 ? id : 0);
+    }
+    if ($url.length) {
+      $url.val(url || '');
+    }
     applyPreview(url || '');
     syncMetaToEditor();
   }
@@ -150,22 +214,24 @@
   }
 
   $(function () {
-    $('#tmw-banner-pick').on('click', function (e) {
+    stripDuplicateBannerUis();
+
+    scoped('#tmw-banner-pick').on('click', function (e) {
       e.preventDefault();
       openMediaFrame();
     });
 
-    $('#tmw-banner-remove').on('click', function (e) {
+    scoped('#tmw-banner-remove').on('click', function (e) {
       e.preventDefault();
       setBanner(0, '');
     });
 
-    $('#tmwBannerSlider').on('input change', function () {
+    scoped('#tmwBannerSlider').on('input change', function () {
       applyFocus($(this).val());
     });
 
     applyPreview(currentPreviewUrl());
-    applyFocus($('#tmwBannerSlider').val());
+    applyFocus(scoped('#tmwBannerSlider').val());
     syncMetaToEditor();
   });
 })(jQuery);
