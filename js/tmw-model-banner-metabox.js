@@ -26,32 +26,20 @@
     return null;
   }
 
-  function root() {
-    return $('#tmw-banner-metabox-root').first();
-  }
-
-  function field(selector) {
-    var $root = root();
-    if (!$root.length) {
-      return $();
-    }
-    return $root.find(selector).first();
-  }
-
   function sanitizeFocus(value) {
     var n = parseInt(value, 10);
     return isNaN(n) ? 50 : Math.max(0, Math.min(100, n));
   }
 
   function getBannerId() {
-    return parseInt(field('#tmw_banner_image_id').val(), 10) || 0;
+    return parseInt($('#tmw_banner_image_id').val(), 10) || 0;
   }
 
   function currentMeta() {
     return {
       tmw_banner_image_id: getBannerId(),
       banner_image: getBannerId(),
-      _banner_focal_y: sanitizeFocus(field('#tmwBannerSlider').val())
+      _banner_focal_y: sanitizeFocus($('#tmwBannerSlider').val())
     };
   }
 
@@ -66,39 +54,8 @@
     }
   }
 
-  function hideDuplicateBannerPickers() {
-    var $root = root();
-    if (!$root.length) {
-      return;
-    }
-
-    $('[id="tmw-banner-pick"]').each(function () {
-      var $el = $(this);
-      if ($root.has($el).length || $el.is($root.find('#tmw-banner-pick'))) {
-        return;
-      }
-      var $row = $el.closest('.tmw-banner-picker');
-      if ($row.length) {
-        $row.hide();
-        return;
-      }
-      $el.closest('div, p').hide();
-    });
-
-    $('[id="tmw_banner_image_id"]').each(function () {
-      var $el = $(this);
-      if ($root.has($el).length || $el.is($root.find('#tmw_banner_image_id'))) {
-        return;
-      }
-      var $row = $el.closest('.tmw-banner-picker');
-      if ($row.length) {
-        $row.hide();
-      }
-    });
-  }
-
   function ensurePreviewFrame() {
-    var $wrap = field('#tmw-banner-preview');
+    var $wrap = $('#tmw-banner-preview');
     if (!$wrap.length) {
       return $();
     }
@@ -117,10 +74,10 @@
   }
 
   function updatePickerLabel(url) {
-    var $label = field('#tmw-banner-picker-label');
+    var $label = $('#tmw-banner-picker-label');
     var hasUrl = !!url;
     $label.text(hasUrl ? 'Image selected' : 'No image selected');
-    field('#tmw-banner-remove').prop('disabled', !hasUrl).toggle(hasUrl);
+    $('#tmw-banner-remove').prop('disabled', !hasUrl).toggle(hasUrl);
   }
 
   function applyPreview(url) {
@@ -138,7 +95,7 @@
     }
 
     updatePickerLabel(url);
-    applyFocus(field('#tmwBannerSlider').val());
+    applyFocus($('#tmwBannerSlider').val());
   }
 
   function applyFocus(value) {
@@ -146,8 +103,9 @@
     var $img = $frame.find('img').first();
     var focus = sanitizeFocus(value);
 
-    field('#tmwBannerSlider').val(focus);
-    field('#tmwBannerValue').text(focus);
+    $('#tmwBannerSlider').val(focus);
+    $('#tmw_banner_focal_y').val(focus);
+    $('#tmwBannerValue').text(focus);
 
     if ($img.length && $img.attr('src')) {
       $img.css('object-position', '50% ' + focus + '%');
@@ -157,12 +115,12 @@
   }
 
   function currentPreviewUrl() {
-    return field('#tmw_banner_image_url').val() || '';
+    return $('#tmw_banner_image_url').val() || '';
   }
 
   function setBanner(id, url) {
-    field('#tmw_banner_image_id').val(id > 0 ? id : 0);
-    field('#tmw_banner_image_url').val(url || '');
+    $('#tmw_banner_image_id').val(id > 0 ? id : 0);
+    $('#tmw_banner_image_url').val(url || '');
     applyPreview(url || '');
     syncMetaToEditor();
   }
@@ -193,29 +151,23 @@
   }
 
   $(function () {
-    var $root = root();
-    if (!$root.length) {
-      return;
-    }
-
-    hideDuplicateBannerPickers();
-
-    field('#tmw-banner-pick').on('click', function (e) {
+    $('#tmw-banner-pick').on('click', function (e) {
       e.preventDefault();
       openMediaFrame();
     });
 
-    field('#tmw-banner-remove').on('click', function (e) {
+    $('#tmw-banner-remove').on('click', function (e) {
       e.preventDefault();
       setBanner(0, '');
     });
 
-    field('#tmwBannerSlider').on('input change', function () {
+    $('#tmwBannerSlider').on('input change', function () {
       applyFocus($(this).val());
     });
 
+    $('#tmw_banner_focal_y').val(sanitizeFocus($('#tmwBannerSlider').val()));
     applyPreview(currentPreviewUrl());
-    applyFocus(field('#tmwBannerSlider').val());
+    applyFocus($('#tmwBannerSlider').val());
     syncMetaToEditor();
   });
 })(jQuery);
