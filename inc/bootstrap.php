@@ -38,6 +38,7 @@ require_once __DIR__ . '/frontend/flipboxes.php';
 require_once __DIR__ . '/frontend/comments.php';
 require_once __DIR__ . '/frontend/taxonomies.php';
 require_once __DIR__ . '/frontend/shortcodes.php';
+require_once __DIR__ . '/frontend/tmw-seo-archive-display.php';
 require_once __DIR__ . '/frontend/template-tags.php';
 require_once __DIR__ . '/frontend/model-stats.php';
 require_once __DIR__ . '/frontend/tmw-slot-banner.php';
@@ -57,9 +58,16 @@ require_once __DIR__ . '/admin/tmw-slot-banner-meta.php';
 /** SEO helpers */
 require_once __DIR__ . '/seo/schema.php';
 
-/** Admin-only */
+/** Admin-only UI (metaboxes, list-table columns) */
 if (is_admin()) {
     require_once __DIR__ . '/admin/metabox-model-banner.php';
     require_once __DIR__ . '/admin/tmw-slot-banner-metabox.php';
-    require_once __DIR__ . '/admin/editor-tweaks.php';
 }
+
+/**
+ * editor-tweaks loads tmw-admin-tools.php which registers save_post_model
+ * and rest_after_insert_model hooks for banner saving.
+ * MUST be outside is_admin(): Gutenberg REST saves have is_admin()=FALSE,
+ * so any hook registration gated on is_admin() is invisible to REST saves.
+ */
+require_once __DIR__ . '/admin/editor-tweaks.php';

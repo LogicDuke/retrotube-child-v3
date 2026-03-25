@@ -221,23 +221,56 @@ add_filter('the_content', function ($content) {
 
 // 2) Keep old ‘actors’ and new ‘models’ in sync on save.
 add_action('save_post', function ($post_id) {
-  if (wp_is_post_revision($post_id)) return;
+  if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) return;
+
   $pt = get_post_type($post_id);
-  if ($pt !== 'post' && $pt !== 'video') return;
+  $detected_pt = function_exists('tmw_detect_livejasmin_post_type') ? tmw_detect_livejasmin_post_type() : 'video';
+  $detected_pt = !empty($detected_pt) ? $detected_pt : 'video';
+  if ($pt !== 'post' && $pt !== $detected_pt) return;
+
+  $actors_tax = 'actors';
+  if (function_exists('xbox_get_field_value')) {
+    $tmp = xbox_get_field_value('lvjm-options', 'custom-video-actors');
+    if (!empty($tmp)) {
+      $actors_tax = $tmp;
+    }
+  }
 
   if (!taxonomy_exists('models') || !is_object_in_taxonomy($pt, 'models')) {
     return;
   }
 
-  $actors = wp_get_post_terms($post_id, 'actors', ['fields' => 'ids']);
-  $models = wp_get_post_terms($post_id, 'models', ['fields' => 'ids']);
+  if (!taxonomy_exists($actors_tax) || !is_object_in_taxonomy($pt, $actors_tax)) {
+    return;
+  }
 
-  // If plugin set actors, mirror to models
-  if (!empty($actors) && !is_wp_error($actors)) {
-    wp_set_post_terms($post_id, $actors, 'models', false);
+  $lock_key = '_tmw_models_actors_sync_lock';
+  if (get_post_meta($post_id, $lock_key, true)) {
+    return;
   }
-  // If you ever tag only in models, mirror to actors too
-  if (!empty($models) && !is_wp_error($models)) {
-    wp_set_post_terms($post_id, $models, 'actors', false);
+
+  update_post_meta($post_id, $lock_key, 1);
+
+  $actors_slugs = wp_get_post_terms($post_id, $actors_tax, ['fields' => 'slugs']);
+  $models_slugs = wp_get_post_terms($post_id, 'models', ['fields' => 'slugs']);
+
+  if (is_wp_error($actors_slugs) || is_wp_error($models_slugs)) {
+    delete_post_meta($post_id, $lock_key);
+    return;
   }
+
+  $actors_slugs = array_values(array_unique(array_filter($actors_slugs)));
+  $models_slugs = array_values(array_unique(array_filter($models_slugs)));
+
+  if (empty($models_slugs) && !empty($actors_slugs)) {
+    wp_set_post_terms($post_id, $actors_slugs, 'models', false);
+  } elseif (empty($actors_slugs) && !empty($models_slugs)) {
+    wp_set_post_terms($post_id, $models_slugs, $actors_tax, false);
+  } elseif (!empty($actors_slugs) && !empty($models_slugs)) {
+    $merged = array_values(array_unique(array_merge($models_slugs, $actors_slugs)));
+    wp_set_post_terms($post_id, $merged, 'models', false);
+    wp_set_post_terms($post_id, $merged, $actors_tax, false);
+  }
+
+  delete_post_meta($post_id, $lock_key);
 }, 20);

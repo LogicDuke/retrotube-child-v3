@@ -178,3 +178,34 @@
     padding-left: 0;
     padding-right: 0;
 }
+
+/* ============================================
+   [TMW-FIX] Ensure accordion toggle is always clickable
+   ============================================ */
+
+.tmw-accordion-toggle-wrap {
+    position: relative;
+    z-index: 100;
+}
+
+.tmw-accordion-toggle {
+    position: relative;
+    z-index: 101;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.video-description,
+.tmw-accordion,
+.tmw-accordion--video-desc,
+.tab-content,
+#video-about,
+.width70,
+.width100 {
+    overflow: visible !important;
+    position: relative;
+}
+
+.tmw-accordion-toggle:hover {
+    cursor: pointer !important;
+}

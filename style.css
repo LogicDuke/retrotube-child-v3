@@ -483,19 +483,8 @@ article[id^="post-"]::before {
   content: none !important;
 }
 
-/* === v2.7.7-remove-video-id === */
-.single-model .tmw-model-video-item .post-id,
-.single-model .tmw-model-video-item .video-meta,
-.single-model .tmw-model-video-item span,
-.single-model .tmw-model-video-item .entry-meta {
-    display: none !important;
-}
-
-/* === v2.7.8-video-thumb-gap-fix === */
-.single-model .tmw-model-video-item .video-title {
-    margin-top: 3px !important;
-    line-height: 1.2em;
-}
+/* === v2.7.7-remove-video-id (model page) === */
+/* Cards now use standard loop-video thumb-block classes — parent theme CSS applies. */
 
 /* =========================
    Model taxonomy layout
@@ -669,129 +658,9 @@ article[id^="post-"]::before {
     box-shadow: inset 0 0 2px #000;
 }
 
-.single-model .videos-featuring {
-    margin-top: 1.5em;
-    padding-top: 0.5em;
-    border-top: 3px solid #333;
-}
-
-/* [TMW-FIX] Videos Featuring rating UX parity with /videos/, strictly scoped to model page section */
-.single-model .videos-featuring .videos-list .tmw-model-video-item {
-    position: relative;
-}
-
-/* Kill the inline baseline gap between thumbnail and rating bar */
-.single-model .videos-featuring .videos-list .tmw-model-video-item > a {
-    display: block;
-    line-height: 0;
-    font-size: 0;
-}
-
-.single-model .videos-featuring .videos-list .tmw-model-video-item img {
-    display: block;
-    width: 100%;
-    height: auto;
-}
-
-/* Rating bar: in normal flow between thumbnail and title */
-.single-model .videos-featuring .videos-list .tmw-vid-rating {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-    position: relative;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    line-height: 0;
-}
-
-.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-bar {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-    position: relative;
-    overflow: hidden;
-    height: 1.4em;
-    background-color: #333;
-    margin: 0;
-    padding: 0;
-}
-
-/* Red meter: hidden by default, reveals on hover */
-.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-bar-meter {
-    display: block;
-    height: 100%;
-    background-color: #c00;
-    box-sizing: border-box;
-    transform: scaleX(0);
-    transform-origin: left center;
-    opacity: 0;
-    transition: transform 0.25s ease, opacity 0.25s ease;
-}
-
-.single-model .videos-featuring .videos-list .tmw-model-video-item:hover .rating-bar-meter {
-    transform: scaleX(1);
-    opacity: 1;
-}
-
-.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-result {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    margin: 0;
-    pointer-events: none;
-}
-
-.single-model .videos-featuring .videos-list .tmw-vid-rating .rating-result .percentage {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    font-size: 0.8em;
-    font-weight: 600;
-    line-height: 1.4em;
-    color: #fff;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    z-index: 3;
-    pointer-events: none;
-}
-
-.single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage,
-.single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage span,
-.single-model .videos-featuring .videos-list .tmw-model-video-item .rating-result .percentage i {
-    display: inline-flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Title: match widget card style — small, light, no red */
-.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header {
-    height: 3.5em;
-    overflow: hidden;
-    text-align: center;
-    padding: 0.4em 0.3em 0;
-    margin: 0;
-}
-
-.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header .entry-title {
-    font-size: 0.8em;
-    font-weight: normal;
-    line-height: 1.4;
-    margin: 0;
-    padding: 0;
-}
-
-.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header .entry-title a {
-    color: #ddd !important;
-    text-decoration: none;
-}
-
-.single-model .videos-featuring .videos-list .tmw-model-video-item .entry-header .entry-title a:hover {
-    color: #fff !important;
-}
+/* [TMW-FIX] Model page video cards now use identical markup to parent theme
+   widget (loop-video thumb-block). No custom CSS needed — parent theme handles
+   rating bar, thumbnails, views, duration, and title automatically. */
 
 /* identical margins & layout with .single-video */
 .single-model #content {
@@ -879,6 +748,7 @@ a.tag-link {
   .single-model .entry-related,
   .single-model .related-posts,
   .single-model .video-grid,
+  .single-model .videos-list,
   .single-model .videos,
   .single-model .posts,
   .single-model .loop-videos {
@@ -889,6 +759,7 @@ a.tag-link {
 
   /* FIX: use container-based sizing (no vw) to avoid overflow from side padding */
   .single-model .video-grid > *,
+  .single-model .videos-list > *,
   .single-model .posts > li,
   .single-model .loop-videos > * {
     width: 100% !important;        /* fill the container’s content box */
@@ -900,6 +771,7 @@ a.tag-link {
 
   /* Thumbs fill the card exactly */
   .single-model .video-grid img,
+  .single-model .videos-list img,
   .single-model .posts img,
   .single-model .loop-videos img {
     display: block !important;
@@ -909,6 +781,7 @@ a.tag-link {
 
   /* Optional safety: clip any tiny sub-pixel overflow caused by transforms */
   .single-model .video-grid,
+  .single-model .videos-list,
   .single-model .posts,
   .single-model .loop-videos {
     overflow-x: clip;
@@ -1349,4 +1222,34 @@ footer#colophon.site-footer a[href*="/18-u-s-c-2257/"]:focus,
 footer#colophon.site-footer a[href*="/18-u-s-c-2257/"]:focus-visible {
   color: #e00000 !important;
   text-decoration: underline;
+}
+
+/* ============================================
+   [TMW-FIX] Model Page Layout
+   ============================================ */
+
+.single-model .tab-content,
+.single-model #video-about,
+.single-model .video-description {
+    overflow: visible !important;
+}
+
+.single-model .tmw-model-tags {
+    margin-top: 15px;
+    padding: 12px 0;
+}
+
+.single-model .tmw-model-tags.no-tags .tag-title {
+    color: #f5c842;
+    font-style: italic;
+}
+
+/* [TMW-SEO-ARCHIVE] Cross-links between mirrored category/tag archives. */
+.tmw-archive-crosslink {
+    margin: 12px 0 0;
+    font-size: 14px;
+}
+
+.tmw-archive-crosslink a {
+    text-decoration: underline;
 }

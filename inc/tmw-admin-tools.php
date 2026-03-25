@@ -1,5 +1,42 @@
 <?php
 
+
+if (!function_exists('tmw_banner_audit_enabled')) {
+  function tmw_banner_audit_enabled(): bool {
+    return defined('TMW_AUDIT_ENABLED') && TMW_AUDIT_ENABLED === true;
+  }
+}
+
+if (!function_exists('tmw_banner_audit_log')) {
+  /**
+   * Emit debug logs for banner save/audit flow.
+   *
+   * @param string               $event   Event label.
+   * @param array<string, mixed> $context Additional context payload.
+   */
+  function tmw_banner_audit_log(string $event, array $data = []): void {
+    if (!tmw_banner_audit_enabled()) {
+      return;
+    }
+
+    $post_id = 0;
+    if (isset($data['post_id'])) {
+      $post_id = absint($data['post_id']);
+      unset($data['post_id']);
+    }
+
+    $payload = [
+      'event' => $event,
+      'uri' => isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '',
+      'user_id' => get_current_user_id(),
+      'post_id' => $post_id,
+      'data' => $data,
+    ];
+
+    error_log('[TMW-BANNER-AUDIT] ' . wp_json_encode($payload)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+  }
+}
+
 /* ======================================================================
  * SLOT BANNER BACKFILL TOOL
  * ====================================================================== */
@@ -116,9 +153,28 @@ if (!function_exists('tmw_render_banner_position_box')) {
       ? (int) round(tmw_get_model_banner_focal_y($post->ID))
       : 50;
     $value = max(0, min(100, $value));
-    $banner   = function_exists('tmw_resolve_model_banner_url') ? tmw_resolve_model_banner_url($post->ID) : '';
+
+    // FIX (Bug 1): Load the current saved banner attachment ID and render
+    // the media picker + hidden input so the save_post_model hook can read it.
+    $banner_id  = absint(get_post_meta($post->ID, 'tmw_banner_image_id', true));
+    $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'large') : '';
 
     wp_nonce_field('tmw_save_banner_position', 'tmw_banner_position_nonce');
+
+    // ── Banner image picker ───────────────────────────────────────────────
+    echo '<div style="margin-bottom:14px;">';
+    echo '<strong>' . esc_html__('Banner Image', 'retrotube-child') . '</strong><br>';
+    echo '<input type="hidden" id="tmw_banner_image_id" name="tmw_banner_image_id" value="' . esc_attr((string) $banner_id) . '">';
+    echo '<button type="button" class="button" id="tmw-banner-pick-btn" style="margin-top:6px;">'
+       . esc_html__('Choose Banner Image', 'retrotube-child') . '</button> ';
+    echo '<button type="button" class="button" id="tmw-banner-remove-btn" style="margin-top:6px;">'
+       . esc_html__('Remove', 'retrotube-child') . '</button>';
+    echo '<div id="tmw-banner-thumb-wrap" style="margin-top:8px;">';
+    echo '<img id="tmw-banner-thumb" src="' . esc_url((string) $banner_url) . '" '
+       . 'style="max-width:100%;height:auto;' . ($banner_url ? '' : 'display:none;') . '" />';
+    echo '</div>';
+    echo '</div>';
+    // ─────────────────────────────────────────────────────────────────────
 
     ob_start();
     $rendered = function_exists('tmw_render_model_banner') ? tmw_render_model_banner($post->ID, 'backend') : false;
@@ -141,32 +197,64 @@ if (!function_exists('tmw_render_banner_position_box')) {
     ?>
     <script>
         (function(){
-            const slider = document.getElementById("tmwBannerSlider");
-            const previewWrap = document.getElementById("tmw-banner-preview") || document.getElementById("tmwBannerPreview");
-            const previewFrame = previewWrap ? (previewWrap.classList && previewWrap.classList.contains('tmw-banner-frame') ? previewWrap : previewWrap.querySelector('.tmw-banner-frame')) : null;
-            const val = document.getElementById("tmwBannerValue");
+            var slider       = document.getElementById('tmwBannerSlider');
+            var previewWrap  = document.getElementById('tmw-banner-preview') || document.getElementById('tmwBannerPreview');
+            var previewFrame = previewWrap
+                ? (previewWrap.classList.contains('tmw-banner-frame') ? previewWrap : previewWrap.querySelector('.tmw-banner-frame'))
+                : null;
+            var valSpan      = document.getElementById('tmwBannerValue');
 
             function applyFocus(value) {
-                if (!previewFrame) {
-                    return;
-                }
-                const img = previewFrame.querySelector('img');
-                if (!img || !img.style) {
-                    return;
-                }
-                const numeric = parseInt(value, 10);
-                const clamped = Math.max(0, Math.min(100, isNaN(numeric) ? 50 : numeric));
-                img.style.objectPosition = `50% ${clamped}%`;
-                if (val) {
-                    val.textContent = clamped;
-                }
+                if (!previewFrame) { return; }
+                var img = previewFrame.querySelector('img');
+                if (!img) { return; }
+                var n = parseInt(value, 10);
+                var c = Math.max(0, Math.min(100, isNaN(n) ? 50 : n));
+                img.style.objectPosition = '50% ' + c + '%';
+                if (valSpan) { valSpan.textContent = c; }
             }
 
             if (slider) {
-                slider.addEventListener("input", function(e){
-                    applyFocus(e.target.value);
-                });
+                slider.addEventListener('input', function(e){ applyFocus(e.target.value); });
                 applyFocus(slider.value);
+            }
+
+            // FIX (Bug 1): Media picker wiring for the banner image button.
+            var pickBtn   = document.getElementById('tmw-banner-pick-btn');
+            var removeBtn = document.getElementById('tmw-banner-remove-btn');
+            var hiddenId  = document.getElementById('tmw_banner_image_id');
+            var thumb     = document.getElementById('tmw-banner-thumb');
+
+            if (pickBtn && typeof wp !== 'undefined' && wp.media) {
+                pickBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var frame = wp.media({
+                        title:    'Select Banner Image',
+                        button:   { text: 'Use this image' },
+                        multiple: false,
+                        library:  { type: 'image' }
+                    });
+                    frame.on('select', function() {
+                        var att = frame.state().get('selection').first().toJSON();
+                        if (!att || !att.id) { return; }
+                        var url = (att.sizes && att.sizes.large && att.sizes.large.url)
+                            ? att.sizes.large.url
+                            : (att.sizes && att.sizes.full && att.sizes.full.url)
+                                ? att.sizes.full.url
+                                : (att.url || '');
+                        hiddenId.value = att.id;
+                        if (thumb) { thumb.src = url; thumb.style.display = ''; }
+                    });
+                    frame.open();
+                });
+            }
+
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    hiddenId.value = '0';
+                    if (thumb) { thumb.src = ''; thumb.style.display = 'none'; }
+                });
             }
         })();
     </script>
@@ -180,34 +268,103 @@ add_action('add_meta_boxes', function () {
 });
 
 add_action('save_post_model', function ($post_id) {
-  if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-    return;
-  }
+  if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
+  if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) { return; }
+  if (!current_user_can('edit_post', $post_id)) { return; }
 
-  if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
-    return;
-  }
-
-  if (!isset($_POST['tmw_banner_position_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['tmw_banner_position_nonce'])), 'tmw_save_banner_position')) {
-    return;
-  }
-
-  if (!current_user_can('edit_post', $post_id)) {
-    return;
-  }
-
-  if (isset($_POST['banner_focal_y'])) {
-    $value = wp_unslash($_POST['banner_focal_y']);
-    $value = is_numeric($value) ? (float) $value : 50;
-    if ($value < 0) {
-      $value = 0;
+  // Focal Y — only if nonce present (classic metabox form POST).
+  if (
+    isset($_POST['tmw_banner_position_nonce']) &&
+    wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['tmw_banner_position_nonce'])), 'tmw_save_banner_position')
+  ) {
+    if (isset($_POST['banner_focal_y'])) {
+      $value = wp_unslash($_POST['banner_focal_y']);
+      $value = is_numeric($value) ? (float) $value : 50;
+      $value = max(0.0, min(100.0, $value));
+      update_post_meta($post_id, '_banner_focal_y', $value);
     }
-    if ($value > 100) {
-      $value = 100;
+
+    // Banner image — only act when the field was actually submitted.
+    if (isset($_POST['tmw_banner_image_id'])) {
+      $attachment_id = absint(wp_unslash($_POST['tmw_banner_image_id']));
+
+      if ($attachment_id > 0) {
+        update_post_meta($post_id, 'tmw_banner_image_id', $attachment_id);
+        update_post_meta($post_id, 'banner_image', $attachment_id);
+      } else {
+        delete_post_meta($post_id, 'tmw_banner_image_id');
+        delete_post_meta($post_id, 'banner_image');
+      }
+
+      tmw_banner_audit_log('save_post_model', [
+        'post_id' => $post_id,
+        'banner_id_posted' => $attachment_id,
+        'banner_image_meta_after' => get_post_meta($post_id, 'banner_image', true),
+        'tmw_banner_image_id_meta_after' => get_post_meta($post_id, 'tmw_banner_image_id', true),
+      ]);
     }
-    update_post_meta($post_id, '_banner_focal_y', $value);
   }
 });
+
+// REST save (Gutenberg) — sync banner_image ID whenever tmw_banner_image_id is in the payload.
+// FIX (Bug 2): Gutenberg always sends 0 for meta it does not manage. We must
+// read the attachment ID from $request_meta (the value the user actually sent),
+// NOT from get_post_meta() (which already shows the 0 Gutenberg just wrote).
+// If the request value is 0, bail out entirely — never delete existing data.
+add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
+  $post_id = (int) $post->ID;
+  $request_meta = (array) ($request->get_param('meta') ?: []);
+  $meta_keys = array_keys($request_meta);
+
+  tmw_banner_audit_log('rest_after_insert_model_request', [
+    'post_id' => $post_id,
+    'creating' => $creating,
+    'request_meta_keys' => $meta_keys,
+    'request_tmw_banner_image_id' => $request_meta['tmw_banner_image_id'] ?? null,
+  ]);
+
+  if (!array_key_exists('tmw_banner_image_id', $request_meta)) {
+    return;
+  }
+
+  // FIX (Bug 2): Use the value from the request, not from the DB.
+  // Gutenberg sends 0 when it has no knowledge of the field — treat 0 as "no change".
+  $attachment_id = absint($request_meta['tmw_banner_image_id']);
+
+  if ($attachment_id <= 0) {
+    // Gutenberg sent 0: do NOT wipe an existing banner. Leave meta untouched.
+    tmw_banner_audit_log('rest_after_insert_model_skipped', [
+      'post_id' => $post_id,
+      'reason' => 'request value is 0 — preserving existing banner meta',
+    ]);
+    return;
+  }
+
+  update_post_meta($post_id, 'tmw_banner_image_id', $attachment_id);
+  update_post_meta($post_id, 'banner_image', $attachment_id);
+
+  tmw_banner_audit_log('rest_after_insert_model_applied', [
+    'post_id' => $post_id,
+    'resolved_tmw_banner_image_id' => $attachment_id,
+    'banner_image_meta_after' => get_post_meta($post_id, 'banner_image', true),
+    'tmw_banner_image_id_meta_after' => get_post_meta($post_id, 'tmw_banner_image_id', true),
+  ]);
+}, 10, 3);
+
+
+
+add_action('admin_enqueue_scripts', function ($hook) {
+  if (!in_array($hook, ['post.php', 'post-new.php'], true)) {
+    return;
+  }
+
+  $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+  if (!$screen || ($screen->post_type ?? '') !== 'model') {
+    return;
+  }
+
+  wp_enqueue_media();
+}, 20);
 
 /* ======================================================================
  * FEATURED MODELS SHORTCODE META BOX
@@ -520,4 +677,3 @@ add_filter( 'pings_open', function( $open, $post_id ) {
     }
     return $open;
 }, 99, 2 );
-
