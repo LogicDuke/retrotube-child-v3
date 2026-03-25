@@ -154,27 +154,7 @@ if (!function_exists('tmw_render_banner_position_box')) {
       : 50;
     $value = max(0, min(100, $value));
 
-    // FIX (Bug 1): Load the current saved banner attachment ID and render
-    // the media picker + hidden input so the save_post_model hook can read it.
-    $banner_id  = absint(get_post_meta($post->ID, 'tmw_banner_image_id', true));
-    $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'large') : '';
-
     wp_nonce_field('tmw_save_banner_position', 'tmw_banner_position_nonce');
-
-    // ── Banner image picker ───────────────────────────────────────────────
-    echo '<div style="margin-bottom:14px;">';
-    echo '<strong>' . esc_html__('Banner Image', 'retrotube-child') . '</strong><br>';
-    echo '<input type="hidden" id="tmw_banner_image_id" name="tmw_banner_image_id" value="' . esc_attr((string) $banner_id) . '">';
-    echo '<button type="button" class="button" id="tmw-banner-pick-btn" style="margin-top:6px;">'
-       . esc_html__('Choose Banner Image', 'retrotube-child') . '</button> ';
-    echo '<button type="button" class="button" id="tmw-banner-remove-btn" style="margin-top:6px;">'
-       . esc_html__('Remove', 'retrotube-child') . '</button>';
-    echo '<div id="tmw-banner-thumb-wrap" style="margin-top:8px;">';
-    echo '<img id="tmw-banner-thumb" src="' . esc_url((string) $banner_url) . '" '
-       . 'style="max-width:100%;height:auto;' . ($banner_url ? '' : 'display:none;') . '" />';
-    echo '</div>';
-    echo '</div>';
-    // ─────────────────────────────────────────────────────────────────────
 
     ob_start();
     $rendered = function_exists('tmw_render_model_banner') ? tmw_render_model_banner($post->ID, 'backend') : false;
@@ -217,44 +197,6 @@ if (!function_exists('tmw_render_banner_position_box')) {
             if (slider) {
                 slider.addEventListener('input', function(e){ applyFocus(e.target.value); });
                 applyFocus(slider.value);
-            }
-
-            // FIX (Bug 1): Media picker wiring for the banner image button.
-            var pickBtn   = document.getElementById('tmw-banner-pick-btn');
-            var removeBtn = document.getElementById('tmw-banner-remove-btn');
-            var hiddenId  = document.getElementById('tmw_banner_image_id');
-            var thumb     = document.getElementById('tmw-banner-thumb');
-
-            if (pickBtn && typeof wp !== 'undefined' && wp.media) {
-                pickBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    var frame = wp.media({
-                        title:    'Select Banner Image',
-                        button:   { text: 'Use this image' },
-                        multiple: false,
-                        library:  { type: 'image' }
-                    });
-                    frame.on('select', function() {
-                        var att = frame.state().get('selection').first().toJSON();
-                        if (!att || !att.id) { return; }
-                        var url = (att.sizes && att.sizes.large && att.sizes.large.url)
-                            ? att.sizes.large.url
-                            : (att.sizes && att.sizes.full && att.sizes.full.url)
-                                ? att.sizes.full.url
-                                : (att.url || '');
-                        hiddenId.value = att.id;
-                        if (thumb) { thumb.src = url; thumb.style.display = ''; }
-                    });
-                    frame.open();
-                });
-            }
-
-            if (removeBtn) {
-                removeBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    hiddenId.value = '0';
-                    if (thumb) { thumb.src = ''; thumb.style.display = 'none'; }
-                });
             }
         })();
     </script>
@@ -307,10 +249,6 @@ add_action('save_post_model', function ($post_id) {
 });
 
 // REST save (Gutenberg) — sync banner_image ID whenever tmw_banner_image_id is in the payload.
-// FIX (Bug 2): Gutenberg always sends 0 for meta it does not manage. We must
-// read the attachment ID from $request_meta (the value the user actually sent),
-// NOT from get_post_meta() (which already shows the 0 Gutenberg just wrote).
-// If the request value is 0, bail out entirely — never delete existing data.
 add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
   $post_id = (int) $post->ID;
   $request_meta = (array) ($request->get_param('meta') ?: []);
@@ -327,21 +265,14 @@ add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $
     return;
   }
 
-  // FIX (Bug 2): Use the value from the request, not from the DB.
-  // Gutenberg sends 0 when it has no knowledge of the field — treat 0 as "no change".
-  $attachment_id = absint($request_meta['tmw_banner_image_id']);
+  $attachment_id = absint(get_post_meta($post_id, 'tmw_banner_image_id', true));
 
-  if ($attachment_id <= 0) {
-    // Gutenberg sent 0: do NOT wipe an existing banner. Leave meta untouched.
-    tmw_banner_audit_log('rest_after_insert_model_skipped', [
-      'post_id' => $post_id,
-      'reason' => 'request value is 0 — preserving existing banner meta',
-    ]);
-    return;
+  if ($attachment_id > 0) {
+    update_post_meta($post_id, 'banner_image', $attachment_id);
+  } else {
+    delete_post_meta($post_id, 'banner_image');
+    delete_post_meta($post_id, 'tmw_banner_image_id');
   }
-
-  update_post_meta($post_id, 'tmw_banner_image_id', $attachment_id);
-  update_post_meta($post_id, 'banner_image', $attachment_id);
 
   tmw_banner_audit_log('rest_after_insert_model_applied', [
     'post_id' => $post_id,

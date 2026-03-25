@@ -314,61 +314,26 @@ add_action('save_post_model', function (int $post_id): void {
   }
 }, 30);
 
-// FIX (Bug 3): Gutenberg always sends 0 for meta keys it does not manage in
-// its block editor store. This hook previously read those zeros from post meta
-// (already overwritten by the REST save) and propagated them to term meta,
-// silently wiping any flipbox images set on the taxonomy term edit page.
-//
-// The fix: read values from $request->get_param('meta') directly (the actual
-// values the user sent), skip image ID keys whose request value is 0 (means
-// Gutenberg sent a placeholder, not a real removal), and never write image IDs
-// to term meta unless the value is a valid attachment ID (> 0).
 add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
-  $post_id      = (int) $post->ID;
-  $term         = tmw_model_flipbox_metabox_get_term($post_id);
-  $request_meta = (array) ($request->get_param('meta') ?: []);
-
+  $post_id = (int) $post->ID;
+  $term = tmw_model_flipbox_metabox_get_term($post_id);
   $post_meta_snapshot = [];
   $term_meta_snapshot = [];
 
-  $image_keys = ['tmw_flip_front_id', 'tmw_flip_back_id'];
-
   foreach (tmw_model_flipbox_metabox_keys() as $meta_key) {
+    $raw_value = get_post_meta($post_id, $meta_key, true);
 
-    // If this key was not sent in the REST request at all, skip it entirely
-    // so we never overwrite data that was set via the classic term-edit form.
-    if (!array_key_exists($meta_key, $request_meta)) {
-      continue;
-    }
-
-    // For image ID keys, use the request value directly.
-    // If Gutenberg sent 0, treat it as "no change" and leave both post meta
-    // and term meta untouched — do NOT write 0.
-    if (in_array($meta_key, $image_keys, true)) {
-      $sanitized_value = tmw_model_flipbox_sanitize_absint($request_meta[$meta_key]);
-
-      if ($sanitized_value <= 0) {
-        // 0 from Gutenberg = placeholder, not an intentional removal. Skip.
-        tmw_flipbox_audit_log('rest_after_insert_model:skip-zero-image-id', [
-          'post_id' => $post_id,
-          'key'     => $meta_key,
-        ]);
-        continue;
-      }
+    if (in_array($meta_key, ['tmw_flip_front_id', 'tmw_flip_back_id'], true)) {
+      $sanitized_value = tmw_model_flipbox_sanitize_absint($raw_value);
     } elseif (strpos($meta_key, 'zoom') !== false) {
-      $sanitized_value = tmw_model_flipbox_sanitize_zoom($request_meta[$meta_key]);
+      $sanitized_value = tmw_model_flipbox_sanitize_zoom($raw_value);
     } else {
-      $sanitized_value = tmw_model_flipbox_sanitize_pos($request_meta[$meta_key]);
+      $sanitized_value = tmw_model_flipbox_sanitize_pos($raw_value);
     }
 
     update_post_meta($post_id, $meta_key, $sanitized_value);
 
-    // Only propagate to term meta for image IDs that are actually set (> 0).
-    // For position/zoom keys, always propagate so term-level defaults stay in sync.
-    $is_image_key     = in_array($meta_key, $image_keys, true);
-    $should_write_term = $term && (!$is_image_key || $sanitized_value > 0);
-
-    if ($should_write_term) {
+    if ($term) {
       update_term_meta((int) $term->term_id, $meta_key, $sanitized_value);
     }
 
@@ -380,7 +345,7 @@ add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $
     'post_id' => $post_id,
     'creating' => $creating,
     'current_user_can_edit_post' => current_user_can('edit_post', $post_id),
-    'request_meta' => $request_meta,
+    'request_meta' => $request->get_param('meta'),
     'persisted_post_meta' => $post_meta_snapshot,
     'persisted_term_meta' => $term_meta_snapshot,
     'term_id' => $term ? (int) $term->term_id : 0,
