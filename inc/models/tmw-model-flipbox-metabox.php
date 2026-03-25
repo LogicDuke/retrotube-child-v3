@@ -71,19 +71,10 @@ if (!function_exists('tmw_model_flipbox_metabox_get_term')) {
    * @return WP_Term|null
    */
   function tmw_model_flipbox_metabox_get_term(int $post_id): ?WP_Term {
-    if (function_exists('tmw_resolve_model_term_for_post')) {
-      $resolved = tmw_resolve_model_term_for_post($post_id);
-      if ($resolved instanceof WP_Term) {
-        return $resolved;
-      }
-    }
-
     $terms = wp_get_post_terms($post_id, 'models', ['fields' => 'all']);
     if (is_wp_error($terms) || empty($terms) || !($terms[0] instanceof WP_Term)) {
       return null;
     }
-
-    update_term_meta((int) $terms[0]->term_id, 'tmw_model_post_id', $post_id);
 
     return $terms[0];
   }
@@ -376,16 +367,10 @@ add_action('admin_enqueue_scripts', function ($hook): void {
   }
 
   wp_enqueue_media();
-
-  $script_deps = ['jquery'];
-  if (wp_script_is('wp-data', 'registered')) {
-    $script_deps[] = 'wp-data';
-  }
-
   wp_enqueue_script(
     'tmw-model-flipbox-metabox',
     get_stylesheet_directory_uri() . '/js/tmw-model-flipbox-metabox.js',
-    $script_deps,
+    ['jquery'],
     (string) filemtime(get_stylesheet_directory() . '/js/tmw-model-flipbox-metabox.js'),
     true
   );

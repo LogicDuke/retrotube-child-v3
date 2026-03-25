@@ -1,6 +1,7 @@
 /**
- * Flipbox metabox JS.
- * Keeps the classic metabox fields and Gutenberg REST meta in sync.
+ * Flipbox metabox JS — media picker only.
+ * Save is handled by WordPress classic metabox form POST (save_post hook).
+ * No Gutenberg store interaction needed.
  */
 (function ($) {
   'use strict';
@@ -33,35 +34,6 @@
     $(sel).text(v + unit);
   }
 
-  function canSyncMetaToEditor() {
-    return typeof wp !== 'undefined' &&
-      wp.data &&
-      wp.data.select &&
-      wp.data.dispatch &&
-      wp.data.select('core/editor') &&
-      wp.data.dispatch('core/editor');
-  }
-
-  function collectMeta() {
-    return {
-      tmw_flip_front_id: parseInt($('#tmw_flip_front_id').val(), 10) || 0,
-      tmw_flip_back_id: parseInt($('#tmw_flip_back_id').val(), 10) || 0,
-      tmw_flip_pos_front: sanitizePos($('#tmw_flip_pos_front').val()),
-      tmw_flip_pos_back: sanitizePos($('#tmw_flip_pos_back').val()),
-      tmw_flip_zoom_front: sanitizeZoom($('#tmw_flip_zoom_front').val()),
-      tmw_flip_zoom_back: sanitizeZoom($('#tmw_flip_zoom_back').val())
-    };
-  }
-
-  function syncMetaToEditor() {
-    if (!canSyncMetaToEditor()) { return; }
-
-    var currentMeta = wp.data.select('core/editor').getEditedPostAttribute('meta') || {};
-    wp.data.dispatch('core/editor').editPost({
-      meta: $.extend({}, currentMeta, collectMeta())
-    });
-  }
-
   function openMediaFrame($trigger) {
     if (typeof wp === 'undefined' || !wp.media) { return; }
 
@@ -83,11 +55,10 @@
         ? att.sizes.full.url
         : (att.url || '');
 
-      // Keep the classic metabox field and REST meta in sync.
+      // Set the hidden input — this value is submitted with the metabox form POST.
       $('#' + targetId).val(att.id);
       updatePreviewImage(side, url);
       applyPreview(side);
-      syncMetaToEditor();
     });
 
     frame.open();
@@ -99,8 +70,6 @@
       updateReadout($('#tmw_flip_zoom_' + side));
       applyPreview(side);
     });
-
-    syncMetaToEditor();
 
     $('.tmw-flipbox-pick').on('click', function (e) {
       e.preventDefault();
@@ -114,7 +83,6 @@
       $('#' + tid).val('0');
       updatePreviewImage(side, '');
       applyPreview(side);
-      syncMetaToEditor();
     });
 
     $('#tmw_flip_pos_front,#tmw_flip_zoom_front,#tmw_flip_pos_back,#tmw_flip_zoom_back')
@@ -125,7 +93,6 @@
         $i.val(isZoom ? v.toFixed(1) : v);
         updateReadout($i);
         applyPreview($i.data('side'));
-        syncMetaToEditor();
       });
   });
 

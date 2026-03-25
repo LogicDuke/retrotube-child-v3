@@ -50,7 +50,6 @@ require_once get_stylesheet_directory() . '/inc/tmw-seo-model-bridge.php';
 require_once get_stylesheet_directory() . '/inc/tmw-model-schema.php';
 require_once get_stylesheet_directory() . '/inc/tmw-video-schema.php';
 require_once get_stylesheet_directory() . '/inc/tmw-video-opengraph.php';
-require_once get_stylesheet_directory() . '/inc/tmw-video-thumbnail-compat.php';
 require_once get_stylesheet_directory() . '/inc/tmw-archive-schema.php';
 require_once __DIR__ . '/inc/tmw-tml-bridge.php';
 require_once TMW_CHILD_PATH . '/inc/frontend/tmw-voting.php';
