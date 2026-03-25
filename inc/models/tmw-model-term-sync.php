@@ -19,10 +19,12 @@ if (!function_exists('tmw_sync_model_term_to_post')) {
     $desc     = term_description($term_id, 'models');
     $content  = wp_strip_all_tags($desc);
     $existing = get_page_by_path($slug, OBJECT, 'model');
+    $post_id  = 0;
 
     if ($existing instanceof WP_Post) {
+      $post_id      = (int) $existing->ID;
       $needs_update = false;
-      $update_data  = ['ID' => $existing->ID];
+      $update_data  = ['ID' => $post_id];
 
       if ($title && $existing->post_title !== $title) {
         $update_data['post_title'] = $title;
@@ -40,21 +42,27 @@ if (!function_exists('tmw_sync_model_term_to_post')) {
           return;
         }
       }
+    } else {
+      $post_id = wp_insert_post([
+        'post_title'   => $title,
+        'post_name'    => $slug,
+        'post_content' => $content,
+        'post_type'    => 'model',
+        'post_status'  => 'publish',
+      ]);
 
+      if (is_wp_error($post_id)) {
+        return;
+      }
+    }
+
+    $post_id = (int) $post_id;
+    if ($post_id <= 0) {
       return;
     }
 
-    $post_id = wp_insert_post([
-      'post_title'   => $title,
-      'post_name'    => $slug,
-      'post_content' => $content,
-      'post_type'    => 'model',
-      'post_status'  => 'publish',
-    ]);
-
-    if (is_wp_error($post_id)) {
-      return;
-    }
+    wp_set_post_terms($post_id, [(int) $term_id], 'models', false);
+    update_term_meta((int) $term_id, 'tmw_model_post_id', $post_id);
   }
 }
 
@@ -79,3 +87,45 @@ add_action('init', function () {
 
   update_option('tmw_models_synced', true);
 }, 20);
+
+
+add_action('save_post_model', function ($post_id) {
+  if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+    return;
+  }
+
+  if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+    return;
+  }
+
+  if (!current_user_can('edit_post', $post_id)) {
+    return;
+  }
+
+  if (function_exists('tmw_resolve_model_term_for_post')) {
+    tmw_resolve_model_term_for_post((int) $post_id);
+  }
+}, 5);
+
+add_action('init', function () {
+  if (get_option('tmw_model_post_terms_relinked_v1')) {
+    return;
+  }
+
+  $post_ids = get_posts([
+    'post_type'      => 'model',
+    'fields'         => 'ids',
+    'posts_per_page' => -1,
+    'no_found_rows'  => true,
+  ]);
+
+  if (is_array($post_ids)) {
+    foreach ($post_ids as $post_id) {
+      if (function_exists('tmw_resolve_model_term_for_post')) {
+        tmw_resolve_model_term_for_post((int) $post_id);
+      }
+    }
+  }
+
+  update_option('tmw_model_post_terms_relinked_v1', 1);
+}, 30);

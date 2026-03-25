@@ -65,9 +65,12 @@ if (!function_exists('tmw_resolve_model_banner_url')) {
     }
 
     if ($term_id === 0 && $post_id) {
-      $terms = wp_get_post_terms($post_id, 'models');
-      if (!is_wp_error($terms) && !empty($terms)) {
-        $term_id = (int) $terms[0]->term_id;
+      $resolved_term = function_exists('tmw_resolve_model_term_for_post')
+        ? tmw_resolve_model_term_for_post($post_id)
+        : null;
+
+      if ($resolved_term instanceof WP_Term) {
+        $term_id = (int) $resolved_term->term_id;
       }
     }
 
@@ -383,12 +386,14 @@ if (!function_exists('tmw_get_model_banner_offset_y')) {
 
     if (!$has_meta) {
       // Try taxonomy ACF offset
-      $terms = wp_get_post_terms($post_id, 'models');
-      if (!is_wp_error($terms) && !empty($terms) && function_exists('get_field')) {
-        $term_id = (int)$terms[0]->term_id;
+      $term = function_exists('tmw_resolve_model_term_for_post')
+        ? tmw_resolve_model_term_for_post($post_id)
+        : null;
+      if ($term instanceof WP_Term && function_exists('get_field')) {
+        $term_id = (int) $term->term_id;
         $acf_y   = get_field('banner_offset_y', 'models_' . $term_id);
         if (is_numeric($acf_y)) {
-          $y = (int)$acf_y;
+          $y = (int) $acf_y;
         }
       }
     }
@@ -415,9 +420,11 @@ if (!function_exists('tmw_get_model_banner_height')) {
   function tmw_get_model_banner_height($post_id) {
     $height = 350;
 
-    $terms = wp_get_post_terms($post_id, 'models');
-    if (!is_wp_error($terms) && !empty($terms) && function_exists('get_field')) {
-      $term_id = (int)$terms[0]->term_id;
+    $term = function_exists('tmw_resolve_model_term_for_post')
+      ? tmw_resolve_model_term_for_post($post_id)
+      : null;
+    if ($term instanceof WP_Term && function_exists('get_field')) {
+      $term_id = (int) $term->term_id;
       $pick    = get_field('banner_height', 'models_' . $term_id);
 
       if (is_array($pick) && isset($pick['value'])) {
