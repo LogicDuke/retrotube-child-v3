@@ -8,6 +8,45 @@
  * Unified banner resolver used by both admin preview and the front-end.
  * Priority: post-level ACF/legacy sources -> taxonomy ACF & feed helpers -> featured image fallback.
  */
+if (!function_exists('tmw_model_banner_field_to_url')) {
+  /**
+   * Normalize ACF or legacy banner field values into a URL.
+   *
+   * @param mixed $value Raw field value.
+   * @return string
+   */
+  function tmw_model_banner_field_to_url($value): string {
+    if (is_array($value)) {
+      if (!empty($value['url']) && filter_var($value['url'], FILTER_VALIDATE_URL)) {
+        return (string) $value['url'];
+      }
+
+      $attachment_id = absint($value['ID'] ?? ($value['id'] ?? 0));
+      if ($attachment_id > 0) {
+        $maybe = wp_get_attachment_url($attachment_id);
+        if (is_string($maybe) && filter_var($maybe, FILTER_VALIDATE_URL)) {
+          return $maybe;
+        }
+      }
+
+      return '';
+    }
+
+    if (is_string($value) && filter_var($value, FILTER_VALIDATE_URL)) {
+      return $value;
+    }
+
+    if (is_numeric($value)) {
+      $maybe = wp_get_attachment_url((int) $value);
+      if (is_string($maybe) && filter_var($maybe, FILTER_VALIDATE_URL)) {
+        return $maybe;
+      }
+    }
+
+    return '';
+  }
+}
+
 if (!function_exists('tmw_resolve_model_banner_url')) {
   /**
    * Resolve the banner URL for a model post or term.
@@ -31,13 +70,17 @@ if (!function_exists('tmw_resolve_model_banner_url')) {
     $banner_url = '';
 
     if ($post_id) {
-      if (function_exists('get_field')) {
-        $banner_field = get_field('banner_image', $post_id);
-        if (is_array($banner_field) && !empty($banner_field['url'])) {
-          $banner_url = (string) $banner_field['url'];
-        } elseif (is_string($banner_field) && filter_var($banner_field, FILTER_VALIDATE_URL)) {
-          $banner_url = $banner_field;
+      $override_id = (int) get_post_meta($post_id, 'tmw_banner_image_id', true);
+      if ($override_id > 0) {
+        $maybe = wp_get_attachment_url($override_id);
+        if (is_string($maybe) && filter_var($maybe, FILTER_VALIDATE_URL)) {
+          $banner_url = $maybe;
         }
+      }
+
+      if (empty($banner_url) && function_exists('get_field')) {
+        $banner_field = get_field('banner_image', $post_id);
+        $banner_url = tmw_model_banner_field_to_url($banner_field);
       }
 
       if (empty($banner_url)) {
@@ -65,9 +108,18 @@ if (!function_exists('tmw_resolve_model_banner_url')) {
     }
 
     if ($term_id === 0 && $post_id) {
-      $terms = wp_get_post_terms($post_id, 'models');
-      if (!is_wp_error($terms) && !empty($terms)) {
-        $term_id = (int) $terms[0]->term_id;
+      if (function_exists('tmw_resolve_models_term_for_post')) {
+        $term = tmw_resolve_models_term_for_post($post_id);
+        if ($term instanceof WP_Term) {
+          $term_id = (int) $term->term_id;
+        }
+      }
+
+      if ($term_id === 0) {
+        $terms = wp_get_post_terms($post_id, 'models');
+        if (!is_wp_error($terms) && !empty($terms)) {
+          $term_id = (int) $terms[0]->term_id;
+        }
       }
     }
 
@@ -84,9 +136,7 @@ if (!function_exists('tmw_resolve_model_banner_url')) {
 
       if (empty($banner_url) && $source === 'upload' && function_exists('get_field')) {
         $img = get_field('banner_image', $acf_id);
-        if (is_array($img) && !empty($img['url'])) {
-          $banner_url = (string) $img['url'];
-        }
+        $banner_url = tmw_model_banner_field_to_url($img);
       }
 
       if (empty($banner_url) && function_exists('tmw_aw_find_by_candidates')) {
@@ -111,9 +161,8 @@ if (!function_exists('tmw_resolve_model_banner_url')) {
 
       if (empty($banner_url) && function_exists('get_field')) {
         $img = get_field('banner_image', $acf_id);
-        if (is_array($img) && !empty($img['url'])) {
-          $banner_url = (string) $img['url'];
-        } elseif (!$banner_url) {
+        $banner_url = tmw_model_banner_field_to_url($img);
+        if (!$banner_url) {
           $maybe_url = get_field('banner_image_url', $acf_id);
           if (is_string($maybe_url) && filter_var($maybe_url, FILTER_VALIDATE_URL)) {
             $banner_url = $maybe_url;

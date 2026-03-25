@@ -248,7 +248,7 @@ add_action('save_post_model', function ($post_id) {
   }
 });
 
-// REST save (Gutenberg) — sync banner_image ID whenever tmw_banner_image_id is in the payload.
+// REST save (Gutenberg) - sync banner_image only when a real attachment ID was submitted.
 add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
   $post_id = (int) $post->ID;
   $request_meta = (array) ($request->get_param('meta') ?: []);
@@ -265,14 +265,19 @@ add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $
     return;
   }
 
-  $attachment_id = absint(get_post_meta($post_id, 'tmw_banner_image_id', true));
-
-  if ($attachment_id > 0) {
-    update_post_meta($post_id, 'banner_image', $attachment_id);
-  } else {
-    delete_post_meta($post_id, 'banner_image');
-    delete_post_meta($post_id, 'tmw_banner_image_id');
+  $attachment_id = absint($request_meta['tmw_banner_image_id']);
+  if ($attachment_id <= 0) {
+    tmw_banner_audit_log('rest_after_insert_model_skipped_empty_banner', [
+      'post_id' => $post_id,
+      'request_tmw_banner_image_id' => $request_meta['tmw_banner_image_id'],
+      'banner_image_meta_after' => get_post_meta($post_id, 'banner_image', true),
+      'tmw_banner_image_id_meta_after' => get_post_meta($post_id, 'tmw_banner_image_id', true),
+    ]);
+    return;
   }
+
+  update_post_meta($post_id, 'tmw_banner_image_id', $attachment_id);
+  update_post_meta($post_id, 'banner_image', $attachment_id);
 
   tmw_banner_audit_log('rest_after_insert_model_applied', [
     'post_id' => $post_id,

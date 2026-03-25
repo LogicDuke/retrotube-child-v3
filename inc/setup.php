@@ -1,8 +1,19 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!function_exists('tmw_child_thumbnail_post_types')) {
+    /**
+     * Post types that should always support featured images.
+     *
+     * @return string[]
+     */
+    function tmw_child_thumbnail_post_types() {
+        return ['post', 'page', 'model', 'video', 'videos', 'wpsc-video', 'wp-script-video', 'wpws_video'];
+    }
+}
+
 add_action('after_setup_theme', function () {
-    // Keep existing supports; do NOT add new.
+    add_theme_support('post-thumbnails', tmw_child_thumbnail_post_types());
     add_image_size('tmw-model-hero-land', 1440, 810, true);
     add_image_size('tmw-model-hero-banner', 1200, 350, true);
     add_image_size('tmw-hero-mobile', 480, 270, true);
@@ -24,3 +35,12 @@ add_filter('get_the_category', function ($categories) {
 
     return $categories;
 });
+
+
+add_action('init', function () {
+    foreach (tmw_child_thumbnail_post_types() as $post_type) {
+        if (post_type_exists($post_type)) {
+            add_post_type_support($post_type, 'thumbnail');
+        }
+    }
+}, 20);

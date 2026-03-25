@@ -1,13 +1,55 @@
 /**
- * Flipbox metabox JS — media picker only.
- * Save is handled by WordPress classic metabox form POST (save_post hook).
- * No Gutenberg store interaction needed.
+ * Flipbox metabox JS.
+ * Keeps the classic hidden inputs updated and mirrors the same values into
+ * the block editor meta store so Gutenberg REST saves persist the images.
  */
 (function ($) {
   'use strict';
 
   function sanitizePos(v)  { var n = parseInt(v, 10);  return isNaN(n) ? 50 : Math.max(0,  Math.min(100, n)); }
   function sanitizeZoom(v) { var n = parseFloat(v);    return isNaN(n) ? 1  : Math.max(1,  Math.min(2.5, n)); }
+
+  function editorApi() {
+    if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch && wp.data.select) {
+      return wp;
+    }
+    if (window.parent && window.parent !== window && window.parent.wp && window.parent.wp.data && window.parent.wp.data.dispatch && window.parent.wp.data.select) {
+      return window.parent.wp;
+    }
+    return null;
+  }
+
+  function mediaApi() {
+    if (typeof wp !== 'undefined' && wp.media) {
+      return wp;
+    }
+    if (window.parent && window.parent !== window && window.parent.wp && window.parent.wp.media) {
+      return window.parent.wp;
+    }
+    return null;
+  }
+
+  function currentMeta() {
+    return {
+      tmw_flip_front_id:  parseInt($('#tmw_flip_front_id').val(), 10) || 0,
+      tmw_flip_back_id:   parseInt($('#tmw_flip_back_id').val(), 10) || 0,
+      tmw_flip_pos_front: sanitizePos($('#tmw_flip_pos_front').val()),
+      tmw_flip_pos_back:  sanitizePos($('#tmw_flip_pos_back').val()),
+      tmw_flip_zoom_front: parseFloat(sanitizeZoom($('#tmw_flip_zoom_front').val()).toFixed(1)),
+      tmw_flip_zoom_back:  parseFloat(sanitizeZoom($('#tmw_flip_zoom_back').val()).toFixed(1))
+    };
+  }
+
+  function syncMetaToEditor() {
+    var api = editorApi();
+    if (!api) { return; }
+
+    try {
+      api.data.dispatch('core/editor').editPost({ meta: currentMeta() });
+    } catch (err) {
+      // Classic editor or unavailable editor store.
+    }
+  }
 
   function getPreview(side) { return $('#tmw-flipbox-' + side + '-preview'); }
 
@@ -35,12 +77,13 @@
   }
 
   function openMediaFrame($trigger) {
-    if (typeof wp === 'undefined' || !wp.media) { return; }
+    var media = mediaApi();
+    if (!media) { return; }
 
     var targetId = $trigger.data('target');
     var side     = $trigger.data('side');
 
-    var frame = wp.media({
+    var frame = media.media({
       title:    'Select Image',
       button:   { text: 'Use image' },
       multiple: false,
@@ -59,6 +102,7 @@
       $('#' + targetId).val(att.id);
       updatePreviewImage(side, url);
       applyPreview(side);
+      syncMetaToEditor();
     });
 
     frame.open();
@@ -70,6 +114,8 @@
       updateReadout($('#tmw_flip_zoom_' + side));
       applyPreview(side);
     });
+
+    syncMetaToEditor();
 
     $('.tmw-flipbox-pick').on('click', function (e) {
       e.preventDefault();
@@ -83,6 +129,7 @@
       $('#' + tid).val('0');
       updatePreviewImage(side, '');
       applyPreview(side);
+      syncMetaToEditor();
     });
 
     $('#tmw_flip_pos_front,#tmw_flip_zoom_front,#tmw_flip_pos_back,#tmw_flip_zoom_back')
@@ -93,6 +140,7 @@
         $i.val(isZoom ? v.toFixed(1) : v);
         updateReadout($i);
         applyPreview($i.data('side'));
+        syncMetaToEditor();
       });
   });
 

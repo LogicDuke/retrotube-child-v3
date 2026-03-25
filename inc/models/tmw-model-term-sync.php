@@ -41,6 +41,10 @@ if (!function_exists('tmw_sync_model_term_to_post')) {
         }
       }
 
+      if (function_exists('tmw_bind_model_post_to_term')) {
+        tmw_bind_model_post_to_term((int) $existing->ID, $term);
+      }
+
       return;
     }
 
@@ -54,6 +58,10 @@ if (!function_exists('tmw_sync_model_term_to_post')) {
 
     if (is_wp_error($post_id)) {
       return;
+    }
+
+    if (function_exists('tmw_bind_model_post_to_term')) {
+      tmw_bind_model_post_to_term((int) $post_id, $term);
     }
   }
 }
@@ -79,3 +87,30 @@ add_action('init', function () {
 
   update_option('tmw_models_synced', true);
 }, 20);
+
+
+add_action('init', function () {
+  if (get_option('tmw_models_post_term_backfilled_v2')) {
+    return;
+  }
+
+  $terms = get_terms([
+    'taxonomy' => 'models',
+    'hide_empty' => false,
+    'fields' => 'all',
+  ]);
+
+  if (is_wp_error($terms)) {
+    return;
+  }
+
+  foreach ($terms as $term) {
+    if (!($term instanceof WP_Term)) {
+      continue;
+    }
+
+    tmw_sync_model_term_to_post((int) $term->term_id, (int) $term->term_taxonomy_id);
+  }
+
+  update_option('tmw_models_post_term_backfilled_v2', gmdate('c'));
+}, 25);

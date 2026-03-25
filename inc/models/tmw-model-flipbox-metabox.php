@@ -71,6 +71,13 @@ if (!function_exists('tmw_model_flipbox_metabox_get_term')) {
    * @return WP_Term|null
    */
   function tmw_model_flipbox_metabox_get_term(int $post_id): ?WP_Term {
+    if (function_exists('tmw_resolve_models_term_for_post')) {
+      $term = tmw_resolve_models_term_for_post($post_id);
+      if ($term instanceof WP_Term) {
+        return $term;
+      }
+    }
+
     $terms = wp_get_post_terms($post_id, 'models', ['fields' => 'all']);
     if (is_wp_error($terms) || empty($terms) || !($terms[0] instanceof WP_Term)) {
       return null;
@@ -317,11 +324,23 @@ add_action('save_post_model', function (int $post_id): void {
 add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $request, bool $creating): void {
   $post_id = (int) $post->ID;
   $term = tmw_model_flipbox_metabox_get_term($post_id);
+  $request_meta = (array) ($request->get_param('meta') ?: []);
+  $request_keys = array_values(array_intersect(tmw_model_flipbox_metabox_keys(), array_keys($request_meta)));
   $post_meta_snapshot = [];
   $term_meta_snapshot = [];
 
-  foreach (tmw_model_flipbox_metabox_keys() as $meta_key) {
-    $raw_value = get_post_meta($post_id, $meta_key, true);
+  if (empty($request_keys)) {
+    tmw_flipbox_audit_log('rest_after_insert_model:skip-no-request-meta', [
+      'post_id' => $post_id,
+      'creating' => $creating,
+      'request_meta' => $request->get_param('meta'),
+      'term_id' => $term ? (int) $term->term_id : 0,
+    ]);
+    return;
+  }
+
+  foreach ($request_keys as $meta_key) {
+    $raw_value = $request_meta[$meta_key];
 
     if (in_array($meta_key, ['tmw_flip_front_id', 'tmw_flip_back_id'], true)) {
       $sanitized_value = tmw_model_flipbox_sanitize_absint($raw_value);
@@ -336,7 +355,9 @@ add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $
     if ($term) {
       update_term_meta((int) $term->term_id, $meta_key, $sanitized_value);
     }
+  }
 
+  foreach (tmw_model_flipbox_metabox_keys() as $meta_key) {
     $post_meta_snapshot[$meta_key] = get_post_meta($post_id, $meta_key, true);
     $term_meta_snapshot[$meta_key] = $term ? get_term_meta((int) $term->term_id, $meta_key, true) : null;
   }
@@ -346,6 +367,7 @@ add_action('rest_after_insert_model', function (WP_Post $post, WP_REST_Request $
     'creating' => $creating,
     'current_user_can_edit_post' => current_user_can('edit_post', $post_id),
     'request_meta' => $request->get_param('meta'),
+    'request_keys' => $request_keys,
     'persisted_post_meta' => $post_meta_snapshot,
     'persisted_term_meta' => $term_meta_snapshot,
     'term_id' => $term ? (int) $term->term_id : 0,
