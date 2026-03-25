@@ -14,6 +14,15 @@ if (!function_exists('tmw_model_banner_meta_auth_callback')) {
   }
 }
 
+
+if (!function_exists('tmw_model_banner_sanitize_focal_y')) {
+  function tmw_model_banner_sanitize_focal_y($value): float {
+    $value = is_numeric($value) ? (float) $value : 50.0;
+
+    return max(0.0, min(100.0, $value));
+  }
+}
+
 add_action('init', function (): void {
   register_post_meta('model', 'tmw_banner_image_id', [
     'type' => 'integer',
@@ -30,6 +39,15 @@ add_action('init', function (): void {
     'show_in_rest' => true,
     'default' => 0,
     'sanitize_callback' => 'absint',
+    'auth_callback' => 'tmw_model_banner_meta_auth_callback',
+  ]);
+
+  register_post_meta('model', '_banner_focal_y', [
+    'type' => 'number',
+    'single' => true,
+    'show_in_rest' => true,
+    'default' => 50,
+    'sanitize_callback' => 'tmw_model_banner_sanitize_focal_y',
     'auth_callback' => 'tmw_model_banner_meta_auth_callback',
   ]);
 });

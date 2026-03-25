@@ -160,48 +160,40 @@ if (!function_exists('tmw_render_banner_position_box')) {
     $rendered = function_exists('tmw_render_model_banner') ? tmw_render_model_banner($post->ID, 'backend') : false;
     $markup   = ob_get_clean();
 
+    $current_attachment_id = (int) get_post_meta($post->ID, 'tmw_banner_image_id', true);
+    if ($current_attachment_id <= 0) {
+      $legacy_banner = get_post_meta($post->ID, 'banner_image', true);
+      $current_attachment_id = is_numeric($legacy_banner) ? (int) $legacy_banner : 0;
+    }
+
+    $current_attachment_url = $current_attachment_id > 0 ? wp_get_attachment_url($current_attachment_id) : '';
+    if (!is_string($current_attachment_url)) {
+      $current_attachment_url = '';
+    }
+
+    echo '<div class="tmw-banner-picker" style="margin:0 0 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">';
+    echo '<strong>' . esc_html__('Banner Image', 'retrotube-child') . '</strong>';
+    echo '<span id="tmw-banner-picker-label">' . esc_html($current_attachment_url ? __('Image selected', 'retrotube-child') : __('No image selected', 'retrotube-child')) . '</span>';
+    echo '<button type="button" class="button" id="tmw-banner-pick">' . esc_html__('Add Image', 'retrotube-child') . '</button>';
+    echo '<button type="button" class="button" id="tmw-banner-remove"' . ($current_attachment_url ? '' : ' style="display:none" disabled') . '>' . esc_html__('Remove Image', 'retrotube-child') . '</button>';
+    echo '<input type="hidden" id="tmw_banner_image_id" name="tmw_banner_image_id" value="' . esc_attr($current_attachment_id) . '">';
+    echo '<input type="hidden" id="tmw_banner_image_url" value="' . esc_attr($current_attachment_url) . '">';
+    echo '</div>';
+
     echo '<div id="tmw-banner-preview" class="tmw-banner-preview">';
     if ($rendered && $markup) {
       echo $markup; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+    } elseif ($current_attachment_url) {
+      echo '<div class="tmw-banner-frame backend"><img src="' . esc_url($current_attachment_url) . '" alt="' . esc_attr__('Banner preview', 'retrotube-child') . '" /></div>';
     }
     echo '</div>';
 
-    if (!$rendered) {
+    if (!$rendered && !$current_attachment_url) {
       echo '<p><em>' . esc_html__('No banner found. Assign a “Models” term with a banner in ACF, or set a featured image.', 'retrotube-child') . '</em></p>';
     }
 
-    echo '<input type="range" min="0" max="100" step="1" value="' . esc_attr($value) . '" id="tmwBannerSlider" class="tmw-slider" name="banner_focal_y">
-    <p><small>Vertical focus (%): <span id="tmwBannerValue">' . esc_html($value) . '</span> (0=top, 100=bottom)</small></p>';
-
-    ob_start();
-    ?>
-    <script>
-        (function(){
-            var slider       = document.getElementById('tmwBannerSlider');
-            var previewWrap  = document.getElementById('tmw-banner-preview') || document.getElementById('tmwBannerPreview');
-            var previewFrame = previewWrap
-                ? (previewWrap.classList.contains('tmw-banner-frame') ? previewWrap : previewWrap.querySelector('.tmw-banner-frame'))
-                : null;
-            var valSpan      = document.getElementById('tmwBannerValue');
-
-            function applyFocus(value) {
-                if (!previewFrame) { return; }
-                var img = previewFrame.querySelector('img');
-                if (!img) { return; }
-                var n = parseInt(value, 10);
-                var c = Math.max(0, Math.min(100, isNaN(n) ? 50 : n));
-                img.style.objectPosition = '50% ' + c + '%';
-                if (valSpan) { valSpan.textContent = c; }
-            }
-
-            if (slider) {
-                slider.addEventListener('input', function(e){ applyFocus(e.target.value); });
-                applyFocus(slider.value);
-            }
-        })();
-    </script>
-    <?php
-    echo ob_get_clean();
+    echo '<input type="range" min="0" max="100" step="1" value="' . esc_attr($value) . '" id="tmwBannerSlider" class="tmw-slider" name="banner_focal_y">';
+    echo '<p><small>Vertical focus (%): <span id="tmwBannerValue">' . esc_html($value) . '</span> (0=top, 100=bottom)</small></p>';
   }
 }
 

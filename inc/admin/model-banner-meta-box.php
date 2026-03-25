@@ -39,11 +39,8 @@ add_action('admin_enqueue_scripts', function ($hook) {
 
   if ($hook === 'term.php' && $screen && $screen->taxonomy === 'models') {
     $should_enqueue = true;
-  } elseif ($hook === 'post.php') {
-    $post_id = isset($_GET['post']) ? absint($_GET['post']) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-    if ($post_id && get_post_type($post_id) === 'model') {
-      $should_enqueue = true;
-    }
+  } elseif (($hook === 'post.php' || $hook === 'post-new.php') && $screen && ($screen->post_type ?? '') === 'model') {
+    $should_enqueue = true;
   }
 
   if (!$should_enqueue) {
@@ -56,5 +53,19 @@ add_action('admin_enqueue_scripts', function ($hook) {
 
   if (wp_style_is('tmw-banner-admin-align', 'registered')) {
     wp_enqueue_style('tmw-banner-admin-align');
+  }
+
+  if ($hook === 'post.php' || $hook === 'post-new.php') {
+    $script_path = get_stylesheet_directory() . '/js/tmw-model-banner-metabox.js';
+    if (file_exists($script_path)) {
+      wp_enqueue_media();
+      wp_enqueue_script(
+        'tmw-model-banner-metabox',
+        get_stylesheet_directory_uri() . '/js/tmw-model-banner-metabox.js',
+        ['jquery', 'wp-data'],
+        (string) filemtime($script_path),
+        true
+      );
+    }
   }
 });
