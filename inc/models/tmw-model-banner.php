@@ -298,27 +298,15 @@ if (!function_exists('tmw_render_model_banner')) {
       $use_picture   = $context === 'frontend' && is_singular('model');
 
       if ($use_picture) {
-        $desktop_data = $attachment_id ? wp_get_attachment_image_src($attachment_id, 'tmw-hero-desktop') : false;
-        if (!$desktop_data && $attachment_id) {
-          $desktop_data = wp_get_attachment_image_src($attachment_id, 'large');
-        }
-        if (!$desktop_data && $attachment_id) {
-          $desktop_data = wp_get_attachment_image_src($attachment_id, 'full');
-        }
+        // Use the original attachment or full-size source so the saved focal point
+        // is applied to the uncropped image. Hard-cropped intermediate sizes make
+        // the focus slider appear broken because WordPress pre-crops them first.
+        $desktop_data = $attachment_id ? wp_get_attachment_image_src($attachment_id, 'full') : false;
 
         $desktop_url    = is_array($desktop_data) && !empty($desktop_data[0]) ? $desktop_data[0] : $url;
         $desktop_width  = is_array($desktop_data) && !empty($desktop_data[1]) ? (int) $desktop_data[1] : (int) $dimensions['width'];
         $desktop_height = is_array($desktop_data) && !empty($desktop_data[2]) ? (int) $desktop_data[2] : (int) $dimensions['height'];
-
-        $mobile_data = $attachment_id ? wp_get_attachment_image_src($attachment_id, 'tmw-hero-mobile') : false;
-        if (!$mobile_data && $attachment_id) {
-          $mobile_data = wp_get_attachment_image_src($attachment_id, 'medium');
-        }
-        if (!$mobile_data) {
-          $mobile_data = $desktop_data;
-        }
-
-        $mobile_url = is_array($mobile_data) && !empty($mobile_data[0]) ? $mobile_data[0] : $desktop_url;
+        $mobile_url     = $desktop_url;
 
         $attrs = [
           'src'           => esc_url($desktop_url),
@@ -342,8 +330,8 @@ if (!function_exists('tmw_render_model_banner')) {
         echo '<div class="tmw-banner-container">';
         echo '  <div class="' . esc_attr(implode(' ', $classes)) . '">';
         echo '    <picture>';
-        if ($mobile_url) {
-          echo '      <source media="(max-width: 768px)" srcset="' . esc_url($mobile_url) . '" type="image/webp" />';
+        if ($mobile_url && $mobile_url !== $desktop_url) {
+          echo '      <source media="(max-width: 768px)" srcset="' . esc_url($mobile_url) . '" />';
         }
         echo '      <img' . $attr_html . ' />';
         echo '    </picture>';
@@ -362,34 +350,11 @@ if (!function_exists('tmw_render_model_banner')) {
         $attrs['loading'] = 'lazy';
 
         if ($attachment_id) {
-          $src_data = wp_get_attachment_image_src($attachment_id, $image_size);
+          $src_data = wp_get_attachment_image_src($attachment_id, 'full');
           if (is_array($src_data) && !empty($src_data[0])) {
             $attrs['src']    = esc_url($src_data[0]);
             $attrs['width']  = !empty($src_data[1]) ? (int) $src_data[1] : $attrs['width'];
             $attrs['height'] = !empty($src_data[2]) ? (int) $src_data[2] : $attrs['height'];
-          }
-
-          $meta = wp_get_attachment_metadata($attachment_id);
-          if (is_array($meta) && isset($meta['sizes'][$image_size])) {
-            $size_meta = $meta['sizes'][$image_size];
-
-            if (!empty($size_meta['width'])) {
-              $attrs['width'] = (int) $size_meta['width'];
-            }
-
-            if (!empty($size_meta['height'])) {
-              $attrs['height'] = (int) $size_meta['height'];
-            }
-          }
-
-          $srcset = wp_get_attachment_image_srcset($attachment_id, $image_size);
-          if ($srcset) {
-            $attrs['srcset'] = $srcset;
-          }
-
-          $sizes = wp_get_attachment_image_sizes($attachment_id, $image_size);
-          if ($sizes) {
-            $attrs['sizes'] = $sizes;
           }
         }
 

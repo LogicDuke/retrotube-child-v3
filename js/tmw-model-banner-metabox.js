@@ -26,41 +26,32 @@
     return null;
   }
 
+  function root() {
+    return $('#tmw-banner-metabox-root').first();
+  }
+
+  function field(selector) {
+    var $root = root();
+    if (!$root.length) {
+      return $();
+    }
+    return $root.find(selector).first();
+  }
+
   function sanitizeFocus(value) {
     var n = parseInt(value, 10);
     return isNaN(n) ? 50 : Math.max(0, Math.min(100, n));
   }
 
-  function metaboxRoot() {
-    var $root = $('#tmw-banner-metabox-root');
-    if ($root.length) {
-      return $root.first();
-    }
-
-    var $slider = $('#tmwBannerSlider').first();
-    if ($slider.length) {
-      var $fallback = $slider.closest('#model_banner_position, .postbox, .components-panel__body, .meta-box-sortables');
-      if ($fallback.length) {
-        return $fallback.first();
-      }
-    }
-
-    return $(document.body);
-  }
-
-  function scoped(selector) {
-    return metaboxRoot().find(selector).first();
-  }
-
   function getBannerId() {
-    return parseInt(scoped('[id="tmw_banner_image_id"]').val(), 10) || 0;
+    return parseInt(field('#tmw_banner_image_id').val(), 10) || 0;
   }
 
   function currentMeta() {
     return {
       tmw_banner_image_id: getBannerId(),
       banner_image: getBannerId(),
-      _banner_focal_y: sanitizeFocus(scoped('#tmwBannerSlider').val())
+      _banner_focal_y: sanitizeFocus(field('#tmwBannerSlider').val())
     };
   }
 
@@ -75,34 +66,39 @@
     }
   }
 
-  function stripDuplicateBannerUis() {
-    var $root = metaboxRoot();
+  function hideDuplicateBannerPickers() {
+    var $root = root();
+    if (!$root.length) {
+      return;
+    }
 
-    $('[id="tmw_banner_image_id"]').each(function () {
-      var $field = $(this);
-      if ($root.has($field).length) {
+    $('[id="tmw-banner-pick"]').each(function () {
+      var $el = $(this);
+      if ($root.has($el).length || $el.is($root.find('#tmw-banner-pick'))) {
         return;
       }
-      $field.prop('disabled', true);
+      var $row = $el.closest('.tmw-banner-picker');
+      if ($row.length) {
+        $row.hide();
+        return;
+      }
+      $el.closest('div, p').hide();
     });
 
-    $('.tmw-banner-picker').each(function () {
-      var $picker = $(this);
-      if ($root.has($picker).length) {
+    $('[id="tmw_banner_image_id"]').each(function () {
+      var $el = $(this);
+      if ($root.has($el).length || $el.is($root.find('#tmw_banner_image_id'))) {
         return;
       }
-
-      var $container = $picker.closest('.postbox, .components-panel__body, .components-base-control, .editor-post-taxonomies__hierarchical-terms-list');
-      if ($container.length) {
-        $container.hide();
-      } else {
-        $picker.hide();
+      var $row = $el.closest('.tmw-banner-picker');
+      if ($row.length) {
+        $row.hide();
       }
     });
   }
 
   function ensurePreviewFrame() {
-    var $wrap = scoped('#tmw-banner-preview');
+    var $wrap = field('#tmw-banner-preview');
     if (!$wrap.length) {
       return $();
     }
@@ -121,15 +117,10 @@
   }
 
   function updatePickerLabel(url) {
-    var $label = scoped('#tmw-banner-picker-label');
-    var $remove = scoped('#tmw-banner-remove');
+    var $label = field('#tmw-banner-picker-label');
     var hasUrl = !!url;
-    if ($label.length) {
-      $label.text(hasUrl ? 'Image selected' : 'No image selected');
-    }
-    if ($remove.length) {
-      $remove.prop('disabled', !hasUrl).toggle(hasUrl);
-    }
+    $label.text(hasUrl ? 'Image selected' : 'No image selected');
+    field('#tmw-banner-remove').prop('disabled', !hasUrl).toggle(hasUrl);
   }
 
   function applyPreview(url) {
@@ -147,22 +138,16 @@
     }
 
     updatePickerLabel(url);
-    applyFocus(scoped('#tmwBannerSlider').val());
+    applyFocus(field('#tmwBannerSlider').val());
   }
 
   function applyFocus(value) {
     var $frame = ensurePreviewFrame();
     var $img = $frame.find('img').first();
     var focus = sanitizeFocus(value);
-    var $slider = scoped('#tmwBannerSlider');
-    var $readout = scoped('#tmwBannerValue');
 
-    if ($slider.length) {
-      $slider.val(focus);
-    }
-    if ($readout.length) {
-      $readout.text(focus);
-    }
+    field('#tmwBannerSlider').val(focus);
+    field('#tmwBannerValue').text(focus);
 
     if ($img.length && $img.attr('src')) {
       $img.css('object-position', '50% ' + focus + '%');
@@ -172,18 +157,12 @@
   }
 
   function currentPreviewUrl() {
-    return scoped('[id="tmw_banner_image_url"]').val() || '';
+    return field('#tmw_banner_image_url').val() || '';
   }
 
   function setBanner(id, url) {
-    var $id = scoped('[id="tmw_banner_image_id"]');
-    var $url = scoped('[id="tmw_banner_image_url"]');
-    if ($id.length) {
-      $id.val(id > 0 ? id : 0);
-    }
-    if ($url.length) {
-      $url.val(url || '');
-    }
+    field('#tmw_banner_image_id').val(id > 0 ? id : 0);
+    field('#tmw_banner_image_url').val(url || '');
     applyPreview(url || '');
     syncMetaToEditor();
   }
@@ -214,24 +193,29 @@
   }
 
   $(function () {
-    stripDuplicateBannerUis();
+    var $root = root();
+    if (!$root.length) {
+      return;
+    }
 
-    scoped('#tmw-banner-pick').on('click', function (e) {
+    hideDuplicateBannerPickers();
+
+    field('#tmw-banner-pick').on('click', function (e) {
       e.preventDefault();
       openMediaFrame();
     });
 
-    scoped('#tmw-banner-remove').on('click', function (e) {
+    field('#tmw-banner-remove').on('click', function (e) {
       e.preventDefault();
       setBanner(0, '');
     });
 
-    scoped('#tmwBannerSlider').on('input change', function () {
+    field('#tmwBannerSlider').on('input change', function () {
       applyFocus($(this).val());
     });
 
     applyPreview(currentPreviewUrl());
-    applyFocus(scoped('#tmwBannerSlider').val());
+    applyFocus(field('#tmwBannerSlider').val());
     syncMetaToEditor();
   });
 })(jQuery);
