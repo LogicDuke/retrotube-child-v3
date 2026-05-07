@@ -154,9 +154,11 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
         ?>
 
         <?php
-        // === [TMW-FIX] TAGS SECTION - Collect from associated videos ===
+        // === [TMW-FIX] TAGS + CATEGORIES SECTION - Collect from associated videos ===
         $tmw_model_tags       = array();
         $tmw_model_tags_count = 0;
+        $tmw_model_categories = array();
+        $tmw_model_cats_count = 0;
 
         // Step 1: Get model info.
         $tmw_m_id   = get_the_ID();
@@ -184,24 +186,52 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
             wp_reset_postdata();
         }
 
-        // Step 3: Collect tags from each video.
+        // Step 3: Collect tags/categories from each video.
         if ( ! empty( $tmw_tag_videos ) && is_array( $tmw_tag_videos ) ) {
-            $collected = array();
+            $collected_tags       = array();
+            $collected_categories = array();
+            $default_category_id  = (int) get_option( 'default_category', 1 );
             foreach ( $tmw_tag_videos as $tv ) {
                 if ( ! $tv instanceof WP_Post ) { continue; }
+
                 $tv_tags = wp_get_post_terms( $tv->ID, 'post_tag' );
                 if ( ! is_wp_error( $tv_tags ) && ! empty( $tv_tags ) ) {
                     foreach ( $tv_tags as $vt ) {
-                        $collected[ $vt->term_id ] = $vt;
+                        $collected_tags[ $vt->term_id ] = $vt;
+                    }
+                }
+
+                $tv_categories = get_the_category( $tv->ID );
+                if ( ! is_wp_error( $tv_categories ) && ! empty( $tv_categories ) ) {
+                    foreach ( $tv_categories as $cat ) {
+                        if ( ! $cat instanceof WP_Term ) {
+                            continue;
+                        }
+
+                        if ( $cat->term_id === $default_category_id || $cat->slug === 'uncategorized' || $cat->count < 1 ) {
+                            continue;
+                        }
+
+                        $collected_categories[ $cat->term_id ] = $cat;
                     }
                 }
             }
-            if ( ! empty( $collected ) ) {
-                usort( $collected, static function( $a, $b ) {
+
+            if ( ! empty( $collected_tags ) ) {
+                usort( $collected_tags, static function( $a, $b ) {
                     return strcasecmp( $a->name, $b->name );
                 } );
-                $tmw_model_tags       = array_values( $collected );
+                $tmw_model_tags       = array_values( $collected_tags );
                 $tmw_model_tags_count = count( $tmw_model_tags );
+            }
+
+            if ( ! empty( $collected_categories ) ) {
+                usort( $collected_categories, static function( $a, $b ) {
+                    return strcasecmp( $a->name, $b->name );
+                } );
+
+                $tmw_model_categories = array_slice( array_values( $collected_categories ), 0, 20 );
+                $tmw_model_cats_count = count( $tmw_model_categories );
             }
         }
         ?>
@@ -226,6 +256,30 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
             <?php endif; ?>
         </div>
         <!-- === END TMW-TAGS === -->
+
+        <?php if ( $tmw_model_cats_count > 0 && is_array( $tmw_model_categories ) ) : ?>
+            <!-- === TMW-MODEL-CATEGORIES === -->
+            <div class="post-tags entry-tags tmw-model-tags tmw-video-categories">
+                <span class="tag-title">
+                    <i class="fa fa-tags" aria-hidden="true"></i>
+                    <?php echo esc_html__( 'Categories:', 'retrotube' ); ?>
+                </span>
+                <?php foreach ( $tmw_model_categories as $category ) : ?>
+                    <?php
+                    $category_link = get_term_link( $category );
+                    if ( is_wp_error( $category_link ) ) {
+                        continue;
+                    }
+                    ?>
+                    <a href="<?php echo esc_url( $category_link ); ?>"
+                       class="label"
+                       title="<?php echo esc_attr( $category->name ); ?>">
+                        <i class="fa fa-tag"></i><?php echo esc_html( $category->name ); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+            <!-- === END TMW-MODEL-CATEGORIES === -->
+        <?php endif; ?>
 
         <?php
         // === VIDEOS FEATURING MODEL ===
