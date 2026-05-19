@@ -78,7 +78,7 @@ if (!function_exists('tmw_render_home_accordion_block_v2')) {
 if (!function_exists('tmw_register_home_accordion_block_v2')) {
     function tmw_register_home_accordion_block_v2(): void {
         register_block_type('tmw/home-accordion', [
-            'api_version'     => 2,
+            'api_version'     => 3,
             'render_callback' => 'tmw_render_home_accordion_block_v2',
             'attributes'      => [
                 'title' => [
