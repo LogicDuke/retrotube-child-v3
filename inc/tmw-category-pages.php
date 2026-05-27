@@ -309,43 +309,34 @@ if (!function_exists('tmw_category_page_audit_resolve_post')) {
 }
 
 add_action('admin_bar_menu', function ($wp_admin_bar) {
-    if (!is_category() || !is_user_logged_in() || !current_user_can('manage_categories')) {
+    if (is_admin() || !is_user_logged_in() || !is_category()) {
         return;
     }
 
     $term = get_queried_object();
-    if (!$term instanceof WP_Term) {
+    if (!$term instanceof WP_Term || $term->taxonomy !== 'category') {
+        return;
+    }
+
+    $post = tmw_get_category_page_post($term);
+    if (!$post instanceof WP_Post) {
+        return;
+    }
+
+    if (!current_user_can('edit_post', $post->ID) && !current_user_can('manage_categories')) {
         return;
     }
 
     $node = $wp_admin_bar->get_node('edit');
-    $href = $node ? (string) $node->href : 'none';
-    $title = $node ? (string) $node->title : 'none';
-    $post = tmw_category_page_audit_resolve_post($term);
-    $post_id = $post instanceof WP_Post ? $post->ID : 0;
-    $current_url = (is_ssl() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? '');
-
-    tmw_category_page_audit_log_once(
-        'admin_bar_edit_node',
-        'admin_bar_edit_node href=' . $href . ' title=' . $title . ' term_id=' . $term->term_id . ' term_slug=' . $term->slug . ' post_id=' . $post_id . ' url=' . $current_url
-    );
-}, 999);
-
-add_filter('get_edit_term_link', function ($link, $term_id, $taxonomy, $object_type) {
-    if ($taxonomy !== 'category') {
-        return $link;
+    if (!$node) {
+        return;
     }
 
-    $is_category = is_category();
-    $is_frontend = !is_admin();
+    $node->href = admin_url('post.php?post=' . $post->ID . '&action=edit');
+    $node->title = esc_html__('Edit Category Page', 'retrotube-child');
 
-    tmw_category_page_audit_log_once(
-        'get_edit_term_link_' . (int) $term_id,
-        'get_edit_term_link term_id=' . (int) $term_id . ' taxonomy=' . $taxonomy . ' link=' . $link . ' is_category=' . ($is_category ? 'yes' : 'no') . ' is_frontend=' . ($is_frontend ? 'yes' : 'no')
-    );
-
-    return $link;
-}, 10, 4);
+    $wp_admin_bar->add_node((array) $node);
+}, 999);
 
 if (!function_exists('tmw_create_category_page_post')) {
     function tmw_create_category_page_post($category) {
@@ -450,45 +441,6 @@ add_action('category_edit_form_fields', function ($term) {
         </td>
     </tr>
     <?php
-});
-
-add_action('admin_init', function () {
-    global $pagenow;
-
-    if ($pagenow !== 'term.php') {
-        return;
-    }
-
-    $taxonomy = $_GET['taxonomy'] ?? '';
-    if ($taxonomy !== 'category') {
-        return;
-    }
-
-    $term_id = 0;
-    if (isset($_GET['tag_ID'])) {
-        $term_id = (int) $_GET['tag_ID'];
-    } elseif (isset($_GET['term_id'])) {
-        $term_id = (int) $_GET['term_id'];
-    }
-
-    if (!$term_id) {
-        return;
-    }
-
-    $term = get_term($term_id, 'category');
-    if (!$term instanceof WP_Term) {
-        return;
-    }
-
-    $post = tmw_category_page_audit_resolve_post($term);
-    $post_id = $post instanceof WP_Post ? $post->ID : 0;
-    $current_url = (is_ssl() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? '');
-    $would_redirect_to = $post_id ? admin_url('post.php?post=' . $post_id . '&action=edit') : 'none';
-
-    tmw_category_page_audit_log_once(
-        'term_php_access_' . $term->term_id,
-        'term_php_access term_id=' . $term->term_id . ' post_id=' . $post_id . ' url=' . $current_url . ' would_redirect_to=' . $would_redirect_to
-    );
 });
 
 add_action('admin_post_tmw_category_page_edit', function () {
