@@ -17,15 +17,19 @@ add_action('wp_enqueue_scripts', function () {
     }
 
     if ($get_flag === '1') {
-        setcookie(
-            'tmw_seo',
-            '1',
-            time() + 1800,
-            COOKIEPATH,
-            COOKIE_DOMAIN,
-            is_ssl(),
-            true
-        );
+        // Use the PHP 7.3+ array form so SameSite can be set explicitly.
+        // SameSite=Strict is correct here: this cookie only enables an
+        // admin-only debug overlay — no cross-site request needs to carry
+        // it, so blocking the browser from attaching it to any cross-origin
+        // navigation/subresource is purely upside.
+        setcookie('tmw_seo', '1', [
+            'expires'  => time() + 1800,
+            'path'     => COOKIEPATH,
+            'domain'   => COOKIE_DOMAIN,
+            'secure'   => is_ssl(),
+            'httponly' => true,
+            'samesite' => 'Strict',
+        ]);
         $_COOKIE['tmw_seo'] = '1';
         $cookie_flag = '1';
     }

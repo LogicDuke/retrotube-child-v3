@@ -3,6 +3,7 @@
 if (!defined('ABSPATH')) { exit; }
 
 require_once __DIR__ . '/inc/tmw-boot-guard.php';
+require_once __DIR__ . '/inc/tmw-auth-cookies.php';
 
 // [TMW-LINK-GUARD] loader (v3.6.2)
 // Remove legacy guards if Codex finds them:
