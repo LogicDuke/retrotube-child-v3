@@ -82,18 +82,26 @@ if (!function_exists('tmw_category_accordion_inject_should_run')) {
 }
 
 if (!function_exists('tmw_category_accordion_inject_get_native_description')) {
+    /**
+     * Return the native term description without the CPT append filter applied.
+     */
     function tmw_category_accordion_inject_get_native_description(WP_Term $term): string {
         $removed_term_filter = false;
+        $term_filter_priority = false;
 
-        if (function_exists('tmw_category_append_cpt_to_term_description') && has_filter('term_description', 'tmw_category_append_cpt_to_term_description') !== false) {
-            remove_filter('term_description', 'tmw_category_append_cpt_to_term_description', 19);
+        if (function_exists('tmw_category_append_cpt_to_term_description')) {
+            $term_filter_priority = has_filter('term_description', 'tmw_category_append_cpt_to_term_description');
+        }
+
+        if ($term_filter_priority !== false) {
+            remove_filter('term_description', 'tmw_category_append_cpt_to_term_description', $term_filter_priority);
             $removed_term_filter = true;
         }
 
         $description = term_description($term->term_id, 'category');
 
         if ($removed_term_filter) {
-            add_filter('term_description', 'tmw_category_append_cpt_to_term_description', 19, 3);
+            add_filter('term_description', 'tmw_category_append_cpt_to_term_description', $term_filter_priority, 3);
         }
 
         return is_string($description) ? trim($description) : '';
@@ -192,11 +200,13 @@ if (!function_exists('tmw_category_accordion_inject_render_markup')) {
 }
 
 if (!function_exists('tmw_category_accordion_inject_has_duplicate_marker')) {
+    /**
+     * Detect only proven accordion duplicates, not plain CPT content.
+     */
     function tmw_category_accordion_inject_has_duplicate_marker(string $buffer): bool {
         $needles = [
             'data-tmw-category-accordion="1"',
             'tmw-accordion--category-desc',
-            'tmw-category-page-content',
         ];
 
         foreach ($needles as $needle) {
@@ -209,31 +219,86 @@ if (!function_exists('tmw_category_accordion_inject_has_duplicate_marker')) {
     }
 }
 
-if (!function_exists('tmw_category_accordion_inject_find_anchor')) {
-    function tmw_category_accordion_inject_find_anchor(string $buffer) {
-        $grid_pos = false;
-        if (preg_match('~<article\b[^>]*(?:\bloop-video\b|\bthumb-block\b|\bpost-)~i', $buffer, $grid_match, PREG_OFFSET_CAPTURE)) {
-            $grid_pos = $grid_match[0][1];
+if (!function_exists('tmw_category_accordion_inject_find_balanced_div_end')) {
+    /**
+     * Find the end offset of a div container using simple tag-depth tracking.
+     */
+    function tmw_category_accordion_inject_find_balanced_div_end(string $buffer, int $open_pos) {
+        $cursor = $open_pos;
+        $depth = 0;
+
+        while (preg_match('~</?div\b[^>]*>~i', $buffer, $tag_match, PREG_OFFSET_CAPTURE, $cursor)) {
+            $tag = $tag_match[0][0];
+            $tag_pos = $tag_match[0][1];
+            $cursor = $tag_pos + strlen($tag);
+
+            if (stripos($tag, '</div') === 0) {
+                $depth--;
+            } else {
+                $depth++;
+            }
+
+            if ($depth === 0) {
+                return $cursor;
+            }
         }
 
-        if (!preg_match_all('~<div\b(?=[^>]*\btmw-title\b)[^>]*>.*?</div>~is', $buffer, $title_matches, PREG_OFFSET_CAPTURE)) {
+        return false;
+    }
+}
+
+if (!function_exists('tmw_category_accordion_inject_remove_existing_description')) {
+    /**
+     * Remove the known archive-description block before the grid to avoid duplicate SEO text.
+     */
+    function tmw_category_accordion_inject_remove_existing_description(string $buffer, int $grid_pos): string {
+        $before_grid = substr($buffer, 0, $grid_pos);
+        if (!preg_match_all('~<div\b(?=[^>]*\barchive-description\b)[^>]*>~i', $before_grid, $matches, PREG_OFFSET_CAPTURE)) {
+            return $buffer;
+        }
+
+        $last_match = end($matches[0]);
+        if (!is_array($last_match)) {
+            return $buffer;
+        }
+
+        $desc_start = (int) $last_match[1];
+        $desc_end = tmw_category_accordion_inject_find_balanced_div_end($buffer, $desc_start);
+        if ($desc_end === false || $desc_end > $grid_pos) {
+            tmw_category_accordion_inject_log('skipped reason=archive_description_not_safely_removable');
+            return $buffer;
+        }
+
+        return substr_replace($buffer, '', $desc_start, $desc_end - $desc_start);
+    }
+}
+
+if (!function_exists('tmw_category_accordion_inject_find_anchor')) {
+    /**
+     * Return the first grid offset after a valid title block, never a nested title offset.
+     */
+    function tmw_category_accordion_inject_find_anchor(string $buffer) {
+        if (!preg_match('~<article\b[^>]*(?:\bloop-video\b|\bthumb-block\b|\bpost-)~i', $buffer, $grid_match, PREG_OFFSET_CAPTURE)) {
             return false;
         }
 
-        foreach ($title_matches[0] as $title_match) {
-            $title_start = $title_match[1];
-            $title_end = $title_start + strlen($title_match[0]);
+        $grid_pos = $grid_match[0][1];
+        $before_grid = substr($buffer, 0, $grid_pos);
 
-            if ($grid_pos !== false && $title_end > $grid_pos) {
-                continue;
-            }
+        if (!preg_match_all('~<div\b(?=[^>]*\btmw-title\b)[^>]*>~i', $before_grid, $title_matches, PREG_OFFSET_CAPTURE)) {
+            return false;
+        }
 
-            if (stripos($title_match[0], 'tmw-title-text') === false && stripos($title_match[0], '<h1') === false) {
+        foreach (array_reverse($title_matches[0]) as $title_match) {
+            $title_start = (int) $title_match[1];
+            $title_region = substr($before_grid, $title_start);
+
+            if (stripos($title_region, 'tmw-title-text') === false && stripos($title_region, '<h1') === false) {
                 continue;
             }
 
             $GLOBALS['tmw_category_accordion_inject_anchor'] = 'tmw-title-after';
-            return $title_end;
+            return $grid_pos;
         }
 
         return false;
@@ -259,6 +324,24 @@ if (!function_exists('tmw_category_accordion_inject_into_buffer')) {
         $insert_pos = tmw_category_accordion_inject_find_anchor($buffer);
         if ($insert_pos === false) {
             tmw_category_accordion_inject_log('skipped reason=anchor_not_found');
+            return $buffer;
+        }
+
+        $buffer = tmw_category_accordion_inject_remove_existing_description($buffer, $insert_pos);
+        $insert_pos = tmw_category_accordion_inject_find_anchor($buffer);
+        if ($insert_pos === false) {
+            tmw_category_accordion_inject_log('skipped reason=anchor_not_found_after_description_cleanup');
+            return $buffer;
+        }
+
+        $pre_grid = substr($buffer, 0, $insert_pos);
+        if (strpos($pre_grid, 'tmw-category-page-content') !== false) {
+            tmw_category_accordion_inject_log('skipped reason=plain_cpt_content_before_grid');
+            return $buffer;
+        }
+
+        if (strpos($pre_grid, 'archive-description') !== false) {
+            tmw_category_accordion_inject_log('skipped reason=plain_archive_description_before_grid');
             return $buffer;
         }
 
