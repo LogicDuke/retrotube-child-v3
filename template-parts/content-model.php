@@ -157,8 +157,10 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
         // === [TMW-FIX] TAGS + CATEGORIES SECTION - Collect from associated videos ===
         $tmw_model_tags       = array();
         $tmw_model_tags_count = 0;
-        $tmw_model_categories = array();
-        $tmw_model_cats_count = 0;
+        $tmw_model_categories          = array();
+        $tmw_model_cats_count          = 0;
+        $tmw_original_tags_count       = 0;
+        $tmw_original_categories_count = 0;
 
         // Step 1: Get model info.
         $tmw_m_id   = get_the_ID();
@@ -227,16 +229,6 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
                     : array_slice( array_values( $collected_tags ), 0, 12 );
 
                 $tmw_model_tags_count = count( $tmw_model_tags );
-
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( sprintf(
-                        '[TMW-MODEL-TAGS-FILTER] model_post_id=%d original_tag_count=%d visible_tag_count=%d hidden_tag_count=%d',
-                        (int) $tmw_m_id,
-                        (int) $tmw_original_tags_count,
-                        (int) $tmw_model_tags_count,
-                        max( 0, (int) $tmw_original_tags_count - (int) $tmw_model_tags_count )
-                    ) );
-                }
             }
 
             if ( ! empty( $collected_categories ) ) {
@@ -244,8 +236,25 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
                     return strcasecmp( $a->name, $b->name );
                 } );
 
-                $tmw_model_categories = array_slice( array_values( $collected_categories ), 0, 20 );
+                $tmw_original_categories_count = count( $collected_categories );
+                $tmw_model_categories = function_exists( 'tmw_filter_visible_model_profile_categories' )
+                    ? tmw_filter_visible_model_profile_categories( array_values( $collected_categories ), 6 )
+                    : array_slice( array_values( $collected_categories ), 0, 6 );
+
                 $tmw_model_cats_count = count( $tmw_model_categories );
+            }
+
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( sprintf(
+                    '[TMW-MODEL-TAGS-FILTER-V2] model_post_id=%d original_tag_count=%d visible_tag_count=%d hidden_tag_count=%d original_category_count=%d visible_category_count=%d hidden_category_count=%d',
+                    (int) $tmw_m_id,
+                    (int) $tmw_original_tags_count,
+                    (int) $tmw_model_tags_count,
+                    max( 0, (int) $tmw_original_tags_count - (int) $tmw_model_tags_count ),
+                    (int) $tmw_original_categories_count,
+                    (int) $tmw_model_cats_count,
+                    max( 0, (int) $tmw_original_categories_count - (int) $tmw_model_cats_count )
+                ) );
             }
         }
         ?>
