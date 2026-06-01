@@ -569,6 +569,16 @@ if (!function_exists('tmw_category_append_cpt_to_archive_description')) {
             return $description;
         }
 
+        if (stripos($description, 'tmw-category-page-content') !== false) {
+            if (!$tmw_cat_page_injection_logged) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('[TMW-CAT-ACCORDION-FIX] term_id=' . $term->term_id . ' appended=0 reason=duplicate_guard');
+                }
+                $tmw_cat_page_injection_logged = true;
+            }
+            return $description;
+        }
+
         $post = tmw_get_category_page_post($term);
         if (!$post instanceof WP_Post || $post->post_status !== 'publish') {
             if (!$tmw_cat_page_injection_logged) {
