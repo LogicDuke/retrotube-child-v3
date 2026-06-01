@@ -133,6 +133,14 @@ if (!function_exists('tmw_filter_visible_model_profile_tags')) {
             'family roleplay',
             'lolita',
             'loli',
+            'cam porn',
+            'dildo',
+            'dirty',
+            'doggy',
+            'live sex',
+            'moaning',
+            'horny',
+            'machine',
         ], true);
 
         $hidden_patterns = [
@@ -203,6 +211,86 @@ if (!function_exists('tmw_filter_visible_model_profile_tags')) {
             },
             array_slice($visible, 0, $limit)
         );
+    }
+}
+
+
+if (!function_exists('tmw_filter_visible_model_profile_categories')) {
+    /**
+     * Filter related-video categories before rendering visible chips on model profiles.
+     *
+     * This helper is intentionally display-only: it preserves WP_Term objects and never
+     * mutates taxonomy terms or post relationships.
+     *
+     * @param array $categories Array of WP_Term category objects.
+     * @param int   $limit      Maximum visible categories to return.
+     * @return array Filtered array of WP_Term category objects.
+     */
+    function tmw_filter_visible_model_profile_categories(array $categories, int $limit = 6): array {
+        $limit = max(0, $limit);
+        if (0 === $limit || empty($categories)) {
+            return [];
+        }
+
+        $hidden_exact = array_fill_keys([
+            'live anal cams',
+            'live anal cam',
+            'big boob cam',
+            'big boob cams',
+            'big boobs cam',
+            'big boobs cams',
+        ], true);
+
+        $hidden_patterns = [
+            '/(?:anal|porn|sex|blowjob|cock|pussy|boobs?|nude|naked|xxx)/',
+        ];
+
+        $visible = [];
+        $seen_terms = [];
+
+        foreach ($categories as $category) {
+            if (!$category instanceof WP_Term) {
+                continue;
+            }
+
+            $term_id = isset($category->term_id) ? (int) $category->term_id : 0;
+            if ($term_id > 0 && isset($seen_terms[$term_id])) {
+                continue;
+            }
+
+            $normalized_name = tmw_normalize_model_profile_tag_value((string) $category->name);
+            $normalized_slug = tmw_normalize_model_profile_tag_value((string) $category->slug);
+
+            if ('' === $normalized_name && '' === $normalized_slug) {
+                continue;
+            }
+
+            $is_hidden = isset($hidden_exact[$normalized_name]) || isset($hidden_exact[$normalized_slug]);
+            if (!$is_hidden) {
+                foreach ($hidden_patterns as $pattern) {
+                    if (preg_match($pattern, $normalized_name) || preg_match($pattern, $normalized_slug)) {
+                        $is_hidden = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($is_hidden) {
+                continue;
+            }
+
+            if ($term_id > 0) {
+                $seen_terms[$term_id] = true;
+            }
+
+            $visible[] = $category;
+
+            if (count($visible) >= $limit) {
+                break;
+            }
+        }
+
+        return $visible;
     }
 }
 
