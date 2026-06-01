@@ -221,8 +221,22 @@ $is_rated_yet = ( $likes_count + $dislikes_count === 0 ) ? ' not-rated-yet' : ''
                 usort( $collected_tags, static function( $a, $b ) {
                     return strcasecmp( $a->name, $b->name );
                 } );
-                $tmw_model_tags       = array_values( $collected_tags );
+                $tmw_original_tags_count = count( $collected_tags );
+                $tmw_model_tags = function_exists( 'tmw_filter_visible_model_profile_tags' )
+                    ? tmw_filter_visible_model_profile_tags( array_values( $collected_tags ), 12 )
+                    : array_slice( array_values( $collected_tags ), 0, 12 );
+
                 $tmw_model_tags_count = count( $tmw_model_tags );
+
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( sprintf(
+                        '[TMW-MODEL-TAGS-FILTER] model_post_id=%d original_tag_count=%d visible_tag_count=%d hidden_tag_count=%d',
+                        (int) $tmw_m_id,
+                        (int) $tmw_original_tags_count,
+                        (int) $tmw_model_tags_count,
+                        max( 0, (int) $tmw_original_tags_count - (int) $tmw_model_tags_count )
+                    ) );
+                }
             }
 
             if ( ! empty( $collected_categories ) ) {
