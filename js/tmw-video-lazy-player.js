@@ -51,7 +51,19 @@
   }
 
   function isTbplyrScriptUrl(src) {
-    return typeof src === 'string' && /(?:^|\.)atwmcd\.com\/embed\/tbplyr/i.test(src);
+    if (typeof src !== 'string' || src === '') {
+      return false;
+    }
+
+    try {
+      var url = new URL(src, window.location.href);
+      var host = url.hostname.toLowerCase();
+
+      return (host === 'atwmcd.com' || host.endsWith('.atwmcd.com')) &&
+        url.pathname.indexOf('/embed/tbplyr') === 0;
+    } catch (error) {
+      return /(?:^|\/\/|\.)atwmcd\.com\/embed\/tbplyr/i.test(src);
+    }
   }
 
   function preloadTbplyrScript(container) {
