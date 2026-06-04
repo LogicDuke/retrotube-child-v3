@@ -79,6 +79,22 @@ add_action('wp_enqueue_scripts', function () {
     true
   );
 
+  // [TMW-VIDEO-LAZY] [TMW-EXT-PLAYER] [TMW-PAGESPEED] Defer AWE/LiveJasmin player boot until the visitor clicks the poster.
+  if (is_singular(['post', 'video'])) {
+    $video_lazy_script_path = get_stylesheet_directory() . '/js/tmw-video-lazy-player.js';
+    if (file_exists($video_lazy_script_path)) {
+      $video_lazy_script_ver = filemtime($video_lazy_script_path) ?: $child_version;
+      wp_enqueue_script(
+        'tmw-video-lazy-player',
+        get_stylesheet_directory_uri() . '/js/tmw-video-lazy-player.js',
+        [],
+        $video_lazy_script_ver,
+        true
+      );
+      wp_script_add_data('tmw-video-lazy-player', 'defer', true);
+    }
+  }
+
   $model_videos_path = get_stylesheet_directory() . '/assets/css/style.css';
   if (file_exists($model_videos_path)) {
     $model_videos_ver = filemtime($model_videos_path) ?: $child_version;

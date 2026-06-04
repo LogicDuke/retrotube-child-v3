@@ -1243,3 +1243,71 @@ footer#colophon.site-footer a[href*="/18-u-s-c-2257/"]:focus-visible {
     color: #f5c842;
     font-style: italic;
 }
+
+/* [TMW-VIDEO-LAZY] [TMW-EXT-PLAYER] [TMW-PAGESPEED] [TMW-AFFILIATE-TRACKING]
+   Child override keeps the existing .video-player wrapper but prevents
+   third-party player/video requests until explicit interaction. */
+.video-player .tmw-video-lazy-player {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+}
+
+.video-player .tmw-video-lazy-button {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: #000;
+  color: inherit;
+}
+
+.video-player .tmw-video-lazy-poster {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-player .tmw-video-lazy-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.video-player .tmw-video-lazy-play-icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.58);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.86);
+  position: relative;
+}
+
+.video-player .tmw-video-lazy-play-icon::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 52%;
+  transform: translate(-38%, -50%);
+  border-top: 18px solid transparent;
+  border-bottom: 18px solid transparent;
+  border-left: 28px solid #fff;
+}
+
+.video-player .tmw-video-lazy-button:focus-visible .tmw-video-lazy-play-icon {
+  outline: 3px solid #fff;
+  outline-offset: 6px;
+}
