@@ -50,6 +50,8 @@ if (!function_exists('tmw_video_lazy_extract_player_src')) {
         }
 
         $preferred_patterns = [
+            // [TMW-EXT-PLAYER] AWE tbplyr may be script-based, not iframe-based.
+            '/<script\b[^>]*\bsrc=\s*(["\']?)([^"\'\s>]+)\1/ix',
             '/<(?:iframe|embed)\b[^>]*\bsrc=\s*(["\']?)([^"\'\s>]+)\1/ix',
             '/<source\b[^>]*\bsrc=\s*(["\']?)([^"\'\s>]+)\1/ix',
             '/<video\b[^>]*\bsrc=\s*(["\']?)([^"\'\s>]+)\1/ix',
