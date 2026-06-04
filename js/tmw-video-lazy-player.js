@@ -43,67 +43,38 @@
     });
   }
 
-  function findPlayControl(container) {
-    return container.querySelector([
-      'button',
-      '[role="button"]',
-      '.play',
-      '.play-button',
-      '[class*="play"]',
-      '[id*="play"]'
-    ].join(','));
+  function startInjectedPlayer(container) {
+    // [TMW-VIDEO-LAZY] [TMW-PLAYER-AUTOSTART] Native videos can still honor
+    // the same activation; cross-origin provider controls must rely on their
+    // own autoplay hint and remain manually usable if autoplay is ignored.
+    playNativeVideos(container);
   }
 
-  function clickPlayControl(control) {
-    if (!control) {
+  function isTbplyrScriptUrl(src) {
+    return typeof src === 'string' && /(?:^|\.)atwmcd\.com\/embed\/tbplyr/i.test(src);
+  }
+
+  function preloadTbplyrScript(container) {
+    if (!container || container.getAttribute('data-tmw-video-preloaded') === '1') {
       return;
     }
 
+    var playerSrc = container.getAttribute('data-player-src') || '';
+    if (!isTbplyrScriptUrl(playerSrc)) {
+      return;
+    }
+
+    container.setAttribute('data-tmw-video-preloaded', '1');
+
     try {
-      if (typeof control.click === 'function') {
-        control.click();
-        return;
-      }
-
-      control.dispatchEvent(new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window
-      }));
+      var preload = document.createElement('link');
+      preload.rel = 'preload';
+      preload.as = 'script';
+      preload.href = playerSrc;
+      document.head.appendChild(preload);
     } catch (error) {
-      // [TMW-PLAYER-AUTOSTART] Ignore external control errors; the loaded player remains clickable.
+      // [TMW-PLAYER-AUTOSTART] Preload is only a best-effort user-interaction hint.
     }
-  }
-
-  function startInjectedPlayer(container) {
-    var retryDelays = [0, 250, 500, 1000];
-    var clickedControl = false;
-
-    function attemptStart() {
-      // [TMW-VIDEO-LAZY] [TMW-PLAYER-AUTOSTART] Only invoked from an explicit placeholder activation.
-      playNativeVideos(container);
-
-      if (clickedControl) {
-        return;
-      }
-
-      var control = findPlayControl(container);
-      if (!control) {
-        return;
-      }
-
-      clickedControl = true;
-      clickPlayControl(control);
-    }
-
-    retryDelays.forEach(function (delay) {
-      if (delay === 0) {
-        attemptStart();
-        return;
-      }
-
-      window.setTimeout(attemptStart, delay);
-    });
   }
 
   function loadPlayer(container, shouldAutoStart) {
@@ -143,6 +114,19 @@
     event.preventDefault();
     loadPlayer(container, true);
   }
+
+  document.addEventListener('pointerdown', function (event) {
+    if (!event.target || typeof event.target.closest !== 'function') {
+      return;
+    }
+
+    var trigger = event.target.closest('[data-tmw-video-lazy-trigger]');
+    if (!trigger) {
+      return;
+    }
+
+    preloadTbplyrScript(trigger.closest('[data-tmw-video-lazy="1"]'));
+  }, false);
 
   document.addEventListener('click', handleActivation, false);
   document.addEventListener('keydown', function (event) {
