@@ -79,7 +79,7 @@ add_action('wp_enqueue_scripts', function () {
     true
   );
 
-  // [TMW-VIDEO-LAZY] [TMW-EXT-PLAYER] [TMW-PAGESPEED] Defer AWE/LiveJasmin player boot until the visitor clicks the poster.
+  // [TMW-VIDEO-LAZY] [TMW-EXT-PLAYER] [TMW-PAGESPEED] Defer AWE/LiveJasmin player boot until the visitor shows intent to watch.
   if (is_singular(['post', 'video'])) {
     $video_lazy_script_path = get_stylesheet_directory() . '/js/tmw-video-lazy-player.js';
     if (file_exists($video_lazy_script_path)) {

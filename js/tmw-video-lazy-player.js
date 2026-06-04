@@ -1,6 +1,9 @@
 (function () {
   'use strict';
 
+  var lazySelector = '[data-tmw-video-lazy="1"]';
+  var triggerSelector = '[data-tmw-video-lazy-trigger]';
+
   function decodeMarkup(payload) {
     try {
       return window.atob(payload || '');
@@ -24,30 +27,50 @@
     });
   }
 
-  function playNativeVideos(container) {
-    var videos = container.querySelectorAll('video');
-
-    videos.forEach(function (video) {
-      if (typeof video.play !== 'function') {
-        return;
-      }
-
-      try {
-        var playResult = video.play();
-        if (playResult && typeof playResult.catch === 'function') {
-          playResult.catch(function () {});
-        }
-      } catch (error) {
-        // [TMW-PLAYER-AUTOSTART] External/browser playback blocks should leave the player visible and usable.
-      }
-    });
+  function isLoaded(container) {
+    return container && container.getAttribute('data-tmw-video-loaded') === '1';
   }
 
-  function startInjectedPlayer(container) {
-    // [TMW-VIDEO-LAZY] [TMW-PLAYER-AUTOSTART] Native videos can still honor
-    // the same activation; cross-origin provider controls must rely on their
-    // own autoplay hint and remain manually usable if autoplay is ignored.
-    playNativeVideos(container);
+  function isLoading(container) {
+    return container && container.getAttribute('data-tmw-video-loading') === '1';
+  }
+
+  function setLoadingState(container) {
+    var trigger = container.querySelector(triggerSelector);
+    var overlay = container.querySelector('.tmw-video-lazy-overlay');
+
+    container.setAttribute('data-tmw-video-loading', '1');
+
+    if (trigger) {
+      trigger.setAttribute('aria-label', 'Loading video player…');
+      trigger.setAttribute('aria-busy', 'true');
+    }
+
+    if (overlay && !overlay.querySelector('.tmw-video-lazy-loading-text')) {
+      var loadingText = document.createElement('span');
+      loadingText.className = 'tmw-video-lazy-loading-text';
+      loadingText.textContent = 'Loading video player…';
+      overlay.appendChild(loadingText);
+    }
+  }
+
+  function findFirstFocusable(container) {
+    return container.querySelector('a[href], button:not([disabled]), iframe, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+  }
+
+  function focusInjectedPlayer(container) {
+    var focusTarget = findFirstFocusable(container);
+
+    if (!focusTarget) {
+      focusTarget = container;
+      if (!focusTarget.hasAttribute('tabindex')) {
+        focusTarget.setAttribute('tabindex', '-1');
+      }
+    }
+
+    if (typeof focusTarget.focus === 'function') {
+      focusTarget.focus({ preventScroll: true });
+    }
   }
 
   function isTbplyrScriptUrl(src) {
@@ -67,7 +90,7 @@
   }
 
   function preloadTbplyrScript(container) {
-    if (!container || container.getAttribute('data-tmw-video-preloaded') === '1') {
+    if (!container || isLoaded(container) || isLoading(container) || container.getAttribute('data-tmw-video-preloaded') === '1') {
       return;
     }
 
@@ -85,12 +108,25 @@
       preload.href = playerSrc;
       document.head.appendChild(preload);
     } catch (error) {
-      // [TMW-PLAYER-AUTOSTART] Preload is only a best-effort user-interaction hint.
+      // [TMW-VIDEO-LAZY] Focus warmup is best-effort and must not affect activation.
     }
   }
 
-  function loadPlayer(container, shouldAutoStart) {
-    if (!container || container.getAttribute('data-tmw-video-loaded') === '1') {
+  function loadPlayer(container, options) {
+    options = options || {};
+
+    if (!container) {
+      return;
+    }
+
+    if (isLoaded(container)) {
+      if (options.focusAfterLoad) {
+        focusInjectedPlayer(container);
+      }
+      return;
+    }
+
+    if (isLoading(container)) {
       return;
     }
 
@@ -99,46 +135,88 @@
       return;
     }
 
+    setLoadingState(container);
     container.setAttribute('data-tmw-video-loaded', '1');
     container.innerHTML = markup;
     rehydrateScripts(container);
+    container.removeAttribute('data-tmw-video-loading');
 
-    if (shouldAutoStart) {
-      startInjectedPlayer(container);
+    if (options.focusAfterLoad) {
+      focusInjectedPlayer(container);
     }
   }
 
-  function handleActivation(event) {
-    if (!event.target || typeof event.target.closest !== 'function') {
-      return;
+  function getLazyContainerFromTarget(target) {
+    if (!target || typeof target.closest !== 'function') {
+      return null;
     }
 
-    var trigger = event.target.closest('[data-tmw-video-lazy-trigger]');
+    return target.closest(lazySelector);
+  }
+
+  function getTriggerContainerFromTarget(target) {
+    if (!target || typeof target.closest !== 'function') {
+      return null;
+    }
+
+    var trigger = target.closest(triggerSelector);
     if (!trigger) {
-      return;
+      return null;
     }
 
-    var container = trigger.closest('[data-tmw-video-lazy="1"]');
+    return trigger.closest(lazySelector);
+  }
+
+  function handleActivation(event) {
+    var container = getTriggerContainerFromTarget(event.target);
     if (!container) {
       return;
     }
 
     event.preventDefault();
-    loadPlayer(container, true);
+    loadPlayer(container, { focusAfterLoad: event.type === 'keydown' });
   }
 
-  document.addEventListener('pointerdown', function (event) {
-    if (!event.target || typeof event.target.closest !== 'function') {
+  function handlePointerIntent(event) {
+    var container = getLazyContainerFromTarget(event.target);
+    if (!container) {
       return;
     }
 
-    var trigger = event.target.closest('[data-tmw-video-lazy-trigger]');
-    if (!trigger) {
+    if (event.pointerType && event.pointerType === 'mouse') {
       return;
     }
 
-    preloadTbplyrScript(trigger.closest('[data-tmw-video-lazy="1"]'));
+    loadPlayer(container);
+  }
+
+  document.addEventListener('mouseover', function (event) {
+    var container = getLazyContainerFromTarget(event.target);
+    if (!container) {
+      return;
+    }
+
+    if (event.relatedTarget && container.contains(event.relatedTarget)) {
+      return;
+    }
+
+    loadPlayer(container);
   }, false);
+
+  document.addEventListener('focus', function (event) {
+    var container = getTriggerContainerFromTarget(event.target);
+    if (!container) {
+      return;
+    }
+
+    preloadTbplyrScript(container);
+  }, true);
+
+  document.addEventListener('pointerdown', handlePointerIntent, false);
+
+  document.addEventListener('touchstart', function (event) {
+    loadPlayer(getLazyContainerFromTarget(event.target));
+  }, { passive: true });
 
   document.addEventListener('click', handleActivation, false);
   document.addEventListener('keydown', function (event) {
