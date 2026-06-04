@@ -74,43 +74,6 @@ if (!function_exists('tmw_video_lazy_extract_player_src')) {
     }
 }
 
-if (!function_exists('tmw_video_lazy_add_tbplyr_autoplay')) {
-    /**
-     * Add the provider autoplay hint to script-based AWE tbplyr markup only.
-     *
-     * [TMW-PLAYER-AUTOSTART] The external player is loaded after the initial
-     * click, often inside a cross-origin iframe, so parent-page synthetic clicks
-     * cannot reliably start playback. Passing the provider-supported autoplay
-     * hint in the deferred script URL gives first-click playback a chance while
-     * keeping the original extracted player source unchanged.
-     *
-     * @param string $markup Parent player markup after paywall safety checks.
-     * @return string
-     */
-    function tmw_video_lazy_add_tbplyr_autoplay(string $markup): string {
-        if ($markup === '' || stripos($markup, 'atwmcd.com/embed/tbplyr') === false) {
-            return $markup;
-        }
-
-        $updated_markup = preg_replace_callback(
-            '~(<script\b[^>]*\bsrc\s*=\s*)(["\']?)(https://atwmcd\.com/embed/tbplyr/[^\s>"\']+)(\2)~i',
-            static function (array $matches): string {
-                $url = $matches[3];
-
-                if (preg_match('~(?:[?&]|&amp;)autoplay=~i', $url)) {
-                    return $matches[0];
-                }
-
-                $separator = (strpos($url, '?') === false) ? '?' : '&';
-
-                return $matches[1] . $matches[2] . $url . $separator . 'autoplay=1' . $matches[4];
-            },
-            $markup
-        );
-
-        return is_string($updated_markup) ? $updated_markup : $markup;
-    }
-}
 
 if (!function_exists('tmw_video_lazy_is_external_player')) {
     /**
@@ -163,11 +126,10 @@ if (!$is_external_player || $player_src === '' || $parent_player_markup === '') 
 endif;
 
 $poster_url = tmw_video_lazy_get_poster_url($post_id);
-$autostart_player_markup = tmw_video_lazy_add_tbplyr_autoplay($parent_player_markup);
-$player_markup_payload = base64_encode($autostart_player_markup);
+$player_markup_payload = base64_encode($parent_player_markup);
 $placeholder_id = 'tmw-video-lazy-player-' . (int) $post_id;
 ?>
-<!-- [TMW-VIDEO-LAZY] [TMW-EXT-PLAYER] [TMW-PAGESPEED] [TMW-AFFILIATE-TRACKING] External player deferred until click. -->
+<!-- [TMW-VIDEO-LAZY] [TMW-EXT-PLAYER] [TMW-PAGESPEED] [TMW-AFFILIATE-TRACKING] External player deferred until viewer intent. -->
 <div class="video-player">
     <div
         id="<?php echo esc_attr($placeholder_id); ?>"
