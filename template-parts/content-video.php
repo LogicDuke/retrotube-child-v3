@@ -24,7 +24,7 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
         );
         ?>
 
-        <?php get_template_part( 'template-parts/content', 'video-player' ); ?>
+        <?php require get_stylesheet_directory() . '/template-parts/content-video-player.php'; ?>
 
         <?php if ( get_post_meta( $post->ID, 'unique_ad_under_player', true ) != '' ) : ?>
             <div class="happy-under-player">
