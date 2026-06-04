@@ -141,7 +141,7 @@ $placeholder_id = 'tmw-video-lazy-player-' . (int) $post_id;
         <button
             type="button"
             class="tmw-video-lazy-button"
-            aria-label="<?php echo esc_attr__('Play video', 'retrotube-child'); ?>"
+            aria-label="<?php echo esc_attr__('Load video player', 'retrotube-child'); ?>"
             data-tmw-video-lazy-trigger
         >
             <?php if ($poster_url !== '') : ?>
