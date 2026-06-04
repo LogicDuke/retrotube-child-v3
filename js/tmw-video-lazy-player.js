@@ -27,10 +27,12 @@
     });
   }
 
-  function isLoadedOrLoading(container) {
-    return !container ||
-      container.getAttribute('data-tmw-video-loaded') === '1' ||
-      container.getAttribute('data-tmw-video-loading') === '1';
+  function isLoaded(container) {
+    return container && container.getAttribute('data-tmw-video-loaded') === '1';
+  }
+
+  function isLoading(container) {
+    return container && container.getAttribute('data-tmw-video-loading') === '1';
   }
 
   function setLoadingState(container) {
@@ -52,8 +54,79 @@
     }
   }
 
-  function loadPlayer(container) {
-    if (isLoadedOrLoading(container)) {
+  function findFirstFocusable(container) {
+    return container.querySelector('a[href], button:not([disabled]), iframe, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+  }
+
+  function focusInjectedPlayer(container) {
+    var focusTarget = findFirstFocusable(container);
+
+    if (!focusTarget) {
+      focusTarget = container;
+      if (!focusTarget.hasAttribute('tabindex')) {
+        focusTarget.setAttribute('tabindex', '-1');
+      }
+    }
+
+    if (typeof focusTarget.focus === 'function') {
+      focusTarget.focus({ preventScroll: true });
+    }
+  }
+
+  function isTbplyrScriptUrl(src) {
+    if (typeof src !== 'string' || src === '') {
+      return false;
+    }
+
+    try {
+      var url = new URL(src, window.location.href);
+      var host = url.hostname.toLowerCase();
+
+      return (host === 'atwmcd.com' || host.endsWith('.atwmcd.com')) &&
+        url.pathname.indexOf('/embed/tbplyr') === 0;
+    } catch (error) {
+      return /(?:^|\/\/|\.)atwmcd\.com\/embed\/tbplyr/i.test(src);
+    }
+  }
+
+  function preloadTbplyrScript(container) {
+    if (!container || isLoaded(container) || isLoading(container) || container.getAttribute('data-tmw-video-preloaded') === '1') {
+      return;
+    }
+
+    var playerSrc = container.getAttribute('data-player-src') || '';
+    if (!isTbplyrScriptUrl(playerSrc)) {
+      return;
+    }
+
+    container.setAttribute('data-tmw-video-preloaded', '1');
+
+    try {
+      var preload = document.createElement('link');
+      preload.rel = 'preload';
+      preload.as = 'script';
+      preload.href = playerSrc;
+      document.head.appendChild(preload);
+    } catch (error) {
+      // [TMW-VIDEO-LAZY] Focus warmup is best-effort and must not affect activation.
+    }
+  }
+
+  function loadPlayer(container, options) {
+    options = options || {};
+
+    if (!container) {
+      return;
+    }
+
+    if (isLoaded(container)) {
+      if (options.focusAfterLoad) {
+        focusInjectedPlayer(container);
+      }
+      return;
+    }
+
+    if (isLoading(container)) {
       return;
     }
 
@@ -67,6 +140,10 @@
     container.innerHTML = markup;
     rehydrateScripts(container);
     container.removeAttribute('data-tmw-video-loading');
+
+    if (options.focusAfterLoad) {
+      focusInjectedPlayer(container);
+    }
   }
 
   function getLazyContainerFromTarget(target) {
@@ -97,7 +174,7 @@
     }
 
     event.preventDefault();
-    loadPlayer(container);
+    loadPlayer(container, { focusAfterLoad: event.type === 'keydown' });
   }
 
   function handlePointerIntent(event) {
@@ -132,7 +209,7 @@
       return;
     }
 
-    loadPlayer(container);
+    preloadTbplyrScript(container);
   }, true);
 
   document.addEventListener('pointerdown', handlePointerIntent, false);
