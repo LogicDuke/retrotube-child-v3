@@ -50,9 +50,9 @@ if (!function_exists('tmw_video_lazy_extract_player_src')) {
         }
 
         $preferred_patterns = [
-            '/<(?:iframe|embed)\b[^>]*\bsrc=( ["\']?)([^"\'\s>]+)\1/ix',
-            '/<source\b[^>]*\bsrc=( ["\']?)([^"\'\s>]+)\1/ix',
-            '/<video\b[^>]*\bsrc=( ["\']?)([^"\'\s>]+)\1/ix',
+            '/<(?:iframe|embed)\b[^>]*\bsrc=\s*(["\']?)([^"\'\s>]+)\1/ix',
+            '/<source\b[^>]*\bsrc=\s*(["\']?)([^"\'\s>]+)\1/ix',
+            '/<video\b[^>]*\bsrc=\s*(["\']?)([^"\'\s>]+)\1/ix',
         ];
 
         foreach ($preferred_patterns as $pattern) {
@@ -95,13 +95,30 @@ if (class_exists('WPST_Content_Video_Player')) {
     $parent_player_markup = (string) $content_video_player->get_content_video_player();
 }
 
+$parent_player_output = '<div class="video-player">' . $parent_player_markup . '</div>';
+
+/*
+ * [TMW-VIDEO-LAZY] [TMW-PAGESPEED]
+ * [TMW-AFFILIATE-TRACKING] Preserve wps_paywall_media_content behavior before
+ * deciding whether to expose any deferred player payload. If a paywall/media
+ * filter removes or replaces the player, render that safe filtered response and
+ * never place the original unfiltered HTML in data-player-markup.
+ */
+$filtered_player_output = apply_filters('wps_paywall_media_content', $parent_player_output, $post_id);
+if (!is_string($filtered_player_output)) {
+    $filtered_player_output = '';
+}
+
+if ($filtered_player_output !== $parent_player_output) {
+    echo $filtered_player_output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Paywall/media filter owns the safe replacement markup.
+    return;
+}
+
 $player_src = tmw_video_lazy_extract_player_src($parent_player_markup);
 $is_external_player = tmw_video_lazy_is_external_player($parent_player_markup, $player_src);
 
 if (!$is_external_player || $player_src === '' || $parent_player_markup === '') :
-    echo '<div class="video-player">';
-    echo $parent_player_markup; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Existing trusted parent theme player markup.
-    echo '</div>';
+    echo $filtered_player_output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Existing trusted parent theme player markup after paywall filtering.
     return;
 endif;
 
