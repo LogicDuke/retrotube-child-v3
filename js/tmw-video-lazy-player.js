@@ -3,6 +3,7 @@
 
   var lazySelector = '[data-tmw-video-lazy="1"]';
   var triggerSelector = '[data-tmw-video-lazy-trigger]';
+  var mobilePreloadDelay = 500;
 
   function decodeMarkup(payload) {
     try {
@@ -112,6 +113,84 @@
     }
   }
 
+  function isMobileTouchDevice() {
+    if (!window.matchMedia) {
+      return false;
+    }
+
+    return window.matchMedia('(hover: none), (pointer: coarse)').matches;
+  }
+
+  function clearMobilePreloadTimer(container) {
+    if (!container || !container.tmwVideoMobilePreloadTimer) {
+      return;
+    }
+
+    window.clearTimeout(container.tmwVideoMobilePreloadTimer);
+    container.tmwVideoMobilePreloadTimer = null;
+    container.removeAttribute('data-tmw-video-mobile-preload-scheduled');
+  }
+
+  function scheduleMobileViewportLoad(container) {
+    if (!container || isLoaded(container) || isLoading(container) || container.getAttribute('data-tmw-video-mobile-preload') === '1') {
+      return;
+    }
+
+    if (container.getAttribute('data-tmw-video-mobile-preload-scheduled') === '1') {
+      return;
+    }
+
+    container.setAttribute('data-tmw-video-mobile-preload-scheduled', '1');
+    container.tmwVideoMobilePreloadTimer = window.setTimeout(function () {
+      container.tmwVideoMobilePreloadTimer = null;
+      container.removeAttribute('data-tmw-video-mobile-preload-scheduled');
+
+      if (isLoaded(container) || isLoading(container) || container.getAttribute('data-tmw-video-mobile-preload') === '1') {
+        return;
+      }
+
+      container.setAttribute('data-tmw-video-mobile-preload', '1');
+      loadPlayer(container);
+    }, mobilePreloadDelay);
+  }
+
+  function observeMobileViewportLoads() {
+    if (!isMobileTouchDevice() || !('IntersectionObserver' in window)) {
+      return;
+    }
+
+    var containers = document.querySelectorAll(lazySelector);
+    if (!containers.length) {
+      return;
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var container = entry.target;
+
+        if (isLoaded(container) || container.getAttribute('data-tmw-video-mobile-preload') === '1') {
+          clearMobilePreloadTimer(container);
+          observer.unobserve(container);
+          return;
+        }
+
+        if (entry.isIntersecting) {
+          scheduleMobileViewportLoad(container);
+          return;
+        }
+
+        clearMobilePreloadTimer(container);
+      });
+    }, {
+      rootMargin: '150px 0px',
+      threshold: 0
+    });
+
+    containers.forEach(function (container) {
+      observer.observe(container);
+    });
+  }
+
   function loadPlayer(container, options) {
     options = options || {};
 
@@ -188,6 +267,12 @@
     }
 
     loadPlayer(container);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', observeMobileViewportLoads, { once: true });
+  } else {
+    observeMobileViewportLoads();
   }
 
   document.addEventListener('mouseover', function (event) {
