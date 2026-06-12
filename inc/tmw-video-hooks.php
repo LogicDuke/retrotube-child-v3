@@ -240,6 +240,121 @@ if (!function_exists('tmw_get_model_link_for_term')) {
   }
 }
 
+/* ======================================================================
+ * MODEL FLIPBOX ANCHOR SEO HELPERS (v1.0.0)
+ *
+ * Provide unique semantic anchor text per model card so crawlers receive
+ * model-specific internal-link signals instead of the generic "View profile".
+ * The visible button text ("View profile") is preserved unchanged for users.
+ * ====================================================================== */
+
+/**
+ * Return a human-readable primary platform label for a model post.
+ *
+ * Resolution order:
+ *   1. _tmwseo_platform_primary meta (slug stored by TMW SEO Engine admin UI).
+ *   2. First non-empty _tmwseo_platform_username_* meta across known cam slugs.
+ *
+ * Returns an empty string when no platform can be reliably determined.
+ * Never throws; all failures return ''.
+ *
+ * @param int $post_id Model CPT post ID.
+ * @return string Human-readable label, e.g. "LiveJasmin", "Chaturbate". Empty on failure.
+ */
+if (!function_exists('tmw_get_model_primary_platform_label')) {
+    function tmw_get_model_primary_platform_label(int $post_id): string {
+        if ($post_id <= 0) {
+            return '';
+        }
+
+        // Canonical slug → label map, mirroring PlatformRegistry cam/fansite groups.
+        $platform_labels = [
+            'livejasmin'  => 'LiveJasmin',
+            'chaturbate'  => 'Chaturbate',
+            'stripchat'   => 'Stripchat',
+            'myfreecams'  => 'MyFreeCams',
+            'camsoda'     => 'CamSoda',
+            'bonga'       => 'BongaCams',
+            'cam4'        => 'Cam4',
+            'imlive'      => 'ImLive',
+            'streamate'   => 'Streamate',
+            'flirt4free'  => 'Flirt4Free',
+            'jerkmate'    => 'Jerkmate',
+            'camscom'     => 'Cams.com',
+            'fansly'      => 'Fansly',
+            'fancentro'   => 'FanCentro',
+        ];
+
+        // 1. Explicit primary platform set by operator.
+        $primary_slug = sanitize_key((string) get_post_meta($post_id, '_tmwseo_platform_primary', true));
+        if ($primary_slug !== '' && isset($platform_labels[$primary_slug])) {
+            return $platform_labels[$primary_slug];
+        }
+
+        // 2. First cam platform that has a stored username (priority order).
+        $priority_slugs = ['livejasmin', 'chaturbate', 'stripchat', 'myfreecams', 'camsoda', 'bonga', 'cam4', 'imlive', 'streamate', 'flirt4free', 'jerkmate', 'camscom', 'fansly', 'fancentro'];
+        foreach ($priority_slugs as $slug) {
+            $username = trim((string) get_post_meta($post_id, '_tmwseo_platform_username_' . $slug, true));
+            if ($username !== '') {
+                return $platform_labels[$slug] ?? ucfirst($slug);
+            }
+        }
+
+        return '';
+    }
+}
+
+/**
+ * Build the semantic anchor phrase for a model flipbox card.
+ *
+ * Formula:
+ *   - With platform:    "View {Model Name} {Platform} webcam profile"
+ *   - Without platform: "View {Model Name} webcam model profile"
+ *
+ * Constraints:
+ *   - Model name and platform label are sanitized before use.
+ *   - Duplicate words between name and platform are not repeated.
+ *   - Phrase is kept short and natural; no keyword stuffing.
+ *   - Returns a non-empty string (falls back to model name at minimum).
+ *
+ * @param int    $post_id     Model CPT post ID (0 = skip platform lookup).
+ * @param string $model_title Model display name (term->name or post title).
+ * @return string Semantic anchor phrase, unescaped (escape at output with esc_html()).
+ */
+if (!function_exists('tmw_get_model_semantic_anchor_text')) {
+    function tmw_get_model_semantic_anchor_text(int $post_id, string $model_title): string {
+        $name = trim(wp_strip_all_tags($model_title));
+        if ($name === '') {
+            $name = 'this model';
+        }
+
+        $platform = '';
+        if ($post_id > 0) {
+            $platform = tmw_get_model_primary_platform_label($post_id);
+        }
+
+        if ($platform !== '') {
+            // Guard: skip if platform name is already contained in model name (prevents "Anisyia LiveJasmin LiveJasmin").
+            if (function_exists('mb_strtolower')) {
+                $name_lc     = mb_strtolower($name, 'UTF-8');
+                $platform_lc = mb_strtolower($platform, 'UTF-8');
+            } else {
+                $name_lc     = strtolower($name);
+                $platform_lc = strtolower($platform);
+            }
+            if (strpos($name_lc, $platform_lc) !== false) {
+                $platform = '';
+            }
+        }
+
+        if ($platform !== '') {
+            return 'View ' . $name . ' ' . $platform . ' webcam profile';
+        }
+
+        return 'View ' . $name . ' webcam model profile';
+    }
+}
+
 /* Renderer used everywhere for one flipbox card */
 if (!function_exists('tmw_render_flipbox_card')) {
   function tmw_render_flipbox_card($term): string {
@@ -277,9 +392,15 @@ if (!function_exists('tmw_render_flipbox_card')) {
         $card_attr_html = ' ' . implode(' ', array_map('trim', $card_attrs));
     }
 
-    $sr_label = function_exists('tmw_sr_text')
-        ? tmw_sr_text(sprintf(__('Open %s profile', 'retrotube-child'), $name))
-        : '';
+    // [TMW-MODEL-ANCHOR] Resolve model post ID for platform-aware semantic anchor.
+    $card_model_post_id = 0;
+    $card_model_post    = tmw_get_model_post_for_term($term);
+    if ($card_model_post instanceof WP_Post) {
+        $card_model_post_id = (int) $card_model_post->ID;
+    }
+    $semantic_anchor = tmw_get_model_semantic_anchor_text($card_model_post_id, $name);
+    // Use tmw_sr_text() for the semantic phrase — same helper as the rest of the project.
+    $semantic_sr = function_exists('tmw_sr_text') ? tmw_sr_text($semantic_anchor) : esc_html($semantic_anchor);
 
     $use_lcp_img = function_exists('tmw_child_should_use_lcp_image') && tmw_child_should_use_lcp_image();
     $front_img   = function_exists('tmw_child_flipbox_front_image_markup')
@@ -295,9 +416,9 @@ if (!function_exists('tmw_render_flipbox_card')) {
         </div>
         <div class="tmw-flip-back" style="<?php echo esc_attr($back_style); ?>">
           <?php if ($cta_link) : ?>
-            <a href="<?php echo esc_url($cta_link); ?>" data-href="<?php echo esc_url($cta_link); ?>" class="tmw-view"><?php echo $sr_label; ?>View profile</a>
+            <a href="<?php echo esc_url($cta_link); ?>" data-href="<?php echo esc_url($cta_link); ?>" class="tmw-view"><?php echo $semantic_sr; ?><span aria-hidden="true">View profile</span></a>
           <?php else : ?>
-            <span class="tmw-view"><?php echo $sr_label; ?>View profile</span>
+            <span class="tmw-view"><span aria-hidden="true">View profile</span></span>
           <?php endif; ?>
         </div>
       </div>
@@ -626,9 +747,15 @@ function tmw_models_flipboxes_cb($atts){
       $card_attr_html = ' ' . implode(' ', array_map('trim', $card_attrs));
     }
 
-    $sr_label = function_exists('tmw_sr_text')
-      ? tmw_sr_text(sprintf(__('Open %s profile', 'retrotube-child'), $term->name))
-      : '';
+    // [TMW-MODEL-ANCHOR] Resolve model post ID for platform-aware semantic anchor.
+    $grid_model_post_id = 0;
+    $grid_model_post    = tmw_get_model_post_for_term($term);
+    if ($grid_model_post instanceof WP_Post) {
+        $grid_model_post_id = (int) $grid_model_post->ID;
+    }
+    $semantic_anchor = tmw_get_model_semantic_anchor_text($grid_model_post_id, $term->name);
+    // Use tmw_sr_text() for the semantic phrase — same helper as the rest of the project.
+    $semantic_sr = function_exists('tmw_sr_text') ? tmw_sr_text($semantic_anchor) : esc_html($semantic_anchor);
 
     $use_lcp_img = function_exists('tmw_child_should_use_lcp_image') && tmw_child_should_use_lcp_image();
     $front_img   = function_exists('tmw_child_flipbox_front_image_markup')
@@ -643,9 +770,9 @@ function tmw_models_flipboxes_cb($atts){
     echo     '</div>';
     echo     '<div class="tmw-flip-back"  style="' . esc_attr($back_style) . '">';
     if ($cta_link) {
-      echo '<a href="' . esc_url($cta_link) . '" data-href="' . esc_url($cta_link) . '" class="tmw-view">' . $sr_label . 'View profile</a>';
+      echo '<a href="' . esc_url($cta_link) . '" data-href="' . esc_url($cta_link) . '" class="tmw-view">' . $semantic_sr . '<span aria-hidden="true">View profile</span></a>';
     } else {
-      echo '<span class="tmw-view">' . $sr_label . 'View profile</span>';
+      echo '<span class="tmw-view"><span aria-hidden="true">View profile</span></span>';
     }
     echo     '</div>';
     echo   '</div>';
