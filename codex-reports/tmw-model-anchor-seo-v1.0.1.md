@@ -1,7 +1,7 @@
 # TMW Model Anchor SEO v1.0.1
 
 **[TMW-MODEL-ANCHOR]**  
-PR Branch: `feature/tmw-model-anchor-seo-v1-0-0`  
+PR Branch: `feature/tmw-model-anchor-seo-v1-0-1`  
 Supersedes: `codex-reports/tmw-model-anchor-seo-v1.0.0.md`  
 Commit: `fix: harden semantic model anchor output`
 
@@ -141,7 +141,7 @@ No semantic hidden text when there is no link.
 
 - [ ] Open `/models/` — layout identical to before
 - [ ] Visual: button reads **View profile** on every card
-- [ ] DevTools → inspect Anisyia `.tmw-view a`:
+- [ ] DevTools → inspect Anisyia `a.tmw-view`:
   - One `<span class="tmw-sr-only">` containing `View Anisyia LiveJasmin webcam profile`
   - One `<span aria-hidden="true">` containing `View profile`
   - No `screen-reader-text` span present

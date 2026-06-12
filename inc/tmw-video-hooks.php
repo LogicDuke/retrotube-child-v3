@@ -292,7 +292,7 @@ if (!function_exists('tmw_get_model_primary_platform_label')) {
         }
 
         // 2. First cam platform that has a stored username (priority order).
-        $priority_slugs = ['livejasmin', 'chaturbate', 'stripchat', 'myfreecams', 'camsoda', 'bonga', 'cam4', 'imlive', 'streamate', 'flirt4free', 'jerkmate', 'camscom'];
+        $priority_slugs = ['livejasmin', 'chaturbate', 'stripchat', 'myfreecams', 'camsoda', 'bonga', 'cam4', 'imlive', 'streamate', 'flirt4free', 'jerkmate', 'camscom', 'fansly', 'fancentro'];
         foreach ($priority_slugs as $slug) {
             $username = trim((string) get_post_meta($post_id, '_tmwseo_platform_username_' . $slug, true));
             if ($username !== '') {
