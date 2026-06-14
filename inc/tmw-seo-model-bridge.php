@@ -247,14 +247,7 @@ if (!function_exists('tmw_models_archive_rankmath_description_bridge')) {
             return $description;
         }
 
-        if (function_exists('rank_math_replace_vars')) {
-            $meta_description = (string) rank_math_replace_vars($meta_description, $models_page);
-        } elseif (function_exists('rank_math')) {
-            $rank_math = rank_math();
-            if (is_object($rank_math) && isset($rank_math->variables) && method_exists($rank_math->variables, 'replace')) {
-                $meta_description = (string) $rank_math->variables->replace($meta_description, $models_page);
-            }
-        }
+        $meta_description = tmw_seo_model_bridge_replace_vars($meta_description, $models_page->ID);
 
         $meta_description = trim(sanitize_text_field($meta_description));
         if ($meta_description === '') {
