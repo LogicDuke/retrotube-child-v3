@@ -203,6 +203,71 @@ if (!function_exists('tmw_seo_model_bridge_get_schema')) {
 // RANK MATH FILTERS FOR MODEL TAXONOMY ARCHIVES
 // ============================================================================
 
+if (!function_exists('tmw_models_archive_rankmath_description_bridge')) {
+    /**
+     * Bridge the /models/ CPT archive meta description to the editable models page.
+     *
+     * The public /models/ URL is served as the model CPT archive rather than a
+     * normal WordPress page. The archive template uses the editable Page with the
+     * "models" slug as its visible content source, so this Rank Math bridge lets
+     * that same Page provide the archive's custom Rank Math description without
+     * adding duplicate wp_head meta tags or changing canonical/robots behavior.
+     *
+     * @param string $description Rank Math's generated description.
+     * @return string
+     */
+    function tmw_models_archive_rankmath_description_bridge($description): string {
+        if (is_admin()) {
+            tmw_seo_model_bridge_log_once(
+                '[TMW-RANKMATH-META]',
+                'models_archive_description_bridge skipped reason=admin'
+            );
+            return $description;
+        }
+
+        if (!function_exists('is_post_type_archive') || !is_post_type_archive('model')) {
+            return $description;
+        }
+
+        $models_page = get_page_by_path('models');
+        if (!$models_page instanceof WP_Post) {
+            tmw_seo_model_bridge_log_once(
+                '[TMW-RANKMATH-META]',
+                'models_archive_description_bridge skipped reason=models_page_not_found'
+            );
+            return $description;
+        }
+
+        $meta_description = trim((string) get_post_meta($models_page->ID, 'rank_math_description', true));
+        if ($meta_description === '') {
+            tmw_seo_model_bridge_log_once(
+                '[TMW-RANKMATH-META]',
+                'models_archive_description_bridge skipped reason=empty_rank_math_description page_id=' . $models_page->ID
+            );
+            return $description;
+        }
+
+        $meta_description = tmw_seo_model_bridge_replace_vars($meta_description, $models_page->ID);
+
+        $meta_description = trim(sanitize_text_field($meta_description));
+        if ($meta_description === '') {
+            tmw_seo_model_bridge_log_once(
+                '[TMW-RANKMATH-META]',
+                'models_archive_description_bridge skipped reason=empty_after_sanitize page_id=' . $models_page->ID
+            );
+            return $description;
+        }
+
+        tmw_seo_model_bridge_log_once(
+            '[TMW-RANKMATH-META]',
+            'models_archive_description_bridge applied page_id=' . $models_page->ID
+        );
+        return $meta_description;
+    }
+}
+
+add_filter('rank_math/frontend/description', 'tmw_models_archive_rankmath_description_bridge', 20);
+
 /**
  * Filter: SEO Title for model taxonomy archives.
  */
