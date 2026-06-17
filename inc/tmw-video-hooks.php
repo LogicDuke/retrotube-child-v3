@@ -447,15 +447,85 @@ if (!function_exists('tmw_featured_settings')) {
   }
 }
 if (!function_exists('tmw_featured_pick_terms')) {
+  function tmw_featured_rotation_context_key(): array {
+    if (is_singular()) {
+      $post_id = (int) get_queried_object_id();
+      if ($post_id <= 0) {
+        $post_id = (int) get_the_ID();
+      }
+
+      if ($post_id > 0) {
+        return ['post:' . $post_id, false];
+      }
+    }
+
+    if (is_category() || is_tag() || is_tax()) {
+      $term = get_queried_object();
+      if ($term instanceof WP_Term) {
+        return ['term:' . $term->taxonomy . ':' . (int) $term->term_id, false];
+      }
+    }
+
+    $request_uri = isset($_SERVER['REQUEST_URI'])
+      ? sanitize_text_field(wp_unslash((string) $_SERVER['REQUEST_URI']))
+      : '/';
+    $path = (string) wp_parse_url($request_uri, PHP_URL_PATH);
+    $path = '/' . trim($path, '/');
+    if ($path === '/') {
+      $path = '/';
+    }
+
+    return ['path:' . strtolower($path), true];
+  }
+
+  function tmw_featured_rotation_key(): string {
+    return gmdate('o-\WW', (int) current_time('timestamp', true));
+  }
+
+  function tmw_featured_order_ids(array $ids, string $seed): array {
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+
+    usort($ids, function (int $a, int $b) use ($seed): int {
+      $hash_a = (int) sprintf('%u', crc32($seed . ':' . $a));
+      $hash_b = (int) sprintf('%u', crc32($seed . ':' . $b));
+
+      if ($hash_a === $hash_b) {
+        return $a <=> $b;
+      }
+
+      return $hash_a <=> $hash_b;
+    });
+
+    return $ids;
+  }
+
+  function tmw_featured_debug_rotation(string $context_key, string $rotation_key, array $selected_ids, bool $used_fallback_path): void {
+    if (!defined('WP_DEBUG') || !WP_DEBUG) {
+      return;
+    }
+
+    error_log(sprintf(
+      '[TMW-FEATURED-ROTATION] context=%s rotation=%s selected=%s fallback_path=%s',
+      $context_key,
+      $rotation_key,
+      implode(',', array_map('intval', $selected_ids)),
+      $used_fallback_path ? 'yes' : 'no'
+    ));
+  }
+
   function tmw_featured_pick_terms(string $mode, int $count, array $settings): array {
     $count = max(1, $count);
+    [$context_key, $used_fallback_path] = tmw_featured_rotation_context_key();
+    $rotation_key = tmw_featured_rotation_key();
+    $seed = $context_key . '|' . $rotation_key;
 
     if ($mode === 'pool') {
       $ids = array_values(array_unique(array_map('intval', $settings['pool'] ?? [])));
       if ($ids) {
-        shuffle($ids);
+        $ids = tmw_featured_order_ids($ids, $seed);
         $ids = array_slice($ids, 0, $count);
-        $terms = get_terms(['taxonomy'=>'models','hide_empty'=>false,'include'=>$ids]);
+        tmw_featured_debug_rotation($context_key, $rotation_key, $ids, $used_fallback_path);
+        $terms = get_terms(['taxonomy'=>'models','hide_empty'=>false,'include'=>$ids,'orderby'=>'include']);
         return is_wp_error($terms) ? [] : $terms;
       }
       $mode = 'all';
@@ -463,9 +533,10 @@ if (!function_exists('tmw_featured_pick_terms')) {
 
     $all_ids = get_terms(['taxonomy'=>'models','hide_empty'=>false,'fields'=>'ids']);
     if (is_wp_error($all_ids) || !$all_ids) return [];
-    shuffle($all_ids);
+    $all_ids = tmw_featured_order_ids($all_ids, $seed);
     $pick = array_slice($all_ids, 0, $count);
-    $terms = get_terms(['taxonomy'=>'models','hide_empty'=>false,'include'=>$pick]);
+    tmw_featured_debug_rotation($context_key, $rotation_key, $pick, $used_fallback_path);
+    $terms = get_terms(['taxonomy'=>'models','hide_empty'=>false,'include'=>$pick,'orderby'=>'include']);
     return is_wp_error($terms) ? [] : $terms;
   }
 }
