@@ -61,6 +61,12 @@ if (!function_exists('tmw_featured_models_should_inject')) {
             'terms-of-use-of-top-models-webcam-directory',
             'submit-a-video',
             'models',
+            'login',
+            'register',
+            'lostpassword',
+            'lost-password',
+            'resetpass',
+            'reset-password',
         ];
 
         if (is_page($excluded)) {

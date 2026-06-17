@@ -416,7 +416,7 @@ if (!function_exists('tmw_render_flipbox_card')) {
         </div>
         <div class="tmw-flip-back" style="<?php echo esc_attr($back_style); ?>">
           <?php if ($cta_link) : ?>
-            <a href="<?php echo esc_url($cta_link); ?>" data-href="<?php echo esc_url($cta_link); ?>" class="tmw-view"><?php echo $semantic_sr; ?><span aria-hidden="true">View profile</span></a>
+            <a href="<?php echo esc_url($cta_link); ?>" data-href="<?php echo esc_url($cta_link); ?>" class="tmw-view"><?php echo $semantic_sr; ?> <span aria-hidden="true">View profile</span></a>
           <?php else : ?>
             <span class="tmw-view"><span aria-hidden="true">View profile</span></span>
           <?php endif; ?>
@@ -770,7 +770,7 @@ function tmw_models_flipboxes_cb($atts){
     echo     '</div>';
     echo     '<div class="tmw-flip-back"  style="' . esc_attr($back_style) . '">';
     if ($cta_link) {
-      echo '<a href="' . esc_url($cta_link) . '" data-href="' . esc_url($cta_link) . '" class="tmw-view">' . $semantic_sr . '<span aria-hidden="true">View profile</span></a>';
+      echo '<a href="' . esc_url($cta_link) . '" data-href="' . esc_url($cta_link) . '" class="tmw-view">' . $semantic_sr . ' <span aria-hidden="true">View profile</span></a>';
     } else {
       echo '<span class="tmw-view"><span aria-hidden="true">View profile</span></span>';
     }
