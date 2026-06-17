@@ -10,6 +10,12 @@ $excluded_pages = [
     'dmca',
     'privacy-policy-top-models-webcam',
     'terms-of-use-of-top-models-webcam-directory',
+    'login',
+    'register',
+    'lostpassword',
+    'lost-password',
+    'resetpass',
+    'reset-password',
 ];
 
 if (!empty($GLOBALS['tmw_featured_models_disabled']) || is_page($excluded_pages)) {
