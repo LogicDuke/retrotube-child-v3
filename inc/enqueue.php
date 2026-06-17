@@ -33,9 +33,10 @@ if (!function_exists('tmw_is_flipbox_asset_context')) {
    * Determine whether the current request can render front-end flipbox cards.
    *
    * The mobile turn behavior is handled by the existing tmw-flip-guard script.
-   * Keep this aligned with both the dedicated model-grid templates and the
-   * featured-models injector so pages that receive .tmw-flip cards receive the
-   * same guard without adding duplicate tap handlers.
+   * Keep this aligned with both the dedicated model-grid templates and, during
+   * normal wp_enqueue_scripts execution, tmw_featured_models_should_inject().
+   * The fallback is intentionally narrow for unusual load orders/tests where
+   * the injector helper is unavailable.
    */
   function tmw_is_flipbox_asset_context(): bool {
     $is_model_grid_context = (
@@ -46,14 +47,16 @@ if (!function_exists('tmw_is_flipbox_asset_context')) {
       is_page_template('template-models-flipboxes.php')
     );
 
-    $is_featured_models_context = function_exists('tmw_featured_models_should_inject')
-      ? (bool) tmw_featured_models_should_inject()
-      : (
-        is_singular() ||
+    if (function_exists('tmw_featured_models_should_inject')) {
+      $is_featured_models_context = (bool) tmw_featured_models_should_inject();
+    } else {
+      $is_featured_models_context = (
+        is_singular(['post', 'video', 'model']) ||
         is_page('categories') ||
         is_category() ||
         is_tag()
       );
+    }
 
     return $is_model_grid_context || $is_featured_models_context;
   }
