@@ -17,7 +17,7 @@ if (!function_exists('tmw_child_thumbnail_post_types')) {
             'wpsc-video',
             'wp-script-video',
             'wpws_video',
-            // setup.php loads before the category-page CPT constant is defined.
+            // Literal slug used because setup.php loads before TMW_CATEGORY_PAGE_CPT is defined.
             'tmw_category_page',
         ];
     }
