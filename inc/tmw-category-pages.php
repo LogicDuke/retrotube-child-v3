@@ -93,7 +93,7 @@ add_action('init', function () {
         'show_ui'             => true,
         'show_in_menu'        => true,
         'show_in_rest'        => true,
-        'supports'            => ['title', 'editor', 'excerpt', 'revisions'],
+        'supports'            => ['title', 'editor', 'excerpt', 'revisions', 'thumbnail'],
         'exclude_from_search' => false,
         'rewrite'             => false,
     ];
@@ -399,6 +399,226 @@ add_action('edited_category', function ($term_id) {
         wp_update_post($updates);
     }
 }, 10, 1);
+
+/**
+ * PR C — Category Page Image Sync.
+ *
+ * Syncs the attachment stored in the 'category-image-id' term meta
+ * (the existing WordPress category edit screen Image field) to the
+ * linked tmw_category_page CPT's Featured Image, non-destructively.
+ */
+
+if (!defined('TMW_CAT_IMAGE_TERM_META_KEY')) {
+    define('TMW_CAT_IMAGE_TERM_META_KEY', 'category-image-id');
+}
+
+if (!defined('TMW_CAT_IMAGE_SYNCED_MARKER_KEY')) {
+    define('TMW_CAT_IMAGE_SYNCED_MARKER_KEY', '_tmwseo_cat_image_synced_from_term');
+}
+
+if (!function_exists('tmw_category_page_get_term_image_id')) {
+    function tmw_category_page_get_term_image_id(WP_Term $term): int {
+        return (int) get_term_meta($term->term_id, TMW_CAT_IMAGE_TERM_META_KEY, true);
+    }
+}
+
+if (!function_exists('tmw_category_page_is_valid_image_attachment')) {
+    /**
+     * Validates that an attachment ID points to a real, still-existing
+     * image attachment before it's used for set_post_thumbnail() or marker writes.
+     */
+    function tmw_category_page_is_valid_image_attachment(int $attachment_id): bool {
+        if ($attachment_id <= 0) {
+            return false;
+        }
+
+        $attachment = get_post($attachment_id);
+        if (!$attachment instanceof WP_Post || $attachment->post_type !== 'attachment') {
+            return false;
+        }
+
+        $mime_type = (string) get_post_mime_type($attachment);
+        if (strpos($mime_type, 'image/') === 0) {
+            return true;
+        }
+
+        if (function_exists('wp_attachment_is_image') && wp_attachment_is_image($attachment_id)) {
+            return true;
+        }
+
+        return false;
+    }
+}
+
+if (!function_exists('tmw_category_page_fill_image_attachment_meta')) {
+    /**
+     * Fills empty alt/title/caption/description fields on the synced
+     * attachment using neutral text. Never overwrites existing values.
+     */
+    function tmw_category_page_fill_image_attachment_meta(int $attachment_id, string $category_name): void {
+        $attachment = get_post($attachment_id);
+        if (!$attachment instanceof WP_Post || $attachment->post_type !== 'attachment') {
+            return;
+        }
+
+        $neutral_text = trim($category_name) !== ''
+            ? trim($category_name) . ' category image'
+            : 'Category image';
+
+        $existing_alt = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
+        if (trim((string) $existing_alt) === '') {
+            update_post_meta($attachment_id, '_wp_attachment_image_alt', $neutral_text);
+        }
+
+        $post_updates = [];
+
+        if (trim((string) $attachment->post_title) === '') {
+            $post_updates['post_title'] = $neutral_text;
+        }
+
+        if (trim((string) $attachment->post_excerpt) === '') {
+            $post_updates['post_excerpt'] = $neutral_text;
+        }
+
+        if (trim((string) $attachment->post_content) === '') {
+            $post_updates['post_content'] = $neutral_text;
+        }
+
+        if (!empty($post_updates)) {
+            $post_updates['ID'] = $attachment_id;
+            wp_update_post($post_updates);
+        }
+    }
+}
+
+if (!function_exists('tmw_category_page_sync_term_image')) {
+    function tmw_category_page_sync_term_image($term_id): void {
+        $term = get_term($term_id, 'category');
+        if (!$term instanceof WP_Term) {
+            return;
+        }
+
+        $post = tmw_get_category_page_post($term);
+        if (!$post instanceof WP_Post) {
+            return;
+        }
+
+        $term_image_id = tmw_category_page_get_term_image_id($term);
+        $current_thumb_id = (int) get_post_thumbnail_id($post->ID);
+        $synced_marker = (int) get_post_meta($post->ID, TMW_CAT_IMAGE_SYNCED_MARKER_KEY, true);
+
+        if ($term_image_id > 0) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(
+                    '[TMW-CAT-IMAGE] found term image term_id=' . $term->term_id
+                    . ' attachment_id=' . $term_image_id
+                );
+            }
+
+            if (!tmw_category_page_is_valid_image_attachment($term_image_id)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log(
+                        '[TMW-CAT-IMAGE] skipped invalid term image term_id=' . $term->term_id
+                        . ' attachment_id=' . $term_image_id
+                    );
+                }
+
+                // If the CPT's current featured image was synced from this exact
+                // (now-invalid/deleted) attachment, drop the sync marker so it stops
+                // being treated as auto-managed. The featured image meta itself is
+                // left untouched here — never force-clear a post's thumbnail meta.
+                if ($synced_marker > 0 && $synced_marker === $current_thumb_id && $synced_marker === $term_image_id) {
+                    delete_post_meta($post->ID, TMW_CAT_IMAGE_SYNCED_MARKER_KEY);
+
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log(
+                            '[TMW-CAT-IMAGE] cleared sync marker post_id=' . $post->ID
+                            . ' reason=invalid_attachment attachment_id=' . $term_image_id
+                        );
+                    }
+                }
+
+                return;
+            }
+
+            // CPT featured image is empty: copy from the category image.
+            if ($current_thumb_id === 0) {
+                $thumb_set = set_post_thumbnail($post->ID, $term_image_id);
+
+                if ($thumb_set) {
+                    update_post_meta($post->ID, TMW_CAT_IMAGE_SYNCED_MARKER_KEY, $term_image_id);
+                    tmw_category_page_fill_image_attachment_meta($term_image_id, $term->name);
+
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log(
+                            '[TMW-CAT-IMAGE] synced featured image post_id=' . $post->ID
+                            . ' attachment_id=' . $term_image_id
+                        );
+                    }
+                } else {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log(
+                            '[TMW-CAT-IMAGE] sync failed post_id=' . $post->ID
+                            . ' attachment_id=' . $term_image_id
+                        );
+                    }
+                }
+                return;
+            }
+
+            // CPT already has a featured image that matches the category image: nothing to do.
+            if ($current_thumb_id === $term_image_id) {
+                return;
+            }
+
+            // The category image changed since the last sync: only follow it if
+            // the current CPT featured image was itself set by a previous sync.
+            if ($synced_marker > 0 && $synced_marker === $current_thumb_id) {
+                $thumb_set = set_post_thumbnail($post->ID, $term_image_id);
+
+                if ($thumb_set) {
+                    update_post_meta($post->ID, TMW_CAT_IMAGE_SYNCED_MARKER_KEY, $term_image_id);
+                    tmw_category_page_fill_image_attachment_meta($term_image_id, $term->name);
+
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log(
+                            '[TMW-CAT-IMAGE] synced featured image post_id=' . $post->ID
+                            . ' attachment_id=' . $term_image_id
+                        );
+                    }
+                } else {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log(
+                            '[TMW-CAT-IMAGE] sync failed post_id=' . $post->ID
+                            . ' attachment_id=' . $term_image_id
+                        );
+                    }
+                }
+                return;
+            }
+
+            // CPT featured image was manually set/changed: never overwrite it.
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[TMW-CAT-IMAGE] skipped manual featured image post_id=' . $post->ID);
+            }
+            return;
+        }
+
+        // Category image was removed/empty: only remove the CPT featured image
+        // if it was the one we previously synced in (never touch a manual choice).
+        if ($current_thumb_id !== 0 && $synced_marker > 0 && $synced_marker === $current_thumb_id) {
+            delete_post_thumbnail($post->ID);
+            delete_post_meta($post->ID, TMW_CAT_IMAGE_SYNCED_MARKER_KEY);
+
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[TMW-CAT-IMAGE] removed synced featured image post_id=' . $post->ID);
+            }
+        }
+    }
+}
+
+add_action('created_category', 'tmw_category_page_sync_term_image', 20, 1);
+add_action('edited_category', 'tmw_category_page_sync_term_image', 20, 1);
 
 if (!function_exists('tmw_category_page_admin_link')) {
     function tmw_category_page_admin_link(WP_Term $term): string {
