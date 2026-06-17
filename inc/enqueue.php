@@ -28,6 +28,37 @@ if (!function_exists('tmw_child_style_version')) {
   }
 }
 
+if (!function_exists('tmw_is_flipbox_asset_context')) {
+  /**
+   * Determine whether the current request can render front-end flipbox cards.
+   *
+   * The mobile turn behavior is handled by the existing tmw-flip-guard script.
+   * Keep this aligned with both the dedicated model-grid templates and the
+   * featured-models injector so pages that receive .tmw-flip cards receive the
+   * same guard without adding duplicate tap handlers.
+   */
+  function tmw_is_flipbox_asset_context(): bool {
+    $is_model_grid_context = (
+      is_tax('models') ||
+      is_post_type_archive('model') ||
+      is_post_type_archive('models') ||
+      is_page_template('page-models-grid.php') ||
+      is_page_template('template-models-flipboxes.php')
+    );
+
+    $is_featured_models_context = function_exists('tmw_featured_models_should_inject')
+      ? (bool) tmw_featured_models_should_inject()
+      : (
+        is_singular() ||
+        is_page('categories') ||
+        is_category() ||
+        is_tag()
+      );
+
+    return $is_model_grid_context || $is_featured_models_context;
+  }
+}
+
 /* ======================================================================
  * STYLES + LIGHTWEIGHT OPTIMIZATIONS
  * ====================================================================== */
@@ -142,12 +173,7 @@ add_action('wp_enqueue_scripts', function () {
     wp_register_script('tmw-flip-a11y', $a11y_script_src, [], $a11y_script_ver, true);
   }
 
-  $is_flip_context = (
-    is_tax('models') ||
-    is_post_type_archive('models') ||
-    is_page_template('page-models-grid.php') ||
-    is_page_template('template-models-flipboxes.php')
-  );
+  $is_flip_context = tmw_is_flipbox_asset_context();
 
   if ($is_flip_context) {
     wp_enqueue_style('rt-child-flip');
