@@ -563,6 +563,71 @@ add_filter('rank_math/twitter/description', function ($description) {
     return tmw_seo_category_bridge_get_social_meta('rank_math_description', $description);
 }, 20);
 
+/**
+ * PR C — Category Page Image / Rich Media Support.
+ *
+ * The live category archive is what Rank Math evaluates for OpenGraph/Twitter
+ * output (the singular tmw_category_page CPT redirects away via
+ * template_redirect and is never rendered directly). This mirrors the title/
+ * description bridge above so the CPT's synced Featured Image is used as the
+ * social image source on the live archive page.
+ */
+if (!function_exists('tmw_seo_category_bridge_get_social_image_url')) {
+    function tmw_seo_category_bridge_get_social_image_url(): ?string {
+        if (!is_category()) {
+            return null;
+        }
+
+        $post = tmw_seo_category_bridge_get_category_page_post();
+        if (!$post instanceof WP_Post) {
+            return null;
+        }
+
+        $attachment_id = (int) get_post_thumbnail_id($post->ID);
+        if ($attachment_id <= 0) {
+            return null;
+        }
+
+        $url = wp_get_attachment_image_url($attachment_id, 'full');
+        if (!is_string($url) || $url === '') {
+            return null;
+        }
+
+        return $url;
+    }
+}
+
+if (!function_exists('tmw_seo_category_bridge_apply_social_image')) {
+    function tmw_seo_category_bridge_apply_social_image(string $original): string {
+        if (!is_category()) {
+            return $original;
+        }
+
+        $image_url = tmw_seo_category_bridge_get_social_image_url();
+        if ($image_url === null) {
+            tmw_seo_category_bridge_log_once(
+                '[TMW-SEO-CAT-FALLBACK]',
+                'No synced category page image available for OpenGraph/Twitter.'
+            );
+            return $original;
+        }
+
+        $post = tmw_seo_category_bridge_get_category_page_post();
+        $post_id = $post instanceof WP_Post ? $post->ID : 0;
+        $attachment_id = $post_id ? (int) get_post_thumbnail_id($post_id) : 0;
+
+        tmw_seo_category_bridge_log_once(
+            '[TMW-CAT-RM-IMAGE]',
+            'synced Rank Math social image post_id=' . $post_id . ' attachment_id=' . $attachment_id
+        );
+
+        return $image_url;
+    }
+}
+
+add_filter('rank_math/opengraph/facebook/image', 'tmw_seo_category_bridge_apply_social_image', 20);
+add_filter('rank_math/opengraph/twitter/image', 'tmw_seo_category_bridge_apply_social_image', 20);
+
 add_filter('rank_math/frontend/canonical', function ($canonical) {
     if (!is_category()) {
         return $canonical;

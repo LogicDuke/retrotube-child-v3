@@ -8,7 +8,18 @@ if (!function_exists('tmw_child_thumbnail_post_types')) {
      * @return string[]
      */
     function tmw_child_thumbnail_post_types() {
-        return ['post', 'page', 'model', 'video', 'videos', 'wpsc-video', 'wp-script-video', 'wpws_video'];
+        return [
+            'post',
+            'page',
+            'model',
+            'video',
+            'videos',
+            'wpsc-video',
+            'wp-script-video',
+            'wpws_video',
+            // Literal slug used because setup.php loads before TMW_CATEGORY_PAGE_CPT is defined.
+            'tmw_category_page',
+        ];
     }
 }
 
