@@ -37,7 +37,6 @@
       function (e) {
         var inFlipContext = e.target.closest(containerSelector);
         var tappedCard = e.target.closest(cardSelector);
-        var front = e.target.closest('.tmw-flip-front');
         var cta = e.target.closest('.tmw-view');
 
         // Tap outside any flip context -> close all
@@ -54,8 +53,8 @@
 
         var isFlipped = tappedCard.classList.contains('flipped');
 
-        // First tap on the front face (including image/picture/link children) should flip the card.
-        if (front && !isFlipped) {
+        // First tap anywhere inside an unflipped card should flip it.
+        if (!isFlipped) {
           e.preventDefault();
           closeAllExcept(tappedCard);
           pulseTapFeedback(tappedCard);
