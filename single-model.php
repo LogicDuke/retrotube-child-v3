@@ -58,7 +58,16 @@ get_header(); ?>
       endwhile;
     endif;
     ?>
-    <?php get_template_part('partials/featured-models-block'); ?>
+    <?php
+    // [TMW-SEO] Secondary content zone: other model names live here, after all
+    // primary model content. The tmw-model-secondary-links class signals to
+    // crawlers that this block is supplementary, not the page's primary entity.
+    // Featured models are deterministic per model page (stable seed, self-excluded)
+    // so Googlebot always indexes the same model names here -- no crawl churn.
+    ?>
+    <div class="tmw-model-secondary-links">
+      <?php get_template_part('partials/featured-models-block'); ?>
+    </div><!-- .tmw-model-secondary-links -->
   </main>
 </div>
 

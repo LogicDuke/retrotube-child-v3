@@ -39,6 +39,12 @@ if (!function_exists('tmw_is_flipbox_asset_context')) {
    * the injector helper is unavailable.
    */
   function tmw_is_flipbox_asset_context(): bool {
+    // [TMW-SEO] Single model pages render featured model flipboxes explicitly
+    // from single-model.php, even though output-buffer injection is disabled.
+    // Keep flipbox CSS/JS assets loaded here.
+    if ( function_exists( 'is_singular' ) && is_singular( 'model' ) ) {
+      return true;
+    }
     $is_model_grid_context = (
       is_tax('models') ||
       is_post_type_archive('model') ||

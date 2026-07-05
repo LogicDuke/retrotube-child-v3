@@ -479,6 +479,13 @@ if (!function_exists('tmw_featured_pick_terms')) {
   }
 
   function tmw_featured_rotation_key(): string {
+    // [TMW-SEO] On single model pages use a stable key so Googlebot always
+    // indexes the same set of featured models -- no weekly churn of model names
+    // causes cross-page keyword contamination in the search index.
+    // Weekly rotation is preserved on archive/category/tag pages.
+    if ( function_exists( 'is_singular' ) && is_singular( 'model' ) ) {
+      return 'stable';
+    }
     return gmdate('o-\WW', (int) current_time('timestamp', true));
   }
 
@@ -519,8 +526,29 @@ if (!function_exists('tmw_featured_pick_terms')) {
     $rotation_key = tmw_featured_rotation_key();
     $seed = $context_key . '|' . $rotation_key;
 
+    // [TMW-SEO] Resolve the current model's term IDs so we can exclude them
+    // from the Featured block on their own page. Without this, Google crawls
+    // the Mia Collie page and sees Mia Collie listed as a Featured Model,
+    // which wastes a card slot and risks self-referential entity confusion.
+    $tmw_exclude_ids = [];
+    if ( function_exists( 'is_singular' ) && is_singular( 'model' ) ) {
+      $tmw_current_post_id = (int) get_queried_object_id();
+      if ( $tmw_current_post_id > 0 ) {
+        $tmw_model_terms = get_the_terms( $tmw_current_post_id, 'models' );
+        if ( is_array( $tmw_model_terms ) && ! empty( $tmw_model_terms ) ) {
+          foreach ( $tmw_model_terms as $tmw_mt ) {
+            if ( $tmw_mt instanceof WP_Term ) {
+              $tmw_exclude_ids[] = (int) $tmw_mt->term_id;
+            }
+          }
+        }
+      }
+    }
     if ($mode === 'pool') {
       $ids = array_values(array_unique(array_map('intval', $settings['pool'] ?? [])));
+      if ( ! empty( $tmw_exclude_ids ) ) {
+        $ids = array_values( array_diff( $ids, $tmw_exclude_ids ) );
+      }
       if ($ids) {
         $ids = tmw_featured_order_ids($ids, $seed);
         $ids = array_slice($ids, 0, $count);
@@ -531,7 +559,12 @@ if (!function_exists('tmw_featured_pick_terms')) {
       $mode = 'all';
     }
 
-    $all_ids = get_terms(['taxonomy'=>'models','hide_empty'=>false,'fields'=>'ids']);
+
+    $tmw_get_terms_args = ['taxonomy'=>'models','hide_empty'=>false,'fields'=>'ids'];
+    if ( ! empty( $tmw_exclude_ids ) ) {
+      $tmw_get_terms_args['exclude'] = $tmw_exclude_ids;
+    }
+    $all_ids = get_terms( $tmw_get_terms_args );
     if (is_wp_error($all_ids) || !$all_ids) return [];
     $all_ids = tmw_featured_order_ids($all_ids, $seed);
     $pick = array_slice($all_ids, 0, $count);
