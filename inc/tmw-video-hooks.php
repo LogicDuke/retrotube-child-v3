@@ -526,18 +526,6 @@ if (!function_exists('tmw_featured_pick_terms')) {
     $rotation_key = tmw_featured_rotation_key();
     $seed = $context_key . '|' . $rotation_key;
 
-    if ($mode === 'pool') {
-      $ids = array_values(array_unique(array_map('intval', $settings['pool'] ?? [])));
-      if ($ids) {
-        $ids = tmw_featured_order_ids($ids, $seed);
-        $ids = array_slice($ids, 0, $count);
-        tmw_featured_debug_rotation($context_key, $rotation_key, $ids, $used_fallback_path);
-        $terms = get_terms(['taxonomy'=>'models','hide_empty'=>false,'include'=>$ids,'orderby'=>'include']);
-        return is_wp_error($terms) ? [] : $terms;
-      }
-      $mode = 'all';
-    }
-
     // [TMW-SEO] Resolve the current model's term IDs so we can exclude them
     // from the Featured block on their own page. Without this, Google crawls
     // the Mia Collie page and sees Mia Collie listed as a Featured Model,
@@ -556,6 +544,21 @@ if (!function_exists('tmw_featured_pick_terms')) {
         }
       }
     }
+    if ($mode === 'pool') {
+      $ids = array_values(array_unique(array_map('intval', $settings['pool'] ?? [])));
+      if ( ! empty( $tmw_exclude_ids ) ) {
+        $ids = array_values( array_diff( $ids, $tmw_exclude_ids ) );
+      }
+      if ($ids) {
+        $ids = tmw_featured_order_ids($ids, $seed);
+        $ids = array_slice($ids, 0, $count);
+        tmw_featured_debug_rotation($context_key, $rotation_key, $ids, $used_fallback_path);
+        $terms = get_terms(['taxonomy'=>'models','hide_empty'=>false,'include'=>$ids,'orderby'=>'include']);
+        return is_wp_error($terms) ? [] : $terms;
+      }
+      $mode = 'all';
+    }
+
 
     $tmw_get_terms_args = ['taxonomy'=>'models','hide_empty'=>false,'fields'=>'ids'];
     if ( ! empty( $tmw_exclude_ids ) ) {
