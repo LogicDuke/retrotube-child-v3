@@ -22,6 +22,15 @@ if (!function_exists('tmw_featured_models_should_inject')) {
             return false;
         }
 
+        // [TMW-SEO] Single model pages render the Featured Models block explicitly
+        // in single-model.php via get_template_part('partials/featured-models-block').
+        // The output-buffer injector must not fire here or a second Featured Models
+        // block is injected, doubling the number of other model names on the page
+        // and confusing Google's entity focus for the primary model.
+        if ( is_singular( 'model' ) ) {
+            return false;
+        }
+
         if (function_exists('is_post_type_archive') && is_post_type_archive('model')) {
             return false;
         }
