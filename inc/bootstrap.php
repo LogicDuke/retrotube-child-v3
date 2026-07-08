@@ -42,6 +42,9 @@ require_once __DIR__ . '/frontend/template-tags.php';
 require_once __DIR__ . '/frontend/model-stats.php';
 require_once __DIR__ . '/frontend/tmw-slot-banner.php';
 require_once __DIR__ . '/frontend/tmw-video-widget-links-fix.php';
+// [TMW-SEO v1.0.2] Removes the duplicate short og:title on single model pages,
+// keeping only the Rank Math og:title. See the file header for details.
+require_once __DIR__ . '/frontend/tmw-og-title-dedupe.php';
 require_once __DIR__ . '/frontend/tmw-category-hub-mirror-tag.php';
 require_once __DIR__ . '/frontend/tmw-category-mirror-tag-inventory.php';
 require_once __DIR__ . '/frontend/tmw-hub-tag-redirect.php';
