@@ -212,13 +212,14 @@ if (!function_exists('tmw_neutralize_model_names_in_text')) {
             if (!$parts) {
                 continue;
             }
-            $pattern = '/' . implode($sep, array_map(static fn($p) => preg_quote($p, '/'), $parts)) . '/iu';
-            $text = (string) preg_replace($pattern, 'Featured Model', $text);
+            $pattern = '/(?<![\p{L}\p{N}_])' . implode($sep, array_map(static fn($p) => preg_quote($p, '/'), $parts)) . '(?![\p{L}\p{N}_])/iu';
+            $result = preg_replace($pattern, 'Featured Model', $text);
+            $text = $result ?? $text;
         }
 
         foreach ($names['parts'] as $part) {
             $pattern = '/\b' . preg_quote($part, '/') . '\b/iu';
-            $text = (string) preg_replace_callback(
+            $result = preg_replace_callback(
                 $pattern,
                 static function ($match) {
                     $first = function_exists('mb_substr') ? mb_substr($match[0], 0, 1) : substr($match[0], 0, 1);
@@ -227,9 +228,11 @@ if (!function_exists('tmw_neutralize_model_names_in_text')) {
                 },
                 $text
             );
+            $text = $result ?? $text;
         }
 
-        return (string) preg_replace('/\b(?:Featured\s+)?Model(?:\s+Model)+\b/u', 'Featured Model', $text);
+        $result = preg_replace('/\b(?:Featured\s+)?Model(?:\s+Model)+\b/u', 'Featured Model', $text);
+        return $result ?? $text;
     }
 }
 
@@ -245,31 +248,34 @@ if (!function_exists('tmw_sanitize_sidebar_video_names')) {
         }
 
         // Sanitize title="..." tooltips.
-        $html = (string) preg_replace_callback(
+        $result = preg_replace_callback(
             '/\btitle=(["\'])(.*?)\1/is',
             static function ($match) {
                 return 'title=' . $match[1] . tmw_neutralize_model_names_in_text($match[2]) . $match[1];
             },
             $html
         );
+        $html = $result ?? $html;
 
         // Sanitize alt="..." thumbnail text.
-        $html = (string) preg_replace_callback(
+        $result = preg_replace_callback(
             '/\balt=(["\'])(.*?)\1/is',
             static function ($match) {
                 return 'alt=' . $match[1] . tmw_neutralize_model_names_in_text($match[2]) . $match[1];
             },
             $html
         );
+        $html = $result ?? $html;
 
         // Sanitize visible text nodes only. href/src attribute values live
         // inside tags and are never touched by this pattern.
-        return (string) preg_replace_callback(
+        $result = preg_replace_callback(
             '/>([^<>]+)</s',
             static function ($match) {
                 return '>' . tmw_neutralize_model_names_in_text($match[1]) . '<';
             },
             $html
         );
+        return $result ?? $html;
     }
 }
