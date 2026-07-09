@@ -783,6 +783,13 @@ if (!function_exists('tmw_category_append_cpt_to_archive_description')) {
             return $description;
         }
 
+        if (strpos($description, 'tmw-category-page-content') !== false) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[TMW-CAT-DEDUPE] skipped append reason=already_present');
+            }
+            return $description;
+        }
+
         static $tmw_cat_page_injection_logged = false;
         $term = get_queried_object();
         if (!$term instanceof WP_Term) {
@@ -853,15 +860,4 @@ if (!function_exists('tmw_category_append_cpt_to_archive_description')) {
     }
 }
 
-if (!function_exists('tmw_category_append_cpt_to_term_description')) {
-    function tmw_category_append_cpt_to_term_description($description, $term, $taxonomy): string {
-        if (is_admin() || $taxonomy !== 'category' || !is_category()) {
-            return (string) $description;
-        }
-
-        return tmw_category_append_cpt_to_archive_description((string) $description);
-    }
-}
-
 add_filter('get_the_archive_description', 'tmw_category_append_cpt_to_archive_description', 19);
-add_filter('term_description', 'tmw_category_append_cpt_to_term_description', 19, 3);
