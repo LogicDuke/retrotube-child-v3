@@ -102,7 +102,7 @@ function tmw_render_slot_banner_metabox($post)
 
         if (owns.call(meta, '_tmw_slot_mode') &&
             (meta._tmw_slot_mode === 'widget' || meta._tmw_slot_mode === 'shortcode')) {
-            modes.forEach(function (radio) {
+            Array.prototype.forEach.call(modes, function (radio) {
                 radio.checked = radio.value === meta._tmw_slot_mode;
             });
         }
@@ -127,7 +127,7 @@ function tmw_render_slot_banner_metabox($post)
         if (enabled) {
             enabled.addEventListener('change', syncMeta);
         }
-        modes.forEach(function (radio) {
+        Array.prototype.forEach.call(modes, function (radio) {
             radio.addEventListener('change', syncMeta);
         });
         if (shortcode) {
