@@ -33,7 +33,9 @@ add_action('init', function () {
     'has_archive'        => 'models',
     'rewrite'            => ['slug' => 'model', 'with_front' => false],
     'hierarchical'       => false,
-    'supports'           => ['title', 'editor', 'thumbnail', 'comments'],
+    // 'custom-fields' is required for the REST API to expose/persist registered
+    // post meta (show_in_rest): without it Gutenberg silently drops all `meta`.
+    'supports'           => ['title', 'editor', 'thumbnail', 'comments', 'custom-fields'],
     'taxonomies'         => ['category', 'post_tag'],
     'menu_icon'          => 'dashicons-groups',
     'capability_type'    => 'post',
