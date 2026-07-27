@@ -76,64 +76,83 @@ function tmw_render_slot_banner_metabox($post)
     (function () {
         'use strict';
 
-        if (!window.wp || !wp.data || !wp.data.select || !wp.data.dispatch) {
-            return;
-        }
+        var initialized = false;
+        var attempts = 0;
+        var maxAttempts = 50;
 
-        var editor = wp.data.select('core/editor');
-        if (!editor || !editor.getEditedPostAttribute) {
-            return;
-        }
+        function initSlotBannerMetaSync() {
+            if (initialized) {
+                return;
+            }
 
-        var metabox = document.getElementById('tmw-slot-banner');
-        if (!metabox) {
-            return;
-        }
+            attempts += 1;
 
-        var enabled = metabox.querySelector('[name="tmw_slot_enabled"]');
-        var modes = metabox.querySelectorAll('[name="tmw_slot_mode"]');
-        var shortcode = metabox.querySelector('[name="tmw_slot_shortcode"]');
-        var meta = editor.getEditedPostAttribute('meta') || {};
-        var owns = Object.prototype.hasOwnProperty;
-
-        if (enabled && owns.call(meta, '_tmw_slot_enabled')) {
-            enabled.checked = meta._tmw_slot_enabled === '1';
-        }
-
-        if (owns.call(meta, '_tmw_slot_mode') &&
-            (meta._tmw_slot_mode === 'widget' || meta._tmw_slot_mode === 'shortcode')) {
-            Array.prototype.forEach.call(modes, function (radio) {
-                radio.checked = radio.value === meta._tmw_slot_mode;
-            });
-        }
-
-        if (shortcode && owns.call(meta, '_tmw_slot_shortcode') &&
-            typeof meta._tmw_slot_shortcode === 'string') {
-            shortcode.value = meta._tmw_slot_shortcode;
-        }
-
-        function syncMeta() {
-            var selectedMode = metabox.querySelector('[name="tmw_slot_mode"]:checked');
-
-            wp.data.dispatch('core/editor').editPost({
-                meta: {
-                    _tmw_slot_enabled: enabled && enabled.checked ? '1' : '',
-                    _tmw_slot_mode: selectedMode ? selectedMode.value : 'shortcode',
-                    _tmw_slot_shortcode: shortcode ? shortcode.value : ''
+            if (!window.wp || !wp.data || !wp.data.select || !wp.data.dispatch) {
+                if (attempts < maxAttempts) {
+                    window.setTimeout(initSlotBannerMetaSync, 100);
                 }
+                return;
+            }
+
+            var editor = wp.data.select('core/editor');
+            var metabox = document.getElementById('tmw-slot-banner');
+
+            if (!editor || !editor.getEditedPostAttribute || !metabox) {
+                if (attempts < maxAttempts) {
+                    window.setTimeout(initSlotBannerMetaSync, 100);
+                }
+                return;
+            }
+
+            initialized = true;
+
+            var enabled = metabox.querySelector('[name="tmw_slot_enabled"]');
+            var modes = metabox.querySelectorAll('[name="tmw_slot_mode"]');
+            var shortcode = metabox.querySelector('[name="tmw_slot_shortcode"]');
+            var meta = editor.getEditedPostAttribute('meta') || {};
+            var owns = Object.prototype.hasOwnProperty;
+
+            if (enabled && owns.call(meta, '_tmw_slot_enabled')) {
+                enabled.checked = meta._tmw_slot_enabled === '1';
+            }
+
+            if (owns.call(meta, '_tmw_slot_mode') &&
+                (meta._tmw_slot_mode === 'widget' || meta._tmw_slot_mode === 'shortcode')) {
+                Array.prototype.forEach.call(modes, function (radio) {
+                    radio.checked = radio.value === meta._tmw_slot_mode;
+                });
+            }
+
+            if (shortcode && owns.call(meta, '_tmw_slot_shortcode') &&
+                typeof meta._tmw_slot_shortcode === 'string') {
+                shortcode.value = meta._tmw_slot_shortcode;
+            }
+
+            function syncMeta() {
+                var selectedMode = metabox.querySelector('[name="tmw_slot_mode"]:checked');
+
+                wp.data.dispatch('core/editor').editPost({
+                    meta: {
+                        _tmw_slot_enabled: enabled && enabled.checked ? '1' : '',
+                        _tmw_slot_mode: selectedMode ? selectedMode.value : 'shortcode',
+                        _tmw_slot_shortcode: shortcode ? shortcode.value : ''
+                    }
+                });
+            }
+
+            if (enabled) {
+                enabled.addEventListener('change', syncMeta);
+            }
+            Array.prototype.forEach.call(modes, function (radio) {
+                radio.addEventListener('change', syncMeta);
             });
+            if (shortcode) {
+                shortcode.addEventListener('input', syncMeta);
+                shortcode.addEventListener('change', syncMeta);
+            }
         }
 
-        if (enabled) {
-            enabled.addEventListener('change', syncMeta);
-        }
-        Array.prototype.forEach.call(modes, function (radio) {
-            radio.addEventListener('change', syncMeta);
-        });
-        if (shortcode) {
-            shortcode.addEventListener('input', syncMeta);
-            shortcode.addEventListener('change', syncMeta);
-        }
+        initSlotBannerMetaSync();
     }());
     </script>
     <?php
