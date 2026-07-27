@@ -8,38 +8,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-add_action('init', function () {
-    register_post_meta('model', '_tmw_slot_enabled', [
-        'type' => 'string',
-        'single' => true,
-        'show_in_rest' => true,
-        'sanitize_callback' => 'sanitize_text_field',
-        'auth_callback' => function () {
-            return current_user_can('edit_posts');
-        },
-    ]);
-
-    register_post_meta('model', '_tmw_slot_mode', [
-        'type' => 'string',
-        'single' => true,
-        'show_in_rest' => true,
-        'sanitize_callback' => 'sanitize_text_field',
-        'auth_callback' => function () {
-            return current_user_can('edit_posts');
-        },
-    ]);
-
-    register_post_meta('model', '_tmw_slot_shortcode', [
-        'type' => 'string',
-        'single' => true,
-        'show_in_rest' => true,
-        'sanitize_callback' => 'sanitize_textarea_field',
-        'auth_callback' => function () {
-            return current_user_can('edit_posts');
-        },
-    ]);
-});
-
 // Add metabox
 add_action('add_meta_boxes', function () {
     add_meta_box(
@@ -104,6 +72,38 @@ function tmw_render_slot_banner_metabox($post)
     <p class="description">
         <?php esc_html_e('Default: [tmw_slot_machine]', 'retrotube-child'); ?>
     </p>
+    <?php if (current_user_can('manage_options')) : ?>
+        <hr />
+        <p><strong><?php esc_html_e('Temporary database diagnostic', 'retrotube-child'); ?></strong></p>
+        <dl style="margin:0; overflow-wrap:anywhere;">
+            <dt><code>_tmw_slot_enabled</code></dt>
+            <dd><code><?php echo esc_html(var_export(get_post_meta($post->ID, '_tmw_slot_enabled', true), true)); ?></code></dd>
+            <dt><code>_tmw_slot_mode</code></dt>
+            <dd><code><?php echo esc_html(var_export(get_post_meta($post->ID, '_tmw_slot_mode', true), true)); ?></code></dd>
+            <dt><code>_tmw_slot_shortcode</code></dt>
+            <dd><code><?php echo esc_html(var_export(get_post_meta($post->ID, '_tmw_slot_shortcode', true), true)); ?></code></dd>
+        </dl>
+    <?php endif; ?>
+    <script>
+    (function () {
+        var root = window.parent && window.parent !== window ? window.parent : window;
+        var fields = document.querySelectorAll('[name="tmw_slot_enabled"], [name="tmw_slot_mode"], [name="tmw_slot_shortcode"]');
+        function syncSlotMeta() {
+            if (!root.wp || !root.wp.data || !root.wp.data.dispatch) { return; }
+            var enabled = document.querySelector('[name="tmw_slot_enabled"]');
+            var mode = document.querySelector('[name="tmw_slot_mode"]:checked');
+            var shortcode = document.querySelector('[name="tmw_slot_shortcode"]');
+            root.wp.data.dispatch('core/editor').editPost({ meta: {
+                _tmw_slot_enabled: enabled && enabled.checked ? '1' : '',
+                _tmw_slot_mode: mode ? mode.value : 'shortcode',
+                _tmw_slot_shortcode: shortcode ? shortcode.value : ''
+            } });
+        }
+        Array.prototype.forEach.call(fields, function (field) {
+            field.addEventListener(field.tagName === 'TEXTAREA' ? 'input' : 'change', syncSlotMeta);
+        });
+    }());
+    </script>
     <?php
 }
 
@@ -130,28 +130,24 @@ add_action('save_post_model', function ($post_id) {
         return;
     }
 
-    $enabled = isset($_POST['tmw_slot_enabled']) && $_POST['tmw_slot_enabled'] === '1';
-    $mode = '';
-    $shortcode = '';
+    $enabled = isset($_POST['tmw_slot_enabled']) && wp_unslash($_POST['tmw_slot_enabled']) === '1';
 
     if (!$enabled) {
         delete_post_meta($post_id, '_tmw_slot_enabled');
-        delete_post_meta($post_id, '_tmw_slot_mode');
-        delete_post_meta($post_id, '_tmw_slot_shortcode');
     } else {
         update_post_meta($post_id, '_tmw_slot_enabled', '1');
+    }
 
-        $mode = isset($_POST['tmw_slot_mode']) ? sanitize_text_field($_POST['tmw_slot_mode']) : 'shortcode';
+    if (isset($_POST['tmw_slot_mode'])) {
+        $mode = sanitize_text_field(wp_unslash($_POST['tmw_slot_mode']));
         if (!in_array($mode, ['widget', 'shortcode'], true)) {
             $mode = 'shortcode';
         }
         update_post_meta($post_id, '_tmw_slot_mode', $mode);
-
-        $shortcode = isset($_POST['tmw_slot_shortcode']) ? sanitize_textarea_field($_POST['tmw_slot_shortcode']) : '';
-        $shortcode = trim($shortcode);
-        if ($shortcode !== '') {
-            update_post_meta($post_id, '_tmw_slot_shortcode', $shortcode);
-        }
     }
 
+    if (isset($_POST['tmw_slot_shortcode'])) {
+        $shortcode = trim(sanitize_textarea_field(wp_unslash($_POST['tmw_slot_shortcode'])));
+        update_post_meta($post_id, '_tmw_slot_shortcode', $shortcode);
+    }
 }, 10, 1);

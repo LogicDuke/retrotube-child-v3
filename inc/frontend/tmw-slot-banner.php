@@ -25,23 +25,62 @@ add_action('widgets_init', function () {
 });
 
 /**
- * BULLETPROOF renderer - tries ALL sources until one works
+ * Write a private renderer diagnostic when WordPress debugging is enabled.
+ */
+function tmw_slot_banner_debug(array $context): void
+{
+    if (!defined('WP_DEBUG') || WP_DEBUG !== true) {
+        return;
+    }
+
+    error_log('[TMW-SLOT-BANNER] ' . wp_json_encode($context)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+}
+
+/**
+ * Extract the first shortcode tag from a saved shortcode string.
+ */
+function tmw_slot_banner_shortcode_tag(string $shortcode): string
+{
+    if (preg_match('/' . get_shortcode_regex() . '/s', $shortcode, $matches) && isset($matches[2])) {
+        return (string) $matches[2];
+    }
+
+    return '';
+}
+
+/**
+ * Render the configured model slot banner.
  */
 function tmw_render_model_slot_banner_zone(int $post_id): string
 {
-    $enabled = get_post_meta($post_id, '_tmw_slot_enabled', true);
+    $enabled   = get_post_meta($post_id, '_tmw_slot_enabled', true);
+    $mode_raw  = get_post_meta($post_id, '_tmw_slot_mode', true);
+    $shortcode = trim((string) get_post_meta($post_id, '_tmw_slot_shortcode', true));
+    $fallback_shortcode = $shortcode !== '' ? $shortcode : '[tmw_slot_machine]';
+    $shortcode_tag = tmw_slot_banner_shortcode_tag($fallback_shortcode);
+    $context   = [
+        'post_id'                  => $post_id,
+        'post_type'                => get_post_type($post_id),
+        '_tmw_slot_enabled_raw'    => $enabled,
+        '_tmw_slot_mode_raw'       => $mode_raw,
+        '_tmw_slot_shortcode_raw'  => $shortcode,
+        'shortcode_tag'            => $shortcode_tag,
+        'shortcode_registered'     => $shortcode_tag !== '' && shortcode_exists($shortcode_tag),
+        'do_shortcode_output_length' => 0,
+        'return_reason'            => '',
+    ];
+
     if ($enabled !== '1') {
+        $context['return_reason'] = 'slot_not_enabled';
+        tmw_slot_banner_debug($context);
         return '';
     }
 
-    $mode = get_post_meta($post_id, '_tmw_slot_mode', true);
+    $mode = $mode_raw;
     if (!in_array($mode, ['widget', 'shortcode'], true)) {
         $mode = 'shortcode';
     }
 
-    $shortcode = trim(get_post_meta($post_id, '_tmw_slot_shortcode', true));
-    $fallback_shortcode = $shortcode !== '' ? $shortcode : '[tmw_slot_machine]';
-    $source = '';
     $out = '';
 
     if ($mode === 'widget') {
@@ -55,21 +94,37 @@ function tmw_render_model_slot_banner_zone(int $post_id): string
         $widget_output_clean = trim((string) $widget_output);
         if ($widget_output_clean !== '') {
             $out = (string) $widget_output;
-            $source = 'widget';
         } else {
-            $out = trim(do_shortcode($fallback_shortcode));
-            $source = $out !== '' ? 'shortcode_fallback' : '';
-        }
-    } else {
-        $out = trim(do_shortcode($fallback_shortcode));
-        if ($out !== '') {
-            $source = 'shortcode_fallback';
+            $context['return_reason'] = 'widget_empty_using_shortcode_fallback';
         }
     }
 
     if ($out === '') {
+        $tag = $context['shortcode_tag'];
+        if ($tag === '') {
+            $context['return_reason'] = 'shortcode_tag_not_found';
+            tmw_slot_banner_debug($context);
+            return '';
+        }
+        if (!$context['shortcode_registered']) {
+            $context['return_reason'] = 'shortcode_not_registered';
+            tmw_slot_banner_debug($context);
+            return '';
+        }
+
+        $out = trim(do_shortcode($fallback_shortcode));
+        $context['do_shortcode_output_length'] = strlen($out);
+    }
+
+    if ($out === '') {
+        $context['return_reason'] = 'shortcode_output_empty';
+        tmw_slot_banner_debug($context);
         return '';
     }
+
+    $context['return_reason'] = 'rendered';
+    $context['output_source'] = $mode === 'widget' && $context['do_shortcode_output_length'] === 0 ? 'widget' : 'shortcode';
+    tmw_slot_banner_debug($context);
 
     return '<div class="tmw-slot-banner-zone"><div class="tmw-slot-banner">' . $out . '</div></div>';
 }
