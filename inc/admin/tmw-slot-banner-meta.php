@@ -26,6 +26,7 @@ add_action('init', function () {
         'sanitize_callback' => function ($v) { return $v === '1' ? '1' : ''; },
     ]);
     register_post_meta('model', '_tmw_slot_mode', $base + [
+        'default' => 'shortcode',
         'sanitize_callback' => function ($v) { return in_array($v, ['widget', 'shortcode'], true) ? $v : 'shortcode'; },
     ]);
     register_post_meta('model', '_tmw_slot_shortcode', $base + [
