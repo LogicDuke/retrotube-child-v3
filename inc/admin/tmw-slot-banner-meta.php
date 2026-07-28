@@ -24,9 +24,15 @@ function tmw_slot_banner_post_types(): array {
 /**
  * Determine whether a post is a video eligible for the native Slot Banner UI.
  *
- * RetroTube/LiveJasmin imports are identified elsewhere in the theme by these
- * same wpslj_* keys (see tmw_detect_livejasmin_post_type()).  Requiring an
- * import marker prevents ordinary blog posts from becoming eligible.
+ * Eligibility follows the metadata contract used by live RetroTube imports:
+ *
+ * 1. The `video` CPT is always eligible.
+ * 2. A `post` is eligible when its normalized `partner` value is LiveJasmin.
+ * 3. A `post` may fall back to a non-empty embed plus a LiveJasmin thumbnail.
+ * 4. Legacy non-empty wpslj_* import markers remain compatibility fallbacks.
+ *
+ * Generic `embed` or `feed` metadata alone is deliberately insufficient, so
+ * an ordinary blog post cannot become eligible merely by containing embeds.
  *
  * @param WP_Post|int|null $post Post object or ID.
  * @return bool
@@ -46,8 +52,23 @@ function tmw_slot_banner_is_video_post($post): bool {
         return false;
     }
 
+    $partner = strtolower(trim((string) get_post_meta($post->ID, 'partner', true)));
+    if ($partner === 'livejasmin') {
+        return true;
+    }
+
+    // [TMW-SLOT-VIDEO] Narrow fallback for older LiveJasmin-shaped imports.
+    $embed = trim((string) get_post_meta($post->ID, 'embed', true));
+    $thumbnail_url = trim((string) get_post_meta($post->ID, 'lvjm_thumb_url', true));
+    $thumbnail_attachment_id = absint(get_post_meta($post->ID, 'lvjm_thumb_attachment_id', true));
+
+    if ($embed !== '' && ($thumbnail_url !== '' || $thumbnail_attachment_id > 0)) {
+        return true;
+    }
+
+    // Compatibility with import versions referenced by tmw_detect_livejasmin_post_type().
     foreach (['wpslj_video_id', 'wpslj_model', 'wpslj_stream'] as $meta_key) {
-        if (metadata_exists('post', $post->ID, $meta_key)) {
+        if (trim((string) get_post_meta($post->ID, $meta_key, true)) !== '') {
             return true;
         }
     }
