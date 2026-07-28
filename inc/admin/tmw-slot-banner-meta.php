@@ -18,7 +18,41 @@ if (!defined('ABSPATH')) {
  * @return string[]
  */
 function tmw_slot_banner_post_types(): array {
-    return ['model', 'video'];
+    return ['model', 'video', 'post'];
+}
+
+/**
+ * Determine whether a post is a video eligible for the native Slot Banner UI.
+ *
+ * RetroTube/LiveJasmin imports are identified elsewhere in the theme by these
+ * same wpslj_* keys (see tmw_detect_livejasmin_post_type()).  Requiring an
+ * import marker prevents ordinary blog posts from becoming eligible.
+ *
+ * @param WP_Post|int|null $post Post object or ID.
+ * @return bool
+ */
+function tmw_slot_banner_is_video_post($post): bool {
+    $post = get_post($post);
+
+    if (!$post instanceof WP_Post) {
+        return false;
+    }
+
+    if ($post->post_type === 'video') {
+        return true;
+    }
+
+    if ($post->post_type !== 'post') {
+        return false;
+    }
+
+    foreach (['wpslj_video_id', 'wpslj_model', 'wpslj_stream'] as $meta_key) {
+        if (metadata_exists('post', $post->ID, $meta_key)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 add_action('init', function () {

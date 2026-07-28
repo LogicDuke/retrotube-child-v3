@@ -21,6 +21,10 @@ add_action('add_meta_boxes', function ($post_type, $post = null) {
         : ['model'];
 
     foreach ($post_types as $pt) {
+        if ($pt === 'post' && (!$post instanceof WP_Post || !tmw_slot_banner_is_video_post($post))) {
+            continue;
+        }
+
         $callback_args = null;
 
         /*
@@ -31,7 +35,7 @@ add_action('add_meta_boxes', function ($post_type, $post = null) {
          * Model is untouched: its Gutenberg UI remains this metabox.
          */
         if (
-            $pt === 'video'
+            in_array($pt, ['video', 'post'], true)
             && $post instanceof WP_Post
             && function_exists('use_block_editor_for_post')
             && use_block_editor_for_post($post)
@@ -63,6 +67,10 @@ function tmw_render_slot_banner_metabox($post)
         return;
     }
 
+    if ($post->post_type === 'post' && !tmw_slot_banner_is_video_post($post)) {
+        return;
+    }
+
     $enabled   = get_post_meta($post->ID, '_tmw_slot_enabled', true) === '1';
     $mode      = get_post_meta($post->ID, '_tmw_slot_mode', true);
     $shortcode = get_post_meta($post->ID, '_tmw_slot_shortcode', true);
@@ -75,7 +83,7 @@ function tmw_render_slot_banner_metabox($post)
     }
 
     // Contextual label: "model page" vs "video page"
-    $page_label = $post->post_type === 'video'
+    $page_label = in_array($post->post_type, ['video', 'post'], true)
         ? __('Enable slot banner on this video page', 'retrotube-child')
         : __('Enable slot banner on this model page', 'retrotube-child');
 
@@ -223,6 +231,9 @@ function tmw_slot_banner_classic_save( int $post_id ): void {
     if (!current_user_can('edit_post', $post_id)) {
         return;
     }
+    if (get_post_type($post_id) === 'post' && !tmw_slot_banner_is_video_post($post_id)) {
+        return;
+    }
 
     $enabled = isset($_POST['tmw_slot_enabled']) && $_POST['tmw_slot_enabled'] === '1';
 
@@ -252,3 +263,4 @@ function tmw_slot_banner_classic_save( int $post_id ): void {
 // Hook the shared callback for each supported post type.
 add_action('save_post_model', 'tmw_slot_banner_classic_save', 10, 1);
 add_action('save_post_video', 'tmw_slot_banner_classic_save', 10, 1);
+add_action('save_post_post', 'tmw_slot_banner_classic_save', 10, 1);
