@@ -15,12 +15,23 @@ if (!defined('ABSPATH')) {
 
 // ─── Metabox registration ────────────────────────────────────────────────────
 
-add_action('add_meta_boxes', function () {
+add_action('add_meta_boxes', function ($post_type, $post) {
     $post_types = function_exists('tmw_slot_banner_post_types')
         ? tmw_slot_banner_post_types()
         : ['model'];
 
     foreach ($post_types as $pt) {
+        // For video in Gutenberg a native PluginDocumentSettingPanel provides
+        // the sidebar controls; suppress the classic metabox to avoid duplicates.
+        // Model keeps its proven classic-side-metabox + inline sync approach.
+        if ($pt === 'video'
+            && $post instanceof WP_Post
+            && $post->post_type === 'video'
+            && function_exists('use_block_editor_for_post')
+            && use_block_editor_for_post($post)) {
+            continue;
+        }
+
         add_meta_box(
             'tmw-slot-banner',
             __('Slot Banner', 'retrotube-child'),
@@ -30,7 +41,7 @@ add_action('add_meta_boxes', function () {
             'default'
         );
     }
-});
+}, 10, 2);
 
 // ─── Metabox render ──────────────────────────────────────────────────────────
 
