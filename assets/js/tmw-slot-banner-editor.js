@@ -1,8 +1,13 @@
-(function (plugins, editPost, element, components, data, i18n) {
+(function (plugins, editor, editPost, element, components, data, i18n) {
     'use strict';
 
     var createElement = element.createElement;
-    var PluginDocumentSettingPanel = editPost.PluginDocumentSettingPanel;
+    var PluginDocumentSettingPanel =
+        editor && editor.PluginDocumentSettingPanel
+            ? editor.PluginDocumentSettingPanel
+            : editPost && editPost.PluginDocumentSettingPanel
+                ? editPost.PluginDocumentSettingPanel
+                : null;
     var CheckboxControl = components.CheckboxControl;
     var RadioControl = components.RadioControl;
     var TextareaControl = components.TextareaControl;
@@ -37,7 +42,7 @@
                 label: postType === 'video'
                     ? __('Enable slot banner on this video page', 'retrotube-child')
                     : __('Enable slot banner on this model page', 'retrotube-child'),
-                checked: meta._tmw_slot_enabled === '1',
+                checked: String(meta._tmw_slot_enabled) === '1',
                 onChange: function (enabled) {
                     editMeta('_tmw_slot_enabled', enabled ? '1' : '');
                 }
@@ -76,4 +81,4 @@
     plugins.registerPlugin('tmw-slot-banner', {
         render: ConnectedSlotBannerPanel
     });
-}(wp.plugins, wp.editPost, wp.element, wp.components, wp.data, wp.i18n));
+}(wp.plugins, wp.editor, wp.editPost, wp.element, wp.components, wp.data, wp.i18n));
