@@ -15,22 +15,41 @@ if (!defined('ABSPATH')) {
 
 // ─── Metabox registration ────────────────────────────────────────────────────
 
-add_action('add_meta_boxes', function () {
+add_action('add_meta_boxes', function ($post_type, $post = null) {
     $post_types = function_exists('tmw_slot_banner_post_types')
         ? tmw_slot_banner_post_types()
         : ['model'];
 
     foreach ($post_types as $pt) {
+        $callback_args = null;
+
+        /*
+         * [TMW-SLOT-VIDEO] Video Gutenberg gets a native sidebar panel
+         * (assets/js/tmw-slot-banner-editor.js), so the legacy metabox is
+         * hidden there to avoid a duplicate — but ONLY when the block editor
+         * is confirmed for this post. Classic Editor keeps the metabox.
+         * Model is untouched: its Gutenberg UI remains this metabox.
+         */
+        if (
+            $pt === 'video'
+            && $post instanceof WP_Post
+            && function_exists('use_block_editor_for_post')
+            && use_block_editor_for_post($post)
+        ) {
+            $callback_args = ['__back_compat_meta_box' => true];
+        }
+
         add_meta_box(
             'tmw-slot-banner',
             __('Slot Banner', 'retrotube-child'),
             'tmw_render_slot_banner_metabox',
             $pt,
             'side',
-            'default'
+            'default',
+            $callback_args
         );
     }
-});
+}, 10, 2);
 
 // ─── Metabox render ──────────────────────────────────────────────────────────
 
