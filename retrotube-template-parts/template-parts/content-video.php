@@ -197,6 +197,24 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
         </div>
     </div><!-- .entry-content -->
 
+    <?php
+    // [TMW-SLOT-VIDEO] RetroTube routes imported videos stored as `post`
+    // through this template instead of the child video-CPT template.
+    $tmw_slot_post = get_post();
+    if (
+        $tmw_slot_post instanceof WP_Post
+        && $tmw_slot_post->post_type === 'post'
+        && function_exists( 'tmw_slot_banner_is_video_post' )
+        && tmw_slot_banner_is_video_post( $tmw_slot_post )
+        && function_exists( 'tmw_render_model_slot_banner_zone' )
+    ) :
+        $tmw_slot_html = tmw_render_model_slot_banner_zone( (int) $tmw_slot_post->ID );
+        if ( $tmw_slot_html !== '' ) :
+            echo $tmw_slot_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        endif;
+    endif;
+    ?>
+
     <?php if ( xbox_get_field_value( 'wpst-options', 'display-related-videos' ) == 'on' ) : ?>
         <?php get_template_part( 'template-parts/content', 'related' ); ?>
     <?php endif; ?>
