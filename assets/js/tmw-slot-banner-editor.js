@@ -42,7 +42,7 @@
                 label: postType === 'video'
                     ? __('Enable slot banner on this video page', 'retrotube-child')
                     : __('Enable slot banner on this model page', 'retrotube-child'),
-                checked: meta._tmw_slot_enabled === '1',
+                checked: String(meta._tmw_slot_enabled) === '1',
                 onChange: function (enabled) {
                     editMeta('_tmw_slot_enabled', enabled ? '1' : '');
                 }
