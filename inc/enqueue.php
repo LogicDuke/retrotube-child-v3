@@ -348,14 +348,13 @@ add_action('admin_enqueue_scripts', function ($hook) {
 /**
  * [TMW-SLOT-VIDEO] Video Gutenberg Slot Banner sidebar panel.
  *
- * Loads only on Video block-editor post screens. enqueue_block_editor_assets
+ * Loads only on eligible Video block-editor post screens. enqueue_block_editor_assets
  * never fires on the frontend or in the Classic Editor, so those contexts are
- * excluded by the hook itself; the checks below restrict it to the 'video'
- * post-edit screen. The screen check is backed by a global-post fallback so
- * the gate does not depend solely on get_current_screen().
+ * excluded by the hook itself. Eligibility is resolved from the actual post,
+ * including the LiveJasmin import markers used for videos stored as `post`.
  */
 add_action('enqueue_block_editor_assets', function () {
-    $post_type = '';
+    $post = null;
 
     if (function_exists('get_current_screen')) {
         $screen = get_current_screen();
@@ -364,20 +363,19 @@ add_action('enqueue_block_editor_assets', function () {
             if ($screen->base !== 'post') {
                 return; // Site editor / widgets / customizer block screens.
             }
-            if (!empty($screen->post_type)) {
-                $post_type = $screen->post_type;
-            }
         }
     }
 
-    if ($post_type === '') {
+    $post_id = isset($_GET['post']) ? absint(wp_unslash($_GET['post'])) : 0;
+    if ($post_id > 0) {
+        $post = get_post($post_id);
+    }
+
+    if (!$post instanceof WP_Post) {
         $post = get_post();
-        if ($post instanceof WP_Post) {
-            $post_type = $post->post_type;
-        }
     }
 
-    if ($post_type !== 'video') {
+    if (!$post instanceof WP_Post || !function_exists('tmw_slot_banner_is_video_post') || !tmw_slot_banner_is_video_post($post)) {
         return;
     }
 
@@ -398,6 +396,7 @@ add_action('enqueue_block_editor_assets', function () {
     wp_add_inline_script(
         'tmw-slot-banner-editor',
         'window.tmwSlotBannerEditorSettings = ' . wp_json_encode([
+            'eligible' => true,
             'debug' => defined('WP_DEBUG') && WP_DEBUG,
         ]) . ';',
         'before'

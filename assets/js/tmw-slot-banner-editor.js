@@ -1,9 +1,9 @@
 /**
  * TMW Slot Banner — Video Gutenberg sidebar panel.
  *
- * Registers a native document-sidebar panel for the 'video' post type only.
+ * Registers a native document-sidebar panel for eligible video entries.
  * Model keeps its legacy side metabox; this script is never enqueued there
- * and additionally guards on postType === 'video' at render time.
+ * and requires the server-localized eligibility flag at render time.
  *
  * Component resolution order:
  *   1. wp.editor.PluginDocumentSettingPanel   (WP 6.6+)
@@ -15,7 +15,13 @@
 (function () {
     'use strict';
 
-    var DEBUG = !!(window.tmwSlotBannerEditorSettings && window.tmwSlotBannerEditorSettings.debug);
+    var settings = window.tmwSlotBannerEditorSettings || {};
+    var ELIGIBLE = settings.eligible === true;
+    var DEBUG = !!settings.debug;
+
+    if (!ELIGIBLE) {
+        return;
+    }
 
     function debugLog(message) {
         if (DEBUG && window.console && window.console.error) {
@@ -107,7 +113,7 @@
     }
 
     function SlotBannerPanel(props) {
-        if (props.postType !== 'video') {
+        if (!ELIGIBLE || (props.postType !== 'video' && props.postType !== 'post')) {
             return null;
         }
 
