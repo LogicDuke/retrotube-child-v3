@@ -6,9 +6,9 @@
  * and requires the server-localized eligibility flag at render time.
  *
  * Component resolution order:
- *   1. wp.editor.PluginDocumentSettingPanel   (WP 6.6+)
- *   2. wp.editPost.PluginDocumentSettingPanel (WP < 6.6)
- *   3. wp.editor/wp.editPost PluginSidebar + PluginSidebarMoreMenuItem
+ *   1. wp.editPost.PluginDocumentSettingPanel
+ *   2. wp.editor.PluginDocumentSettingPanel
+ *   3. wp.editPost/wp.editor PluginSidebar + PluginSidebarMoreMenuItem
  * If none is available the script logs (WP_DEBUG only) and exits without
  * registering anything — createElement is never called with a null component.
  */
@@ -37,11 +37,25 @@
     var editorPkg = wp.editor || {};
     var editPostPkg = wp.editPost || {};
 
-    var SettingPanel = editorPkg.PluginDocumentSettingPanel || editPostPkg.PluginDocumentSettingPanel || null;
-    var Sidebar = editorPkg.PluginSidebar || editPostPkg.PluginSidebar || null;
-    var SidebarMenuItem = editorPkg.PluginSidebarMoreMenuItem || editPostPkg.PluginSidebarMoreMenuItem || null;
+    var SettingPanel = editPostPkg.PluginDocumentSettingPanel || editorPkg.PluginDocumentSettingPanel || null;
+    var Sidebar = editPostPkg.PluginSidebar || editorPkg.PluginSidebar || null;
+    var SidebarMenuItem = editPostPkg.PluginSidebarMoreMenuItem || editorPkg.PluginSidebarMoreMenuItem || null;
 
-    if (!SettingPanel && !Sidebar) {
+    if (SettingPanel) {
+        debugLog(
+            editPostPkg.PluginDocumentSettingPanel
+                ? 'Using wp.editPost.PluginDocumentSettingPanel'
+                : 'Using wp.editor.PluginDocumentSettingPanel'
+        );
+    } else if (Sidebar && SidebarMenuItem) {
+        debugLog(
+            editPostPkg.PluginSidebar
+                ? 'Using wp.editPost.PluginSidebar fallback'
+                : 'Using wp.editor.PluginSidebar fallback'
+        );
+    }
+
+    if (!SettingPanel && (!Sidebar || !SidebarMenuItem)) {
         debugLog('No PluginDocumentSettingPanel or PluginSidebar API available; panel not registered.');
         return;
     }
@@ -113,6 +127,9 @@
     }
 
     function SlotBannerPanel(props) {
+        debugLog('SlotBannerPanel render invoked.');
+        debugLog('props.postType: ' + String(props.postType));
+
         if (!ELIGIBLE || (props.postType !== 'video' && props.postType !== 'post')) {
             return null;
         }
@@ -120,6 +137,7 @@
         var title = __('Slot Banner', 'retrotube-child');
 
         if (SettingPanel) {
+            debugLog('Returning SettingPanel branch.');
             return el(
                 SettingPanel,
                 { name: PLUGIN_NAME, title: title },
@@ -128,12 +146,11 @@
         }
 
         // Fallback: dedicated sidebar reachable from the editor "more menu".
+        debugLog('Returning Sidebar fallback branch.');
         return el(
             Fragment,
             null,
-            SidebarMenuItem
-                ? el(SidebarMenuItem, { target: PLUGIN_NAME }, title)
-                : null,
+            el(SidebarMenuItem, { target: PLUGIN_NAME }, title),
             el(
                 Sidebar,
                 { name: PLUGIN_NAME, title: title },
