@@ -31,33 +31,42 @@
         return;
     }
 
-    var Sidebar =
-        wp.editor && wp.editor.PluginSidebar
-            ? wp.editor.PluginSidebar
-            : wp.editPost && wp.editPost.PluginSidebar
-                ? wp.editPost.PluginSidebar
-                : null;
+    var sidebarSource = null;
+    var sidebarMenuItemSource = null;
 
-    var SidebarMenuItem =
-        wp.editor && wp.editor.PluginSidebarMoreMenuItem
-            ? wp.editor.PluginSidebarMoreMenuItem
-            : wp.editPost && wp.editPost.PluginSidebarMoreMenuItem
-                ? wp.editPost.PluginSidebarMoreMenuItem
-                : null;
+    var Sidebar = null;
+    var SidebarMenuItem = null;
+
+    if (wp.editor && wp.editor.PluginSidebar) {
+        Sidebar = wp.editor.PluginSidebar;
+        sidebarSource = 'wp.editor';
+    } else if (wp.editPost && wp.editPost.PluginSidebar) {
+        Sidebar = wp.editPost.PluginSidebar;
+        sidebarSource = 'wp.editPost';
+    }
+
+    if (wp.editor && wp.editor.PluginSidebarMoreMenuItem) {
+        SidebarMenuItem = wp.editor.PluginSidebarMoreMenuItem;
+        sidebarMenuItemSource = 'wp.editor';
+    } else if (wp.editPost && wp.editPost.PluginSidebarMoreMenuItem) {
+        SidebarMenuItem = wp.editPost.PluginSidebarMoreMenuItem;
+        sidebarMenuItemSource = 'wp.editPost';
+    }
 
     if (!Sidebar || !SidebarMenuItem) {
         debugLog('PluginSidebar APIs are unavailable; panel not registered.');
         return;
     }
 
-    if (
-        wp.editor &&
-        Sidebar === wp.editor.PluginSidebar &&
-        SidebarMenuItem === wp.editor.PluginSidebarMoreMenuItem
-    ) {
+    if (sidebarSource === 'wp.editor' && sidebarMenuItemSource === 'wp.editor') {
         debugLog('Using wp.editor PluginSidebar-only path');
-    } else {
+    } else if (sidebarSource === 'wp.editPost' && sidebarMenuItemSource === 'wp.editPost') {
         debugLog('Using wp.editPost PluginSidebar-only path');
+    } else {
+        debugLog(
+            'Using mixed PluginSidebar path: Sidebar from ' + sidebarSource +
+            ', MenuItem from ' + sidebarMenuItemSource
+        );
     }
 
     var PLUGIN_NAME = 'tmw-slot-banner-video';
