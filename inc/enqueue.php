@@ -344,3 +344,62 @@ add_action('admin_enqueue_scripts', function ($hook) {
     // Move any admin-only assets here, same conditions as before.
     // Admin asset logic lives in inc/admin modules.
 }, 20);
+
+/**
+ * [TMW-SLOT-VIDEO] Video Gutenberg Slot Banner sidebar panel.
+ *
+ * Loads only on Video block-editor post screens. enqueue_block_editor_assets
+ * never fires on the frontend or in the Classic Editor, so those contexts are
+ * excluded by the hook itself; the checks below restrict it to the 'video'
+ * post-edit screen. The screen check is backed by a global-post fallback so
+ * the gate does not depend solely on get_current_screen().
+ */
+add_action('enqueue_block_editor_assets', function () {
+    $post_type = '';
+
+    if (function_exists('get_current_screen')) {
+        $screen = get_current_screen();
+
+        if ($screen) {
+            if ($screen->base !== 'post') {
+                return; // Site editor / widgets / customizer block screens.
+            }
+            if (!empty($screen->post_type)) {
+                $post_type = $screen->post_type;
+            }
+        }
+    }
+
+    if ($post_type === '') {
+        $post = get_post();
+        if ($post instanceof WP_Post) {
+            $post_type = $post->post_type;
+        }
+    }
+
+    if ($post_type !== 'video') {
+        return;
+    }
+
+    $asset = get_stylesheet_directory() . '/assets/js/tmw-slot-banner-editor.js';
+
+    if (!file_exists($asset)) {
+        return;
+    }
+
+    wp_enqueue_script(
+        'tmw-slot-banner-editor',
+        get_stylesheet_directory_uri() . '/assets/js/tmw-slot-banner-editor.js',
+        ['wp-plugins', 'wp-editor', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-i18n'],
+        filemtime($asset),
+        true
+    );
+
+    wp_add_inline_script(
+        'tmw-slot-banner-editor',
+        'window.tmwSlotBannerEditorSettings = ' . wp_json_encode([
+            'debug' => defined('WP_DEBUG') && WP_DEBUG,
+        ]) . ';',
+        'before'
+    );
+});
