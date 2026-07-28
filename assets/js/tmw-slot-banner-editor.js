@@ -1,15 +1,12 @@
 /**
  * TMW Slot Banner — Video Gutenberg sidebar panel.
  *
- * Registers a native document-sidebar panel for eligible video entries.
+ * Registers a dedicated plugin sidebar for eligible video entries.
  * Model keeps its legacy side metabox; this script is never enqueued there
  * and requires the server-localized eligibility flag at render time.
  *
- * Component resolution order:
- *   1. wp.editPost.PluginDocumentSettingPanel
- *   2. wp.editor.PluginDocumentSettingPanel
- *   3. wp.editPost/wp.editor PluginSidebar + PluginSidebarMoreMenuItem
- * If none is available the script logs (WP_DEBUG only) and exits without
+ * Sidebar components resolve from wp.editPost first, then wp.editor.
+ * If either is unavailable the script logs (WP_DEBUG only) and exits without
  * registering anything — createElement is never called with a null component.
  */
 (function () {
@@ -34,31 +31,26 @@
         return;
     }
 
-    var editorPkg = wp.editor || {};
-    var editPostPkg = wp.editPost || {};
+    var Sidebar =
+        wp.editPost && wp.editPost.PluginSidebar
+            ? wp.editPost.PluginSidebar
+            : wp.editor && wp.editor.PluginSidebar
+                ? wp.editor.PluginSidebar
+                : null;
 
-    var SettingPanel = editPostPkg.PluginDocumentSettingPanel || editorPkg.PluginDocumentSettingPanel || null;
-    var Sidebar = editPostPkg.PluginSidebar || editorPkg.PluginSidebar || null;
-    var SidebarMenuItem = editPostPkg.PluginSidebarMoreMenuItem || editorPkg.PluginSidebarMoreMenuItem || null;
+    var SidebarMenuItem =
+        wp.editPost && wp.editPost.PluginSidebarMoreMenuItem
+            ? wp.editPost.PluginSidebarMoreMenuItem
+            : wp.editor && wp.editor.PluginSidebarMoreMenuItem
+                ? wp.editor.PluginSidebarMoreMenuItem
+                : null;
 
-    if (SettingPanel) {
-        debugLog(
-            editPostPkg.PluginDocumentSettingPanel
-                ? 'Using wp.editPost.PluginDocumentSettingPanel'
-                : 'Using wp.editor.PluginDocumentSettingPanel'
-        );
-    } else if (Sidebar && SidebarMenuItem) {
-        debugLog(
-            editPostPkg.PluginSidebar
-                ? 'Using wp.editPost.PluginSidebar fallback'
-                : 'Using wp.editor.PluginSidebar fallback'
-        );
-    }
-
-    if (!SettingPanel && (!Sidebar || !SidebarMenuItem)) {
-        debugLog('No PluginDocumentSettingPanel or PluginSidebar API available; panel not registered.');
+    if (!Sidebar || !SidebarMenuItem) {
+        debugLog('PluginSidebar APIs are unavailable; panel not registered.');
         return;
     }
+
+    debugLog('Using PluginSidebar-only path');
 
     var PLUGIN_NAME = 'tmw-slot-banner-video';
 
@@ -76,7 +68,7 @@
     var __ = wp.i18n.__;
     var DEFAULT_SHORTCODE = '[tmw_slot_machine]';
 
-    if (!CheckboxControl || !RadioControl || !TextareaControl) {
+    if (!CheckboxControl || !RadioControl || !TextareaControl || !PanelBody) {
         debugLog('Required wp.components controls are missing; panel not registered.');
         return;
     }
@@ -136,17 +128,7 @@
 
         var title = __('Slot Banner', 'retrotube-child');
 
-        if (SettingPanel) {
-            debugLog('Returning SettingPanel branch.');
-            return el(
-                SettingPanel,
-                { name: PLUGIN_NAME, title: title },
-                el(SlotBannerControls, { meta: props.meta })
-            );
-        }
-
-        // Fallback: dedicated sidebar reachable from the editor "more menu".
-        debugLog('Returning Sidebar fallback branch.');
+        debugLog('Returning Sidebar branch');
         return el(
             Fragment,
             null,
@@ -154,9 +136,7 @@
             el(
                 Sidebar,
                 { name: PLUGIN_NAME, title: title },
-                PanelBody
-                    ? el(PanelBody, { initialOpen: true }, el(SlotBannerControls, { meta: props.meta }))
-                    : el(SlotBannerControls, { meta: props.meta })
+                el(PanelBody, { initialOpen: true }, el(SlotBannerControls, { meta: props.meta }))
             )
         );
     }
