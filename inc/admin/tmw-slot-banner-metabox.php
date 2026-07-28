@@ -135,7 +135,7 @@ function tmw_render_slot_banner_metabox($post)
             var owns = Object.prototype.hasOwnProperty;
 
             if (enabled && owns.call(meta, '_tmw_slot_enabled')) {
-                enabled.checked = meta._tmw_slot_enabled === '1';
+                enabled.checked = String(meta._tmw_slot_enabled) === '1';
             }
 
             if (owns.call(meta, '_tmw_slot_mode') &&
