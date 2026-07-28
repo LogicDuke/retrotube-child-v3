@@ -27,8 +27,7 @@ add_action('add_meta_boxes', function () {
             'tmw_render_slot_banner_metabox',
             $pt,
             'side',
-            'default',
-            $pt === 'video' ? ['__back_compat_meta_box' => true] : null
+            'default'
         );
     }
 });
