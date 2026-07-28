@@ -5,7 +5,7 @@
  * Model keeps its legacy side metabox; this script is never enqueued there
  * and requires the server-localized eligibility flag at render time.
  *
- * Sidebar components resolve from wp.editPost first, then wp.editor.
+ * Sidebar components resolve from wp.editor first, then wp.editPost.
  * If either is unavailable the script logs (WP_DEBUG only) and exits without
  * registering anything — createElement is never called with a null component.
  */
@@ -32,17 +32,17 @@
     }
 
     var Sidebar =
-        wp.editPost && wp.editPost.PluginSidebar
-            ? wp.editPost.PluginSidebar
-            : wp.editor && wp.editor.PluginSidebar
-                ? wp.editor.PluginSidebar
+        wp.editor && wp.editor.PluginSidebar
+            ? wp.editor.PluginSidebar
+            : wp.editPost && wp.editPost.PluginSidebar
+                ? wp.editPost.PluginSidebar
                 : null;
 
     var SidebarMenuItem =
-        wp.editPost && wp.editPost.PluginSidebarMoreMenuItem
-            ? wp.editPost.PluginSidebarMoreMenuItem
-            : wp.editor && wp.editor.PluginSidebarMoreMenuItem
-                ? wp.editor.PluginSidebarMoreMenuItem
+        wp.editor && wp.editor.PluginSidebarMoreMenuItem
+            ? wp.editor.PluginSidebarMoreMenuItem
+            : wp.editPost && wp.editPost.PluginSidebarMoreMenuItem
+                ? wp.editPost.PluginSidebarMoreMenuItem
                 : null;
 
     if (!Sidebar || !SidebarMenuItem) {
@@ -50,7 +50,15 @@
         return;
     }
 
-    debugLog('Using PluginSidebar-only path');
+    if (
+        wp.editor &&
+        Sidebar === wp.editor.PluginSidebar &&
+        SidebarMenuItem === wp.editor.PluginSidebarMoreMenuItem
+    ) {
+        debugLog('Using wp.editor PluginSidebar-only path');
+    } else {
+        debugLog('Using wp.editPost PluginSidebar-only path');
+    }
 
     var PLUGIN_NAME = 'tmw-slot-banner-video';
 
