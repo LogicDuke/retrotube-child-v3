@@ -344,3 +344,22 @@ add_action('admin_enqueue_scripts', function ($hook) {
     // Move any admin-only assets here, same conditions as before.
     // Admin asset logic lives in inc/admin modules.
 }, 20);
+
+/** Native Slot Banner controls for model/video block editor document sidebars. */
+add_action('enqueue_block_editor_assets', function () {
+  $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+
+  if (!$screen || $screen->base !== 'post' || !in_array($screen->post_type, ['model', 'video'], true)) {
+    return;
+  }
+
+  $asset = get_stylesheet_directory() . '/assets/js/tmw-slot-banner-editor.js';
+
+  wp_enqueue_script(
+    'tmw-slot-banner-editor',
+    get_stylesheet_directory_uri() . '/assets/js/tmw-slot-banner-editor.js',
+    ['wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-i18n'],
+    filemtime($asset),
+    true
+  );
+});
