@@ -196,6 +196,17 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
         </div>
     </div><!-- .entry-content -->
 
+    <?php
+    // === TMW SLOT BANNER ZONE (video) ===
+    if ( function_exists( 'tmw_render_model_slot_banner_zone' ) ) :
+        $tmw_slot_html = tmw_render_model_slot_banner_zone( (int) get_the_ID() );
+        if ( $tmw_slot_html !== '' ) :
+            echo $tmw_slot_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        endif;
+    endif;
+    // === END TMW SLOT BANNER ZONE ===
+    ?>
+
     <?php if ( xbox_get_field_value( 'wpst-options', 'display-related-videos' ) == 'on' ) : ?>
         <?php get_template_part( 'template-parts/content', 'related' ); ?>
     <?php endif; ?>

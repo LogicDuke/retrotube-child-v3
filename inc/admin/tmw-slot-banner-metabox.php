@@ -1,42 +1,60 @@
 <?php
 /**
- * TMW Slot Banner Metabox - Bulletproof Version
- * Works with both Classic Editor and Gutenberg Block Editor
+ * TMW Slot Banner Metabox
+ * Works with both Classic Editor and Gutenberg Block Editor.
+ * Supports all post types returned by tmw_slot_banner_post_types().
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Add metabox
+// ─── Metabox registration ────────────────────────────────────────────────────
+
 add_action('add_meta_boxes', function () {
-    add_meta_box(
-        'tmw-slot-banner',
-        __('Slot Banner', 'retrotube-child'),
-        'tmw_render_slot_banner_metabox',
-        'model',
-        'side',
-        'default'
-    );
+    $post_types = function_exists('tmw_slot_banner_post_types')
+        ? tmw_slot_banner_post_types()
+        : ['model'];
+
+    foreach ($post_types as $pt) {
+        add_meta_box(
+            'tmw-slot-banner',
+            __('Slot Banner', 'retrotube-child'),
+            'tmw_render_slot_banner_metabox',
+            $pt,
+            'side',
+            'default'
+        );
+    }
 });
+
+// ─── Metabox render ──────────────────────────────────────────────────────────
 
 function tmw_render_slot_banner_metabox($post)
 {
-    if (!$post || $post->post_type !== 'model') {
+    $supported = function_exists('tmw_slot_banner_post_types')
+        ? tmw_slot_banner_post_types()
+        : ['model'];
+
+    if (!$post || !in_array($post->post_type, $supported, true)) {
         return;
     }
 
-    $enabled = get_post_meta($post->ID, '_tmw_slot_enabled', true) === '1';
-    $mode = get_post_meta($post->ID, '_tmw_slot_mode', true);
+    $enabled   = get_post_meta($post->ID, '_tmw_slot_enabled', true) === '1';
+    $mode      = get_post_meta($post->ID, '_tmw_slot_mode', true);
     $shortcode = get_post_meta($post->ID, '_tmw_slot_shortcode', true);
 
-    // Smart defaults
     if (!in_array($mode, ['widget', 'shortcode'])) {
         $mode = 'shortcode';
     }
     if ($shortcode === '') {
         $shortcode = '[tmw_slot_machine]';
     }
+
+    // Contextual label: "model page" vs "video page"
+    $page_label = $post->post_type === 'video'
+        ? __('Enable slot banner on this video page', 'retrotube-child')
+        : __('Enable slot banner on this model page', 'retrotube-child');
 
     wp_nonce_field('tmw_slot_banner_save', 'tmw_slot_banner_nonce');
     ?>
@@ -45,7 +63,7 @@ function tmw_render_slot_banner_metabox($post)
     <p>
         <label>
             <input type="checkbox" name="tmw_slot_enabled" value="1" <?php checked($enabled); ?> />
-            <?php esc_html_e('Enable slot banner on this model page', 'retrotube-child'); ?>
+            <?php echo esc_html($page_label); ?>
         </label>
     </p>
 
@@ -158,32 +176,32 @@ function tmw_render_slot_banner_metabox($post)
     <?php
 }
 
-// Classic Editor save
-add_action('save_post_model', function ($post_id) {
-    // Skip if not from our metabox
+// ─── Classic Editor save (shared callback) ───────────────────────────────────
+
+/**
+ * Saves Slot Banner meta from the Classic Editor / Gutenberg meta-box-loader.
+ *
+ * @param int $post_id
+ */
+function tmw_slot_banner_classic_save( int $post_id ): void {
     if (!isset($_POST['tmw_slot_metabox_present'])) {
         return;
     }
-
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
         return;
     }
     if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
         return;
     }
-
     if (!isset($_POST['tmw_slot_banner_nonce']) ||
         !wp_verify_nonce($_POST['tmw_slot_banner_nonce'], 'tmw_slot_banner_save')) {
         return;
     }
-
     if (!current_user_can('edit_post', $post_id)) {
         return;
     }
 
     $enabled = isset($_POST['tmw_slot_enabled']) && $_POST['tmw_slot_enabled'] === '1';
-    $mode = '';
-    $shortcode = '';
 
     if (!$enabled) {
         delete_post_meta($post_id, '_tmw_slot_enabled');
@@ -202,7 +220,12 @@ add_action('save_post_model', function ($post_id) {
         $shortcode = trim($shortcode);
         if ($shortcode !== '') {
             update_post_meta($post_id, '_tmw_slot_shortcode', $shortcode);
+        } else {
+            delete_post_meta($post_id, '_tmw_slot_shortcode');
         }
     }
+}
 
-}, 10, 1);
+// Hook the shared callback for each supported post type.
+add_action('save_post_model', 'tmw_slot_banner_classic_save', 10, 1);
+add_action('save_post_video', 'tmw_slot_banner_classic_save', 10, 1);
