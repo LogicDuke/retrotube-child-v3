@@ -54,4 +54,10 @@ add_action('init', function () {
             add_post_type_support($post_type, 'thumbnail');
         }
     }
+
+    // Ensure 'video' supports custom-fields so the REST posts controller
+    // exposes registered post meta (required for Gutenberg persistence).
+    if (post_type_exists('video')) {
+        add_post_type_support('video', 'custom-fields');
+    }
 }, 20);
