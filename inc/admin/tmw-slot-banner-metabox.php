@@ -220,6 +220,8 @@ function tmw_slot_banner_classic_save( int $post_id ): void {
         $shortcode = trim($shortcode);
         if ($shortcode !== '') {
             update_post_meta($post_id, '_tmw_slot_shortcode', $shortcode);
+        } else {
+            delete_post_meta($post_id, '_tmw_slot_shortcode');
         }
     }
 }

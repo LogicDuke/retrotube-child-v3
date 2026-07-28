@@ -196,10 +196,6 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
         </div>
     </div><!-- .entry-content -->
 
-    <?php if ( xbox_get_field_value( 'wpst-options', 'display-related-videos' ) == 'on' ) : ?>
-        <?php get_template_part( 'template-parts/content', 'related' ); ?>
-    <?php endif; ?>
-
     <?php
     // === TMW SLOT BANNER ZONE (video) ===
     if ( function_exists( 'tmw_render_model_slot_banner_zone' ) ) :
@@ -210,6 +206,10 @@ if ( has_post_thumbnail() && wp_get_attachment_url( get_post_thumbnail_id() ) ) 
     endif;
     // === END TMW SLOT BANNER ZONE ===
     ?>
+
+    <?php if ( xbox_get_field_value( 'wpst-options', 'display-related-videos' ) == 'on' ) : ?>
+        <?php get_template_part( 'template-parts/content', 'related' ); ?>
+    <?php endif; ?>
 
     <?php
     // [TMW-VIDEO-TAGS] - Show ALL tags (NO hub filtering) with model-page styling
