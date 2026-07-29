@@ -76,6 +76,21 @@ function tmw_slot_banner_is_video_post($post): bool {
     return false;
 }
 
+// [TMW-SLOT-VIDEO] Identify eligible post-backed RetroTube videos in frontend CSS.
+add_filter('body_class', function (array $classes): array {
+    $post = get_queried_object();
+
+    if (
+        is_singular('post')
+        && $post instanceof WP_Post
+        && tmw_slot_banner_is_video_post($post)
+    ) {
+        $classes[] = 'tmw-slot-banner-video-post';
+    }
+
+    return $classes;
+});
+
 add_action('init', function () {
     $base = [
         'show_in_rest'  => true,
