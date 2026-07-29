@@ -346,7 +346,7 @@ add_action('admin_enqueue_scripts', function ($hook) {
 }, 20);
 
 /**
- * [TMW-SLOT-VIDEO] Video Gutenberg Slot Banner sidebar panel.
+ * Video Gutenberg Slot Banner sidebar panel.
  *
  * Loads only on eligible Video block-editor post screens. enqueue_block_editor_assets
  * never fires on the frontend or in the Classic Editor, so those contexts are
@@ -397,7 +397,6 @@ add_action('enqueue_block_editor_assets', function () {
         'tmw-slot-banner-editor',
         'window.tmwSlotBannerEditorSettings = ' . wp_json_encode([
             'eligible' => true,
-            'debug' => defined('WP_DEBUG') && WP_DEBUG,
         ]) . ';',
         'before'
     );
