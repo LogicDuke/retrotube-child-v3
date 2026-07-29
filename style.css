@@ -799,6 +799,10 @@ a.tag-link {
   box-sizing: border-box;
 }
 
+.single-video .tmw-slot-banner-zone {
+  margin: 20px 0 15px 0;
+}
+
 .single-model .tmw-slot-banner-zone .tmw-slot-banner {
   display: block;
   max-width: 100%;
