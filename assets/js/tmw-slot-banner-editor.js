@@ -6,73 +6,45 @@
  * and requires the server-localized eligibility flag at render time.
  *
  * Sidebar components resolve from wp.editor first, then wp.editPost.
- * If either is unavailable the script logs (WP_DEBUG only) and exits without
- * registering anything — createElement is never called with a null component.
+ * If either is unavailable the script exits without registering anything —
+ * createElement is never called with a null component.
  */
 (function () {
     'use strict';
 
     var settings = window.tmwSlotBannerEditorSettings || {};
     var ELIGIBLE = settings.eligible === true;
-    var DEBUG = !!settings.debug;
 
     if (!ELIGIBLE) {
         return;
     }
 
-    function debugLog(message) {
-        if (DEBUG && window.console && window.console.error) {
-            window.console.error('[TMW-SLOT-VIDEO] ' + message);
-        }
-    }
-
     if (!window.wp || !wp.plugins || !wp.element || !wp.components || !wp.data || !wp.i18n) {
-        debugLog('Required wp.* packages are missing; panel not registered.');
         return;
     }
-
-    var sidebarSource = null;
-    var sidebarMenuItemSource = null;
 
     var Sidebar = null;
     var SidebarMenuItem = null;
 
     if (wp.editor && wp.editor.PluginSidebar) {
         Sidebar = wp.editor.PluginSidebar;
-        sidebarSource = 'wp.editor';
     } else if (wp.editPost && wp.editPost.PluginSidebar) {
         Sidebar = wp.editPost.PluginSidebar;
-        sidebarSource = 'wp.editPost';
     }
 
     if (wp.editor && wp.editor.PluginSidebarMoreMenuItem) {
         SidebarMenuItem = wp.editor.PluginSidebarMoreMenuItem;
-        sidebarMenuItemSource = 'wp.editor';
     } else if (wp.editPost && wp.editPost.PluginSidebarMoreMenuItem) {
         SidebarMenuItem = wp.editPost.PluginSidebarMoreMenuItem;
-        sidebarMenuItemSource = 'wp.editPost';
     }
 
     if (!Sidebar || !SidebarMenuItem) {
-        debugLog('PluginSidebar APIs are unavailable; panel not registered.');
         return;
-    }
-
-    if (sidebarSource === 'wp.editor' && sidebarMenuItemSource === 'wp.editor') {
-        debugLog('Using wp.editor PluginSidebar-only path');
-    } else if (sidebarSource === 'wp.editPost' && sidebarMenuItemSource === 'wp.editPost') {
-        debugLog('Using wp.editPost PluginSidebar-only path');
-    } else {
-        debugLog(
-            'Using mixed PluginSidebar path: Sidebar from ' + sidebarSource +
-            ', MenuItem from ' + sidebarMenuItemSource
-        );
     }
 
     var PLUGIN_NAME = 'tmw-slot-banner-video';
 
     if (wp.plugins.getPlugin && wp.plugins.getPlugin(PLUGIN_NAME)) {
-        debugLog('Plugin "' + PLUGIN_NAME + '" is already registered; skipping duplicate registration.');
         return;
     }
 
@@ -86,7 +58,6 @@
     var DEFAULT_SHORTCODE = '[tmw_slot_machine]';
 
     if (!CheckboxControl || !RadioControl || !TextareaControl || !PanelBody) {
-        debugLog('Required wp.components controls are missing; panel not registered.');
         return;
     }
 
@@ -136,16 +107,12 @@
     }
 
     function SlotBannerPanel(props) {
-        debugLog('SlotBannerPanel render invoked.');
-        debugLog('props.postType: ' + String(props.postType));
-
         if (!ELIGIBLE || (props.postType !== 'video' && props.postType !== 'post')) {
             return null;
         }
 
         var title = __('Slot Banner', 'retrotube-child');
 
-        debugLog('Returning Sidebar branch');
         return el(
             Fragment,
             null,
